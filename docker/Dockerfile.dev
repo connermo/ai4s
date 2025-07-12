@@ -28,9 +28,11 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     python3-venv \
-    nodejs \
-    npm \
     && rm -rf /var/lib/apt/lists/*
+
+# 安装Node.js 20.x LTS
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
 
 # 配置时区
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -60,8 +62,8 @@ RUN pip3 install --ignore-installed \
     plotly \
     dash
 
-# 安装Node.js依赖（用于VSCode Server）
-RUN npm install -g npm@latest
+# Node.js和npm已安装，验证版本
+RUN node --version && npm --version
 
 # 配置SSH
 RUN mkdir /var/run/sshd
