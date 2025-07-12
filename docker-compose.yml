@@ -1,6 +1,24 @@
 version: '3.8'
 
 services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: gpu-platform-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: gpu_platform
+      MYSQL_USER: platform
+      MYSQL_PASSWORD: platform123
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+    networks:
+      - platform-network
+
   # 管理平台后端
   platform-backend:
     build:
@@ -10,14 +28,15 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./platform.db:/app/platform.db
       - ./users:/app/users
       - ./shared:/app/shared
       - ./workspace:/app/workspace
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PORT=8080
-      - DB_PATH=platform.db
+      - DB_DSN=platform:platform123@tcp(mysql:3306)/gpu_platform?charset=utf8mb4&parseTime=True&loc=Local
+    depends_on:
+      - mysql
     restart: unless-stopped
     networks:
       - platform-network
@@ -38,5 +57,5 @@ networks:
     driver: bridge
 
 volumes:
-  platform-data:
+  mysql_data:
     driver: local

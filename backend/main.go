@@ -13,8 +13,11 @@ import (
 
 func main() {
 	// 初始化数据库
-	dbPath := "platform.db"
-	if err := database.InitDB(dbPath); err != nil {
+	dbDSN := os.Getenv("DB_DSN")
+	if dbDSN == "" {
+		dbDSN = "root:password@tcp(mysql:3306)/gpu_platform?charset=utf8mb4&parseTime=True&loc=Local"
+	}
+	if err := database.InitDB(dbDSN); err != nil {
 		log.Fatal("Failed to initialize database:", err)
 	}
 	defer database.Close()
