@@ -1,4 +1,4 @@
-# GPU开发平台
+# GPU开发平台 (AI4S)
 
 基于GPU容器的多人开发平台，提供隔离的开发环境和统一的用户管理。
 
@@ -23,8 +23,8 @@
 
 1. **克隆项目**
 ```bash
-git clone <repository-url>
-cd gpu-dev-platform
+git clone https://github.com/connermo/ai4s.git
+cd ai4s
 ```
 
 2. **构建镜像**
@@ -69,7 +69,7 @@ cd gpu-dev-platform
 ## 架构概述
 
 ```
-gpu-dev-platform/
+ai4s/
 ├── backend/                 # Golang后端API服务
 │   ├── main.go             # 主程序入口
 │   ├── models/             # 数据库模型
