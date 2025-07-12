@@ -59,10 +59,18 @@ async function loadUsers() {
         const tbody = document.getElementById('users-table-body');
         tbody.innerHTML = '';
         
-        users.forEach(user => {
-            const row = createUserRow(user);
+        // 处理null或空数组的情况
+        if (users && Array.isArray(users) && users.length > 0) {
+            users.forEach(user => {
+                const row = createUserRow(user);
+                tbody.appendChild(row);
+            });
+        } else {
+            // 显示空状态
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="8" class="text-center text-muted">暂无用户</td>';
             tbody.appendChild(row);
-        });
+        }
     } catch (error) {
         console.error('加载用户失败:', error);
         showAlert('加载用户失败', 'danger');
@@ -313,14 +321,17 @@ async function loadUserOptions() {
         const select = document.getElementById('container-user-id');
         select.innerHTML = '<option value="">选择用户</option>';
         
-        users.forEach(user => {
-            if (!user.container_id) { // 只显示没有容器的用户
-                const option = document.createElement('option');
-                option.value = user.id;
-                option.textContent = user.username;
-                select.appendChild(option);
-            }
-        });
+        // 处理null或空数组的情况
+        if (users && Array.isArray(users)) {
+            users.forEach(user => {
+                if (!user.container_id) { // 只显示没有容器的用户
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.username;
+                    select.appendChild(option);
+                }
+            });
+        }
     } catch (error) {
         console.error('加载用户选项失败:', error);
     }
@@ -370,7 +381,9 @@ async function loadDashboard() {
         // 加载用户统计
         const usersResponse = await fetch(`${API_BASE}/users`);
         const users = await usersResponse.json();
-        const activeUsers = users.filter(user => user.is_active).length;
+        const activeUsers = (users && Array.isArray(users)) 
+            ? users.filter(user => user.is_active).length 
+            : 0;
         document.getElementById('active-users').textContent = activeUsers;
         
         // 加载容器统计

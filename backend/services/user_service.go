@@ -132,6 +132,11 @@ func (s *UserService) ListUsers() ([]*models.User, error) {
 		users = append(users, user)
 	}
 	
+	// 确保返回空数组而不是nil
+	if users == nil {
+		users = []*models.User{}
+	}
+	
 	return users, nil
 }
 
