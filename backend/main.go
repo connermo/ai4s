@@ -53,11 +53,11 @@ func main() {
 
 	// 静态文件服务
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", 
-		http.FileServer(http.Dir("../frontend/static/"))))
+		http.FileServer(http.Dir("./static/"))))
 
 	// 前端路由 (如果没有API路径，则服务前端)
 	router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "../frontend/templates/index.html")
+		http.ServeFile(w, r, "./templates/index.html")
 	})
 
 	// CORS设置

@@ -25,6 +25,10 @@ WORKDIR /app
 COPY --from=builder /app/main .
 COPY --from=builder /app/database ./database
 
+# 复制前端文件
+COPY frontend/templates ./templates
+COPY frontend/static ./static
+
 # 创建必要的目录
 RUN mkdir -p users shared workspace
 
