@@ -40,6 +40,8 @@ services:
     environment:
       - PORT=${PORT:-8080}
       - DB_DSN=${DB_DSN:-platform:platform123@tcp(mysql:3306)/gpu_platform?charset=utf8mb4&parseTime=True&loc=Local}
+      - DEFAULT_PORT_PREFIX=${DEFAULT_PORT_PREFIX:-9000}
+      - PORT_STEP=${PORT_STEP:-100}
       - USERS_DATA_PATH=${USERS_DATA_PATH:-/app/users}
       - SHARED_DATA_PATH=${SHARED_DATA_PATH:-/app/shared}
       - WORKSPACE_DATA_PATH=${WORKSPACE_DATA_PATH:-/app/workspace}

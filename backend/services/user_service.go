@@ -3,6 +3,8 @@ package services
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"strconv"
 	"time"
 	
 	"gpu-dev-platform/database"
@@ -177,6 +179,21 @@ func (s *UserService) UpdateLastLogin(userID int) error {
 
 // allocatePort 分配可用端口
 func (s *UserService) allocatePort() (int, error) {
+	// 从环境变量获取端口前缀和步长
+	defaultPortPrefix := 9000
+	if prefix := os.Getenv("DEFAULT_PORT_PREFIX"); prefix != "" {
+		if p, err := strconv.Atoi(prefix); err == nil {
+			defaultPortPrefix = p
+		}
+	}
+	
+	portStep := 100
+	if step := os.Getenv("PORT_STEP"); step != "" {
+		if s, err := strconv.Atoi(step); err == nil {
+			portStep = s
+		}
+	}
+	
 	var maxPort sql.NullInt64
 	err := s.db.QueryRow("SELECT MAX(base_port) FROM users").Scan(&maxPort)
 	if err != nil && err != sql.ErrNoRows {
@@ -184,8 +201,8 @@ func (s *UserService) allocatePort() (int, error) {
 	}
 	
 	if !maxPort.Valid {
-		return 9001, nil // 起始端口
+		return defaultPortPrefix, nil // 使用配置的起始端口
 	}
 	
-	return int(maxPort.Int64) + 10, nil // 每用户预留10个端口
+	return int(maxPort.Int64) + portStep, nil // 使用配置的步长
 }

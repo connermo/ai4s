@@ -32,11 +32,14 @@ cd ai4s
 # 复制环境变量模板
 cp .env.example .env
 
-# 根据需要修改 .env 文件中的路径配置
-# 特别是数据存储路径：
-# USERS_DATA_PATH=/your/data/path/users
-# SHARED_DATA_PATH=/your/data/path/shared  
-# WORKSPACE_DATA_PATH=/your/data/path/workspace
+# 根据需要修改 .env 文件中的配置：
+# 1. 端口配置：
+#    DEFAULT_PORT_PREFIX=9000  # 用户端口起始前缀
+#    PORT_STEP=100            # 每个用户的端口步长
+# 2. 数据存储路径：
+#    USERS_DATA_PATH=/your/data/path/users
+#    SHARED_DATA_PATH=/your/data/path/shared  
+#    WORKSPACE_DATA_PATH=/your/data/path/workspace
 ```
 
 3. **创建数据目录**
@@ -77,10 +80,12 @@ mkdir -p users shared workspace
 3. 创建并启动容器
 
 **用户服务访问:**
-- SSH: `ssh username@host -p 900X`
-- VSCode: `http://host:901X`
-- Jupyter: `http://host:902X`
-- TensorBoard: `http://host:903X`
+根据配置的 DEFAULT_PORT_PREFIX (默认9000) 和 PORT_STEP (默认100)：
+- SSH: `ssh username@host -p {base_port+22}` (如9022)
+- VSCode: `http://host:{base_port+80}` (如9080)
+- Jupyter: `http://host:{base_port+88}` (如9088)
+- TensorBoard: `http://host:{base_port+6}` (如9006)
+- 备用应用端口: `http://host:{base_port+66}` (如9066)
 
 ### 管理脚本
 
