@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
 )
 
 type ContainerService struct {
@@ -222,38 +223,43 @@ func (s *ContainerService) ListContainers() ([]*models.Container, error) {
 	return containers, nil
 }
 
-func (s *ContainerService) getExposedPorts(user *models.User) map[string]struct{} {
+func (s *ContainerService) getExposedPorts(user *models.User) nat.PortSet {
 	ports := user.GetPorts()
-	exposed := make(map[string]struct{})
+	exposed := make(nat.PortSet)
 	
 	for _, port := range ports {
-		exposed[fmt.Sprintf("%d/tcp", port)] = struct{}{}
+		portKey := nat.Port(fmt.Sprintf("%d/tcp", port))
+		exposed[portKey] = struct{}{}
 	}
 	
 	return exposed
 }
 
-func (s *ContainerService) getPortBindings(user *models.User) map[string][]container.PortBinding {
+func (s *ContainerService) getPortBindings(user *models.User) nat.PortMap {
 	ports := user.GetPorts()
-	bindings := make(map[string][]container.PortBinding)
+	bindings := make(nat.PortMap)
 	
 	// SSH
-	bindings[strconv.Itoa(ports["ssh"])+"/tcp"] = []container.PortBinding{
+	sshPort := nat.Port(strconv.Itoa(ports["ssh"]) + "/tcp")
+	bindings[sshPort] = []nat.PortBinding{
 		{HostPort: strconv.Itoa(ports["ssh"])},
 	}
 	
 	// VSCode Server
-	bindings["8080/tcp"] = []container.PortBinding{
+	vscodePort := nat.Port("8080/tcp")
+	bindings[vscodePort] = []nat.PortBinding{
 		{HostPort: strconv.Itoa(ports["vscode"])},
 	}
 	
 	// Jupyter Lab
-	bindings["8888/tcp"] = []container.PortBinding{
+	jupyterPort := nat.Port("8888/tcp")
+	bindings[jupyterPort] = []nat.PortBinding{
 		{HostPort: strconv.Itoa(ports["jupyter"])},
 	}
 	
 	// TensorBoard
-	bindings["6006/tcp"] = []container.PortBinding{
+	tensorboardPort := nat.Port("6006/tcp")
+	bindings[tensorboardPort] = []nat.PortBinding{
 		{HostPort: strconv.Itoa(ports["tensorboard"])},
 	}
 	
