@@ -38,8 +38,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # 安装Python依赖
 RUN pip3 install --upgrade pip setuptools wheel
 
-# 安装常用Python包
-RUN pip3 install \
+# 安装常用Python包，忽略已安装的包避免卸载冲突
+RUN pip3 install --ignore-installed \
     numpy \
     pandas \
     matplotlib \
