@@ -11,6 +11,13 @@ echo "用户: $DEV_USER"
 echo "UID: $DEV_UID"
 echo "GID: $DEV_GID"
 
+echo ""
+echo "=== 目录挂载检查 ==="
+echo "个人主目录: /home/$DEV_USER $([ -d "/home/$DEV_USER" ] && echo "✓" || echo "✗")"
+echo "共享目录: /shared $([ -d "/shared" ] && echo "✓" || echo "✗")"
+echo "工作空间: /workspace $([ -d "/workspace" ] && echo "✓" || echo "✗")"
+echo ""
+
 # 检查是否以root身份运行
 if [ "$(id -u)" != "0" ]; then
     echo "错误: 容器需要以root身份启动才能创建用户"
@@ -74,9 +81,21 @@ chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.jupyter 2>/dev/null
 chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.vscode-server 2>/dev/null
 chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config 2>/dev/null
 
-# 设置共享目录权限（忽略错误）
-chown -R $DEV_UID:$DEV_GID /workspace 2>/dev/null || echo "警告: workspace权限设置失败"
-chmod 755 /shared 2>/dev/null || echo "警告: shared权限设置失败"
+# 确保挂载目录存在并设置权限
+if [ -d "/workspace" ]; then
+    chown -R $DEV_UID:$DEV_GID /workspace 2>/dev/null || echo "警告: workspace权限设置失败，但目录可用"
+    chmod 755 /workspace 2>/dev/null
+    echo "workspace目录权限设置完成"
+else
+    echo "警告: workspace目录不存在"
+fi
+
+if [ -d "/shared" ]; then
+    chmod 755 /shared 2>/dev/null
+    echo "shared目录权限设置完成"
+else
+    echo "警告: shared目录不存在"
+fi
 
 # 生成Jupyter配置
 if id -u $DEV_USER > /dev/null 2>&1; then
@@ -180,9 +199,9 @@ if mkdir -p /home/$DEV_USER; then
 
 ## 目录结构
 
-- \`/home/$DEV_USER\`: 个人主目录
-- \`/shared\`: 只读共享目录
-- \`/workspace\`: 读写共享目录
+- \`/home/$DEV_USER\`: 个人主目录 (读写，私有)
+- \`/shared\`: 共享只读目录 (所有用户共享，只读)
+- \`/workspace\`: 共享工作区 (所有用户共享，可读写)
 
 ## 启动服务
 

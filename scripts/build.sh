@@ -31,8 +31,25 @@ echo -e "${GREEN}✓ 环境检查通过${NC}"
 
 # 创建必要的目录
 echo "创建必要的目录..."
-mkdir -p users shared workspace logs
-chmod 755 users shared workspace logs
+
+# 从.env文件读取路径配置（如果存在）
+if [ -f .env ]; then
+    source .env
+fi
+
+# 使用环境变量或默认路径
+USERS_DIR=${USERS_DATA_PATH:-./users}
+SHARED_DIR=${SHARED_DATA_PATH:-./shared}
+WORKSPACE_DIR=${WORKSPACE_DATA_PATH:-./workspace}
+
+mkdir -p "$USERS_DIR" "$SHARED_DIR" "$WORKSPACE_DIR" logs
+chmod 755 "$USERS_DIR" "$SHARED_DIR" "$WORKSPACE_DIR" logs
+
+echo "创建的目录:"
+echo "  用户数据: $USERS_DIR"
+echo "  共享数据: $SHARED_DIR"
+echo "  工作空间: $WORKSPACE_DIR"
+echo "  日志目录: ./logs"
 
 echo -e "${GREEN}✓ 目录创建完成${NC}"
 

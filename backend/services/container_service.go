@@ -84,10 +84,16 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		containerWorkspacePath = "/workspace"
 	}
 
+	// 创建用户目录（如果不存在）
+	userDir := fmt.Sprintf("%s/%s", usersDataPath, user.Username)
+	os.MkdirAll(userDir, 0755)
+	os.MkdirAll(sharedDataPath, 0755)  
+	os.MkdirAll(workspaceDataPath, 0755)
+
 	hostConfig := &container.HostConfig{
 		PortBindings: s.getPortBindings(user),
 		Binds: []string{
-			fmt.Sprintf("%s/%s:%s/%s", usersDataPath, user.Username, containerHomePath, user.Username),
+			fmt.Sprintf("%s:%s/%s", userDir, containerHomePath, user.Username),
 			fmt.Sprintf("%s:%s:ro", sharedDataPath, containerSharedPath),
 			fmt.Sprintf("%s:%s", workspaceDataPath, containerWorkspacePath),
 		},
