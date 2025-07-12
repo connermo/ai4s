@@ -12,9 +12,14 @@ services:
       MYSQL_PASSWORD: platform123
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     ports:
       - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "platform", "-pplatform123"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+      start_period: 40s
     restart: unless-stopped
     networks:
       - platform-network
@@ -36,7 +41,8 @@ services:
       - PORT=8080
       - DB_DSN=platform:platform123@tcp(mysql:3306)/gpu_platform?charset=utf8mb4&parseTime=True&loc=Local
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - platform-network

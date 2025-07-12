@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -37,9 +38,18 @@ func createTables() error {
 		return fmt.Errorf("failed to read schema file: %v", err)
 	}
 
-	_, err = DB.Exec(string(schema))
-	if err != nil {
-		return fmt.Errorf("failed to execute schema: %v", err)
+	// 将schema分割成单独的语句执行
+	statements := strings.Split(string(schema), ";")
+	for _, stmt := range statements {
+		stmt = strings.TrimSpace(stmt)
+		if stmt == "" || strings.HasPrefix(stmt, "--") {
+			continue
+		}
+		
+		_, err = DB.Exec(stmt)
+		if err != nil {
+			return fmt.Errorf("failed to execute statement '%s': %v", stmt, err)
+		}
 	}
 
 	return nil

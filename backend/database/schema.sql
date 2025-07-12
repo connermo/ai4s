@@ -49,5 +49,5 @@ CREATE INDEX IF NOT EXISTS idx_container_stats_container_id ON container_stats(c
 CREATE INDEX IF NOT EXISTS idx_container_stats_timestamp ON container_stats(timestamp);
 
 -- 插入默认管理员用户 (密码: admin123)
-INSERT OR IGNORE INTO users (username, password, email, is_admin, base_port) 
-VALUES ('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@example.com', 1, 9001);
+INSERT IGNORE INTO users (username, password, email, is_admin, base_port) 
+VALUES ('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@example.com', TRUE, 9001);
