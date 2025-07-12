@@ -158,7 +158,7 @@ async function createUser() {
         });
         
         if (response.ok) {
-            showAlert('用户创建成功！创建容器时可选择使用此密码作为SSH密码', 'success');
+            showAlert('用户创建成功！创建容器时可选择使用此密码作为服务登录密码', 'success');
             document.getElementById('addUserForm').reset();
             bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
             loadUsers();
@@ -409,7 +409,7 @@ async function createContainer() {
     } else {
         const customPassword = document.getElementById('ssh-password').value;
         if (!customPassword) {
-            showAlert('请设置SSH密码', 'warning');
+            showAlert('请设置服务登录密码', 'warning');
             return;
         }
         requestBody.password = customPassword;
@@ -425,8 +425,8 @@ async function createContainer() {
         });
         
         if (response.ok) {
-            const passwordType = useUserPassword ? '用户登录密码' : '设置的SSH密码';
-            showAlert(`容器创建成功！SSH、VSCode和Jupyter登录密码均为：${passwordType}`, 'success');
+            const passwordType = useUserPassword ? '用户登录密码' : '设置的服务密码';
+            showAlert(`容器创建成功！所有服务登录密码均为：${passwordType}`, 'success');
             document.getElementById('createContainerForm').reset();
             
             // 恢复密码类型选择的默认状态
