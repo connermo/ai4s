@@ -39,12 +39,20 @@ func createTables() error {
 	// 检查是否已经创建了索引
 	var count int
 	err := DB.QueryRow("SELECT COUNT(*) FROM db_init_status WHERE component = 'indexes' AND initialized = TRUE").Scan(&count)
-	if err != nil && err != sql.ErrNoRows {
-		return fmt.Errorf("failed to check index status: %v", err)
-	}
-
-	// 如果索引还没有创建，则创建索引
-	if count == 0 {
+	
+	// 如果表不存在或者查询出错，说明还没有完全初始化，需要创建索引
+	if err != nil {
+		if err := executeIndexes(); err != nil {
+			return fmt.Errorf("failed to create indexes: %v", err)
+		}
+		
+		// 标记索引已创建
+		_, err = DB.Exec("INSERT IGNORE INTO db_init_status (component, initialized) VALUES ('indexes', TRUE)")
+		if err != nil {
+			return fmt.Errorf("failed to mark indexes as initialized: %v", err)
+		}
+	} else if count == 0 {
+		// 如果表存在但索引还没有创建，则创建索引
 		if err := executeIndexes(); err != nil {
 			return fmt.Errorf("failed to create indexes: %v", err)
 		}
