@@ -27,6 +27,7 @@ type CreateUserRequest struct {
 }
 
 type UpdateUserRequest struct {
+	Username string `json:"username,omitempty"`
 	Email    string `json:"email,omitempty"`
 	IsActive *bool  `json:"is_active,omitempty"`
 	IsAdmin  *bool  `json:"is_admin,omitempty"`
@@ -106,6 +107,9 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updates := make(map[string]interface{})
+	if req.Username != "" {
+		updates["username"] = req.Username
+	}
 	if req.Email != "" {
 		updates["email"] = req.Email
 	}

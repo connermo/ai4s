@@ -39,11 +39,12 @@ func (s *ContainerService) CreateContainer(user *models.User, gpuDevices string)
 	// 创建容器配置
 	config := &container.Config{
 		Image: "gpu-dev-env:latest",
-		User:  fmt.Sprintf("%d:%d", user.ID+1000, user.ID+1000), // 映射到容器内用户
+		// 不设置User，让容器以root启动确保SSH服务可以运行
 		Env: []string{
 			fmt.Sprintf("DEV_USER=%s", user.Username),
 			fmt.Sprintf("DEV_UID=%d", user.ID+1000),
 			fmt.Sprintf("DEV_GID=%d", user.ID+1000),
+			fmt.Sprintf("DEV_PASSWORD=%s123", user.Username), // 设置默认密码为用户名+123
 		},
 		ExposedPorts: s.getExposedPorts(user),
 	}

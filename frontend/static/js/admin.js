@@ -454,11 +454,128 @@ function logout() {
     }
 }
 
-// 占位函数，将来实现
-function editUser(id) {
-    showAlert('编辑用户功能待实现', 'info');
+// 编辑用户
+async function editUser(id) {
+    try {
+        const response = await fetch(`${API_BASE}/users/${id}`);
+        const user = await response.json();
+        
+        // 填充表单
+        document.getElementById('edit-user-id').value = user.id;
+        document.getElementById('edit-username').value = user.username;
+        document.getElementById('edit-email').value = user.email || '';
+        document.getElementById('edit-is-active').checked = user.is_active;
+        document.getElementById('edit-is-admin').checked = user.is_admin;
+        
+        // 显示模态框
+        new bootstrap.Modal(document.getElementById('editUserModal')).show();
+    } catch (error) {
+        console.error('获取用户信息失败:', error);
+        showAlert('获取用户信息失败', 'danger');
+    }
 }
 
-function changePassword(id) {
-    showAlert('修改密码功能待实现', 'info');
+// 更新用户
+async function updateUser() {
+    const id = document.getElementById('edit-user-id').value;
+    const username = document.getElementById('edit-username').value;
+    const email = document.getElementById('edit-email').value;
+    const isActive = document.getElementById('edit-is-active').checked;
+    const isAdmin = document.getElementById('edit-is-admin').checked;
+    
+    if (!username) {
+        showAlert('用户名不能为空', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/users/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                username, 
+                email, 
+                is_active: isActive, 
+                is_admin: isAdmin 
+            }),
+        });
+        
+        if (response.ok) {
+            showAlert('用户更新成功', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+            loadUsers();
+            loadUserOptions(); // 刷新用户选项列表
+        } else {
+            const error = await response.text();
+            showAlert(`更新失败: ${error}`, 'danger');
+        }
+    } catch (error) {
+        console.error('更新用户失败:', error);
+        showAlert('更新用户失败', 'danger');
+    }
+}
+
+// 修改密码
+async function changePassword(id) {
+    try {
+        const response = await fetch(`${API_BASE}/users/${id}`);
+        const user = await response.json();
+        
+        // 填充表单
+        document.getElementById('password-user-id').value = user.id;
+        document.getElementById('password-username').value = user.username;
+        document.getElementById('new-password').value = '';
+        document.getElementById('confirm-password').value = '';
+        
+        // 显示模态框
+        new bootstrap.Modal(document.getElementById('changePasswordModal')).show();
+    } catch (error) {
+        console.error('获取用户信息失败:', error);
+        showAlert('获取用户信息失败', 'danger');
+    }
+}
+
+// 更新密码
+async function updatePassword() {
+    const id = document.getElementById('password-user-id').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+    
+    if (!newPassword) {
+        showAlert('密码不能为空', 'warning');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        showAlert('两次输入的密码不一致', 'warning');
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        showAlert('密码长度至少6位', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/users/${id}/password`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ password: newPassword }),
+        });
+        
+        if (response.ok) {
+            showAlert('密码修改成功', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+        } else {
+            const error = await response.text();
+            showAlert(`密码修改失败: ${error}`, 'danger');
+        }
+    } catch (error) {
+        console.error('修改密码失败:', error);
+        showAlert('修改密码失败', 'danger');
+    }
 }
