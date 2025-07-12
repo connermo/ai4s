@@ -27,11 +27,9 @@ func NewContainerHandler() (*ContainerHandler, error) {
 }
 
 type CreateContainerRequest struct {
-	UserID           int    `json:"user_id"`
-	GPUDevices       string `json:"gpu_devices"`
-	Password         string `json:"password,omitempty"`          // 可选的SSH密码
-	UseUserPassword  bool   `json:"use_user_password,omitempty"` // 是否使用用户登录密码
-	UserPassword     string `json:"user_password,omitempty"`     // 用户的登录密码（用于验证）
+	UserID     int    `json:"user_id"`
+	GPUDevices string `json:"gpu_devices"`
+	Password   string `json:"password,omitempty"` // 服务登录密码
 }
 
 func (h *ContainerHandler) CreateContainer(w http.ResponseWriter, r *http.Request) {
@@ -47,19 +45,9 @@ func (h *ContainerHandler) CreateContainer(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// 确定使用的密码
-	var password string
-	if req.UseUserPassword && req.UserPassword != "" {
-		// 验证用户密码是否正确
-		if user.CheckPassword(req.UserPassword) {
-			password = req.UserPassword
-		} else {
-			http.Error(w, "用户密码验证失败", http.StatusUnauthorized)
-			return
-		}
-	} else if req.Password != "" {
-		password = req.Password
-	} else {
+	// 使用提供的密码，如果没有则使用默认密码
+	password := req.Password
+	if password == "" {
 		password = "123456" // 默认密码
 	}
 	

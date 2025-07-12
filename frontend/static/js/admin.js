@@ -23,28 +23,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 30000);
 });
 
-// 设置密码类型切换
+// 设置密码类型切换（已简化，不再需要）
 function setupPasswordTypeToggle() {
-    const customRadio = document.getElementById('use-custom-password');
-    const userRadio = document.getElementById('use-user-password');
-    const customField = document.getElementById('custom-password-field');
-    const userField = document.getElementById('user-password-field');
-    
-    if (customRadio && userRadio && customField && userField) {
-        customRadio.addEventListener('change', function() {
-            if (this.checked) {
-                customField.style.display = 'block';
-                userField.style.display = 'none';
-            }
-        });
-        
-        userRadio.addEventListener('change', function() {
-            if (this.checked) {
-                customField.style.display = 'none';
-                userField.style.display = 'block';
-            }
-        });
-    }
+    // 功能已简化，不再需要密码类型切换
 }
 
 // 显示指定section
@@ -158,7 +139,7 @@ async function createUser() {
         });
         
         if (response.ok) {
-            showAlert('用户创建成功！创建容器时可选择使用此密码作为服务登录密码', 'success');
+            showAlert('用户创建成功！', 'success');
             document.getElementById('addUserForm').reset();
             bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
             loadUsers();
@@ -386,34 +367,23 @@ async function loadUserOptions() {
 async function createContainer() {
     const userId = document.getElementById('container-user-id').value;
     const gpuDevices = document.getElementById('gpu-devices').value;
-    const useUserPassword = document.getElementById('use-user-password').checked;
+    const password = document.getElementById('service-password').value;
     
     if (!userId) {
         showAlert('请选择用户', 'warning');
         return;
     }
     
-    let requestBody = {
-        user_id: parseInt(userId),
-        gpu_devices: gpuDevices
-    };
-    
-    if (useUserPassword) {
-        const userPassword = document.getElementById('user-password').value;
-        if (!userPassword) {
-            showAlert('请输入用户登录密码', 'warning');
-            return;
-        }
-        requestBody.use_user_password = true;
-        requestBody.user_password = userPassword;
-    } else {
-        const customPassword = document.getElementById('ssh-password').value;
-        if (!customPassword) {
-            showAlert('请设置服务登录密码', 'warning');
-            return;
-        }
-        requestBody.password = customPassword;
+    if (!password) {
+        showAlert('请设置服务登录密码', 'warning');
+        return;
     }
+    
+    const requestBody = {
+        user_id: parseInt(userId),
+        gpu_devices: gpuDevices,
+        password: password
+    };
     
     try {
         const response = await fetch(`${API_BASE}/containers`, {
@@ -425,15 +395,9 @@ async function createContainer() {
         });
         
         if (response.ok) {
-            const passwordType = useUserPassword ? '用户登录密码' : '设置的服务密码';
-            showAlert(`容器创建成功！所有服务登录密码均为：${passwordType}`, 'success');
+            showAlert('容器创建成功！已设置所有服务的登录密码', 'success');
             document.getElementById('createContainerForm').reset();
-            
-            // 恢复密码类型选择的默认状态
-            document.getElementById('use-custom-password').checked = true;
-            document.getElementById('custom-password-field').style.display = 'block';
-            document.getElementById('user-password-field').style.display = 'none';
-            document.getElementById('ssh-password').value = '123456';
+            document.getElementById('service-password').value = '123456';
             
             bootstrap.Modal.getInstance(document.getElementById('createContainerModal')).hide();
             loadContainers();
