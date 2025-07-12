@@ -36,29 +36,29 @@ func createTables() error {
 		return fmt.Errorf("failed to initialize tables: %v", err)
 	}
 
+	// 确保状态表存在（防御性编程）
+	_, err := DB.Exec(`CREATE TABLE IF NOT EXISTS db_init_status (
+		id INT AUTO_INCREMENT PRIMARY KEY,
+		component VARCHAR(50) UNIQUE NOT NULL,
+		initialized BOOLEAN DEFAULT FALSE,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	)`)
+	if err != nil {
+		return fmt.Errorf("failed to ensure status table exists: %v", err)
+	}
+
 	// 检查是否已经创建了索引
 	var count int
-	err := DB.QueryRow("SELECT COUNT(*) FROM db_init_status WHERE component = 'indexes' AND initialized = TRUE").Scan(&count)
+	err = DB.QueryRow("SELECT COUNT(*) FROM db_init_status WHERE component = 'indexes' AND initialized = TRUE").Scan(&count)
 	
-	// 如果表不存在或者查询出错，说明还没有完全初始化，需要创建索引
-	if err != nil {
+	// 如果查询出错或者计数为0，需要创建索引
+	if err != nil || count == 0 {
 		if err := executeIndexes(); err != nil {
 			return fmt.Errorf("failed to create indexes: %v", err)
 		}
 		
 		// 标记索引已创建
-		_, err = DB.Exec("INSERT IGNORE INTO db_init_status (component, initialized) VALUES ('indexes', TRUE)")
-		if err != nil {
-			return fmt.Errorf("failed to mark indexes as initialized: %v", err)
-		}
-	} else if count == 0 {
-		// 如果表存在但索引还没有创建，则创建索引
-		if err := executeIndexes(); err != nil {
-			return fmt.Errorf("failed to create indexes: %v", err)
-		}
-		
-		// 标记索引已创建
-		_, err = DB.Exec("INSERT IGNORE INTO db_init_status (component, initialized) VALUES ('indexes', TRUE)")
+		_, err = DB.Exec("INSERT INTO db_init_status (component, initialized) VALUES ('indexes', TRUE) ON DUPLICATE KEY UPDATE initialized = TRUE")
 		if err != nil {
 			return fmt.Errorf("failed to mark indexes as initialized: %v", err)
 		}
