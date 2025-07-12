@@ -86,10 +86,8 @@ func (s *ContainerService) CreateContainer(user *models.User, gpuDevices string)
 			fmt.Sprintf("%s:%s:ro", sharedDataPath, containerSharedPath),
 			fmt.Sprintf("%s:%s", workspaceDataPath, containerWorkspacePath),
 		},
-		Resources: container.Resources{
-			Memory:   4 * 1024 * 1024 * 1024, // 4GB
-			CPUCount: 2,
-		},
+		// 不限制资源，让容器使用宿主机全部资源
+		Resources: container.Resources{},
 		RestartPolicy: container.RestartPolicy{
 			Name: "unless-stopped",
 		},
@@ -127,8 +125,8 @@ func (s *ContainerService) CreateContainer(user *models.User, gpuDevices string)
 		Name:        containerName,
 		Status:      "created",
 		ImageName:   "gpu-dev-env:latest",
-		CPULimit:    "2",
-		MemoryLimit: "4g",
+		CPULimit:    "unlimited",
+		MemoryLimit: "unlimited",
 		GPUDevices:  gpuDevices,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
@@ -153,6 +151,14 @@ func (s *ContainerService) CreateContainer(user *models.User, gpuDevices string)
 	if err != nil {
 		return nil, err
 	}
+
+	// 自动启动容器
+	if err = s.StartContainer(cont.ID); err != nil {
+		return nil, fmt.Errorf("容器创建成功但启动失败: %v", err)
+	}
+
+	// 更新状态为运行中
+	cont.Status = "running"
 
 	return cont, nil
 }
@@ -261,11 +267,19 @@ func (s *ContainerService) ListContainers() ([]*models.Container, error) {
 }
 
 func (s *ContainerService) getExposedPorts(user *models.User) nat.PortSet {
-	ports := user.GetPorts()
 	exposed := make(nat.PortSet)
 	
-	for _, port := range ports {
-		portKey := nat.Port(fmt.Sprintf("%d/tcp", port))
+	// 容器内需要暴露的端口
+	containerPorts := []string{
+		"22/tcp",    // SSH
+		"8080/tcp",  // VSCode Server
+		"8888/tcp",  // Jupyter Lab
+		"6006/tcp",  // TensorBoard
+		"8066/tcp",  // 备用应用端口
+	}
+	
+	for _, port := range containerPorts {
+		portKey := nat.Port(port)
 		exposed[portKey] = struct{}{}
 	}
 	
@@ -276,28 +290,34 @@ func (s *ContainerService) getPortBindings(user *models.User) nat.PortMap {
 	ports := user.GetPorts()
 	bindings := make(nat.PortMap)
 	
-	// SSH
-	sshPort := nat.Port(strconv.Itoa(ports["ssh"]) + "/tcp")
+	// SSH (端口22 -> 9022)
+	sshPort := nat.Port("22/tcp")
 	bindings[sshPort] = []nat.PortBinding{
 		{HostPort: strconv.Itoa(ports["ssh"])},
 	}
 	
-	// VSCode Server
+	// VSCode Server (端口8080 -> 9080)
 	vscodePort := nat.Port("8080/tcp")
 	bindings[vscodePort] = []nat.PortBinding{
 		{HostPort: strconv.Itoa(ports["vscode"])},
 	}
 	
-	// Jupyter Lab
+	// Jupyter Lab (端口8888 -> 9088)
 	jupyterPort := nat.Port("8888/tcp")
 	bindings[jupyterPort] = []nat.PortBinding{
 		{HostPort: strconv.Itoa(ports["jupyter"])},
 	}
 	
-	// TensorBoard
+	// TensorBoard (端口6006 -> 9006)
 	tensorboardPort := nat.Port("6006/tcp")
 	bindings[tensorboardPort] = []nat.PortBinding{
 		{HostPort: strconv.Itoa(ports["tensorboard"])},
+	}
+	
+	// 备用应用端口 (端口8066 -> 9066)
+	appPort := nat.Port("8066/tcp")
+	bindings[appPort] = []nat.PortBinding{
+		{HostPort: strconv.Itoa(ports["app"])},
 	}
 	
 	return bindings

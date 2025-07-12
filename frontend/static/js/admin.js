@@ -76,7 +76,7 @@ function createUserRow(user) {
     const statusClass = user.is_active ? 'status-active' : 'status-inactive';
     const statusText = user.is_active ? '活跃' : '禁用';
     const adminText = user.is_admin ? '是' : '否';
-    const ports = `${user.base_port}-${user.base_port + 300}`;
+    const ports = `${user.base_port + 22}-${user.base_port + 88}`;
     
     row.innerHTML = `
         <td>${user.id}</td>
@@ -206,7 +206,7 @@ async function createContainerRow(container) {
     const statusClass = container.status === 'running' ? 'status-running' : 'status-stopped';
     const statusText = container.status === 'running' ? '运行中' : '已停止';
     const gpuDevices = container.gpu_devices || '无';
-    const resources = `CPU: ${container.cpu_limit}, 内存: ${container.memory_limit}`;
+    const resources = container.cpu_limit === 'unlimited' ? 'CPU: 无限制, 内存: 无限制' : `CPU: ${container.cpu_limit}, 内存: ${container.memory_limit}`;
     
     // 获取端口信息
     let ports = '-';
@@ -215,7 +215,7 @@ async function createContainerRow(container) {
         if (portResponse.ok) {
             const data = await portResponse.json();
             const p = data.ports;
-            ports = `SSH:${p.ssh}, VSCode:${p.vscode}, Jupyter:${p.jupyter}, TB:${p.tensorboard}`;
+            ports = `SSH:${p.ssh}, VSCode:${p.vscode}, Jupyter:${p.jupyter}, TB:${p.tensorboard}, App:${p.app}`;
         }
     } catch (error) {
         console.error('获取端口信息失败:', error);

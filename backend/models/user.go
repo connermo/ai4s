@@ -40,9 +40,10 @@ func (u *User) CheckPassword(password string) bool {
 // GetPorts 获取用户的服务端口
 func (u *User) GetPorts() map[string]int {
 	return map[string]int{
-		"ssh":        u.BasePort,
-		"vscode":     u.BasePort + 100,
-		"jupyter":    u.BasePort + 200,
-		"tensorboard": u.BasePort + 300,
+		"ssh":         u.BasePort + 22,   // 9022
+		"vscode":      u.BasePort + 80,   // 9080
+		"jupyter":     u.BasePort + 88,   // 9088
+		"tensorboard": u.BasePort + 6,    // 9006
+		"app":         u.BasePort + 66,   // 9066 (备用应用端口)
 	}
 }
