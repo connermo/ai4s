@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io/ioutil"
-	"path/filepath"
 	"strings"
 	
 	_ "github.com/go-sql-driver/mysql"
