@@ -50,9 +50,9 @@ func (s *ContainerService) CreateContainer(user *models.User, gpuDevices string)
 	hostConfig := &container.HostConfig{
 		PortBindings: s.getPortBindings(user),
 		Binds: []string{
-			fmt.Sprintf("./users/%s:/home/%s", user.Username, user.Username),
-			"./shared:/shared:ro",
-			"./workspace:/workspace",
+			fmt.Sprintf("/app/users/%s:/home/%s", user.Username, user.Username),
+			"/app/shared:/shared:ro",
+			"/app/workspace:/workspace",
 		},
 		Resources: container.Resources{
 			Memory:   4 * 1024 * 1024 * 1024, // 4GB
