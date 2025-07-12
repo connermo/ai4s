@@ -126,7 +126,7 @@ docker compose version
 
 ### 验证NVIDIA Docker Runtime
 ```bash
-docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi
+docker run --rm --gpus all nvidia/cuda:12.4.1-base-ubuntu22.04 nvidia-smi
 ```
 
 ## 防火墙配置
