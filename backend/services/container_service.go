@@ -220,6 +220,11 @@ func (s *ContainerService) ListContainers() ([]*models.Container, error) {
 		containers = append(containers, container)
 	}
 	
+	// 确保返回空数组而不是nil
+	if containers == nil {
+		containers = []*models.Container{}
+	}
+	
 	return containers, nil
 }
 
