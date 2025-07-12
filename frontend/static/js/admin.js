@@ -135,6 +135,7 @@ async function createUser() {
             document.getElementById('addUserForm').reset();
             bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
             loadUsers();
+            loadUserOptions(); // 刷新用户选项列表
         } else {
             const error = await response.text();
             showAlert(`创建失败: ${error}`, 'danger');
@@ -323,17 +324,34 @@ async function loadUserOptions() {
         
         // 处理null或空数组的情况
         if (users && Array.isArray(users)) {
-            users.forEach(user => {
-                if (!user.container_id) { // 只显示没有容器的用户
+            const availableUsers = users.filter(user => !user.container_id);
+            
+            if (availableUsers.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = '暂无可用用户（所有用户都已有容器）';
+                option.disabled = true;
+                select.appendChild(option);
+            } else {
+                availableUsers.forEach(user => {
                     const option = document.createElement('option');
                     option.value = user.id;
                     option.textContent = user.username;
                     select.appendChild(option);
-                }
-            });
+                });
+            }
+        } else {
+            // 没有用户数据
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = '暂无用户，请先创建用户';
+            option.disabled = true;
+            select.appendChild(option);
         }
     } catch (error) {
         console.error('加载用户选项失败:', error);
+        const select = document.getElementById('container-user-id');
+        select.innerHTML = '<option value="" disabled>加载用户失败</option>';
     }
 }
 

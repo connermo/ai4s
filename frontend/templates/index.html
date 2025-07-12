@@ -162,16 +162,16 @@
                 <div class="modal-body">
                     <form id="addUserForm">
                         <div class="mb-3">
-                            <label for="username" class="form-label">用户名</label>
+                            <label for="username" class="form-label">用户名 <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="username" required>
                         </div>
                         <div class="mb-3">
-                            <label for="password" class="form-label">密码</label>
+                            <label for="password" class="form-label">密码 <span class="text-danger">*</span></label>
                             <input type="password" class="form-control" id="password" required>
                         </div>
                         <div class="mb-3">
-                            <label for="email" class="form-label">邮箱</label>
-                            <input type="email" class="form-control" id="email">
+                            <label for="email" class="form-label">邮箱 <span class="text-muted">(可选)</span></label>
+                            <input type="email" class="form-control" id="email" placeholder="例如: user@example.com">
                         </div>
                     </form>
                 </div>
