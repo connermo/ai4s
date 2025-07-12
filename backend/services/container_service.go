@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 	"strconv"
 	"time"
 
@@ -47,12 +48,43 @@ func (s *ContainerService) CreateContainer(user *models.User, gpuDevices string)
 		ExposedPorts: s.getExposedPorts(user),
 	}
 
+	// 从环境变量获取路径配置
+	usersDataPath := os.Getenv("USERS_DATA_PATH")
+	if usersDataPath == "" {
+		usersDataPath = "/app/users"
+	}
+	
+	sharedDataPath := os.Getenv("SHARED_DATA_PATH")
+	if sharedDataPath == "" {
+		sharedDataPath = "/app/shared"
+	}
+	
+	workspaceDataPath := os.Getenv("WORKSPACE_DATA_PATH")
+	if workspaceDataPath == "" {
+		workspaceDataPath = "/app/workspace"
+	}
+	
+	containerHomePath := os.Getenv("CONTAINER_HOME_PATH")
+	if containerHomePath == "" {
+		containerHomePath = "/home"
+	}
+	
+	containerSharedPath := os.Getenv("CONTAINER_SHARED_PATH")
+	if containerSharedPath == "" {
+		containerSharedPath = "/shared"
+	}
+	
+	containerWorkspacePath := os.Getenv("CONTAINER_WORKSPACE_PATH")
+	if containerWorkspacePath == "" {
+		containerWorkspacePath = "/workspace"
+	}
+
 	hostConfig := &container.HostConfig{
 		PortBindings: s.getPortBindings(user),
 		Binds: []string{
-			fmt.Sprintf("/app/users/%s:/home/%s", user.Username, user.Username),
-			"/app/shared:/shared:ro",
-			"/app/workspace:/workspace",
+			fmt.Sprintf("%s/%s:%s/%s", usersDataPath, user.Username, containerHomePath, user.Username),
+			fmt.Sprintf("%s:%s:ro", sharedDataPath, containerSharedPath),
+			fmt.Sprintf("%s:%s", workspaceDataPath, containerWorkspacePath),
 		},
 		Resources: container.Resources{
 			Memory:   4 * 1024 * 1024 * 1024, // 4GB

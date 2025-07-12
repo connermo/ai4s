@@ -27,17 +27,40 @@ git clone https://github.com/connermo/ai4s.git
 cd ai4s
 ```
 
-2. **构建镜像**
+2. **配置环境变量**
+```bash
+# 复制环境变量模板
+cp .env.example .env
+
+# 根据需要修改 .env 文件中的路径配置
+# 特别是数据存储路径：
+# USERS_DATA_PATH=/your/data/path/users
+# SHARED_DATA_PATH=/your/data/path/shared  
+# WORKSPACE_DATA_PATH=/your/data/path/workspace
+```
+
+3. **创建数据目录**
+```bash
+# 根据 .env 文件中配置的路径创建目录
+mkdir -p users shared workspace
+
+# 或者如果使用自定义路径：
+# mkdir -p /your/data/path/users
+# mkdir -p /your/data/path/shared
+# mkdir -p /your/data/path/workspace
+```
+
+4. **构建镜像**
 ```bash
 ./scripts/build.sh
 ```
 
-3. **启动平台**
+5. **启动平台**
 ```bash
 ./scripts/start.sh
 ```
 
-4. **访问管理界面**
+6. **访问管理界面**
 - 地址: http://localhost:8080
 - 默认管理员: admin / admin123
 

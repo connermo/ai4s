@@ -31,15 +31,21 @@ services:
       dockerfile: backend/Dockerfile
     container_name: gpu-platform-backend
     ports:
-      - "8080:8080"
+      - "${PORT:-8080}:${PORT:-8080}"
     volumes:
-      - ./users:/app/users
-      - ./shared:/app/shared
-      - ./workspace:/app/workspace
+      - "${USERS_DATA_PATH:-./users}:/app/users"
+      - "${SHARED_DATA_PATH:-./shared}:/app/shared"
+      - "${WORKSPACE_DATA_PATH:-./workspace}:/app/workspace"
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - PORT=8080
-      - DB_DSN=platform:platform123@tcp(mysql:3306)/gpu_platform?charset=utf8mb4&parseTime=True&loc=Local
+      - PORT=${PORT:-8080}
+      - DB_DSN=${DB_DSN:-platform:platform123@tcp(mysql:3306)/gpu_platform?charset=utf8mb4&parseTime=True&loc=Local}
+      - USERS_DATA_PATH=${USERS_DATA_PATH:-/app/users}
+      - SHARED_DATA_PATH=${SHARED_DATA_PATH:-/app/shared}
+      - WORKSPACE_DATA_PATH=${WORKSPACE_DATA_PATH:-/app/workspace}
+      - CONTAINER_HOME_PATH=${CONTAINER_HOME_PATH:-/home}
+      - CONTAINER_SHARED_PATH=${CONTAINER_SHARED_PATH:-/shared}
+      - CONTAINER_WORKSPACE_PATH=${CONTAINER_WORKSPACE_PATH:-/workspace}
     depends_on:
       mysql:
         condition: service_healthy
