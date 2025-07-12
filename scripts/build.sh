@@ -17,8 +17,8 @@ if ! command -v docker &> /dev/null; then
 fi
 
 # 检查Docker Compose是否安装
-if ! command -v docker-compose &> /dev/null; then
-    echo -e "${RED}错误: Docker Compose未安装${NC}"
+if ! docker compose version &> /dev/null; then
+    echo -e "${RED}错误: Docker Compose未安装或版本过低${NC}"
     exit 1
 fi
 
@@ -49,7 +49,7 @@ fi
 
 # 构建平台后端
 echo "构建平台管理后端..."
-docker-compose build platform-backend
+docker compose build platform-backend
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ 平台后端构建成功${NC}"
@@ -64,4 +64,4 @@ echo "使用以下命令启动平台:"
 echo "  ./scripts/start.sh"
 echo ""
 echo "或者手动启动:"
-echo "  docker-compose up -d platform-backend"
+echo "  docker compose up -d platform-backend"

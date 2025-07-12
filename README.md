@@ -140,7 +140,7 @@ ai4s/
 
 ```bash
 # 查看平台后端日志
-docker-compose logs -f platform-backend
+docker compose logs -f platform-backend
 
 # 查看用户容器日志
 docker logs dev-username

@@ -65,17 +65,21 @@ sudo systemctl enable docker
 sudo usermod -aG docker $USER
 ```
 
-## 安装Docker Compose
+## 验证Docker Compose
+
+现代Docker安装通常已包含Docker Compose插件：
 
 ```bash
-# 下载Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.12.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+# 验证Docker Compose是否可用
+docker compose version
 
-# 设置可执行权限
-sudo chmod +x /usr/local/bin/docker-compose
+# 如果上述命令失败，可能需要安装Compose插件
+# Ubuntu/Debian:
+sudo apt-get update
+sudo apt-get install docker-compose-plugin
 
-# 验证安装
-docker-compose --version
+# CentOS/RHEL:
+sudo yum install docker-compose-plugin
 ```
 
 ## 安装NVIDIA Docker Runtime (GPU支持)
@@ -117,7 +121,7 @@ docker run hello-world
 
 ### 验证Docker Compose
 ```bash
-docker-compose --version
+docker compose version
 ```
 
 ### 验证NVIDIA Docker Runtime

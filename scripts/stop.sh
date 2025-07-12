@@ -19,7 +19,7 @@ fi
 
 # 停止平台后端
 echo "停止平台管理后端..."
-docker-compose down
+docker compose down
 
 echo -e "${GREEN}✓ 平台后端已停止${NC}"
 
