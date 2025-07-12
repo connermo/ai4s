@@ -1,6 +1,9 @@
 # 构建阶段
 FROM golang:1.21-alpine AS builder
 
+# 安装必要的构建工具
+RUN apk add --no-cache gcc musl-dev sqlite-dev
+
 WORKDIR /app
 
 # 复制go mod文件
