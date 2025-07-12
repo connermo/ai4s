@@ -169,8 +169,16 @@ async function loadContainers() {
         const tbody = document.getElementById('containers-table-body');
         tbody.innerHTML = '';
         
-        for (const container of containers) {
-            const row = await createContainerRow(container);
+        // 处理null或空数组的情况
+        if (containers && Array.isArray(containers)) {
+            for (const container of containers) {
+                const row = await createContainerRow(container);
+                tbody.appendChild(row);
+            }
+        } else if (!containers || containers.length === 0) {
+            // 显示空状态
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="8" class="text-center text-muted">暂无容器</td>';
             tbody.appendChild(row);
         }
     } catch (error) {
@@ -368,7 +376,9 @@ async function loadDashboard() {
         // 加载容器统计
         const containersResponse = await fetch(`${API_BASE}/containers`);
         const containers = await containersResponse.json();
-        const runningContainers = containers.filter(container => container.status === 'running').length;
+        const runningContainers = (containers && Array.isArray(containers)) 
+            ? containers.filter(container => container.status === 'running').length 
+            : 0;
         document.getElementById('running-containers').textContent = runningContainers;
         
         // 模拟系统资源数据（实际应该从系统API获取）
