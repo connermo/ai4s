@@ -34,6 +34,10 @@ func NewContainerService() (*ContainerService, error) {
 }
 
 func (s *ContainerService) CreateContainer(user *models.User, gpuDevices string) (*models.Container, error) {
+	return s.CreateContainerWithPassword(user, gpuDevices, "123456")
+}
+
+func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDevices, password string) (*models.Container, error) {
 	containerName := fmt.Sprintf("dev-%s", user.Username)
 	
 	// 创建容器配置
@@ -44,7 +48,7 @@ func (s *ContainerService) CreateContainer(user *models.User, gpuDevices string)
 			fmt.Sprintf("DEV_USER=%s", user.Username),
 			fmt.Sprintf("DEV_UID=%d", user.ID+1000),
 			fmt.Sprintf("DEV_GID=%d", user.ID+1000),
-			fmt.Sprintf("DEV_PASSWORD=%s123", user.Username), // 设置默认密码为用户名+123
+			fmt.Sprintf("DEV_PASSWORD=%s", password), // 使用传入的密码
 		},
 		ExposedPorts: s.getExposedPorts(user),
 	}

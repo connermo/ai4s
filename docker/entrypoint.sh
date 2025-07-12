@@ -11,29 +11,58 @@ echo "用户: $DEV_USER"
 echo "UID: $DEV_UID"
 echo "GID: $DEV_GID"
 
+# 检查是否以root身份运行
+if [ "$(id -u)" != "0" ]; then
+    echo "错误: 容器需要以root身份启动才能创建用户"
+    exit 1
+fi
+
 # 创建用户组
 if ! getent group $DEV_USER > /dev/null 2>&1; then
-    groupadd -g $DEV_GID $DEV_USER
-    echo "创建用户组: $DEV_USER ($DEV_GID)"
+    if groupadd -g $DEV_GID $DEV_USER 2>/dev/null; then
+        echo "创建用户组: $DEV_USER ($DEV_GID)"
+    else
+        echo "警告: 用户组创建失败，可能已存在"
+    fi
 fi
 
 # 创建用户
 if ! id -u $DEV_USER > /dev/null 2>&1; then
-    useradd -m -u $DEV_UID -g $DEV_GID -s /bin/bash $DEV_USER
-    echo "创建用户: $DEV_USER ($DEV_UID:$DEV_GID)"
+    # 先创建用户主目录
+    mkdir -p /home/$DEV_USER
     
-    # 设置密码
-    echo "$DEV_USER:$DEV_PASSWORD" | chpasswd
-    
-    # 添加到sudo组
-    usermod -aG sudo $DEV_USER
-    
-    # 设置sudo免密
-    echo "$DEV_USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+    if useradd -m -u $DEV_UID -g $DEV_GID -s /bin/bash -d /home/$DEV_USER $DEV_USER 2>/dev/null; then
+        echo "创建用户: $DEV_USER ($DEV_UID:$DEV_GID)"
+        
+        # 设置密码
+        if echo "$DEV_USER:$DEV_PASSWORD" | chpasswd; then
+            echo "密码设置成功"
+        else
+            echo "警告: 密码设置失败"
+        fi
+        
+        # 添加到sudo组
+        if usermod -aG sudo $DEV_USER 2>/dev/null; then
+            echo "添加到sudo组成功"
+        fi
+        
+        # 设置sudo免密
+        if echo "$DEV_USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; then
+            echo "sudo免密设置成功"
+        fi
+    else
+        echo "警告: 用户创建失败，可能已存在"
+    fi
+else
+    echo "用户 $DEV_USER 已存在"
 fi
 
 # 确保用户主目录权限正确
-chown -R $DEV_UID:$DEV_GID /home/$DEV_USER
+if chown -R $DEV_UID:$DEV_GID /home/$DEV_USER 2>/dev/null; then
+    echo "用户主目录权限设置成功"
+else
+    echo "警告: 用户主目录权限设置失败"
+fi
 
 # 创建必要的目录
 mkdir -p /home/$DEV_USER/.jupyter
@@ -41,19 +70,22 @@ mkdir -p /home/$DEV_USER/.vscode-server
 mkdir -p /home/$DEV_USER/.config/code-server
 
 # 设置目录权限
-chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.jupyter
-chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.vscode-server
-chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config
+chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.jupyter 2>/dev/null
+chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.vscode-server 2>/dev/null
+chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config 2>/dev/null
 
-# 设置共享目录权限
-chown -R $DEV_UID:$DEV_GID /workspace
-chmod 755 /shared
+# 设置共享目录权限（忽略错误）
+chown -R $DEV_UID:$DEV_GID /workspace 2>/dev/null || echo "警告: workspace权限设置失败"
+chmod 755 /shared 2>/dev/null || echo "警告: shared权限设置失败"
 
 # 生成Jupyter配置
-su - $DEV_USER -c "python3 -m jupyter lab --generate-config"
+if id -u $DEV_USER > /dev/null 2>&1; then
+    su - $DEV_USER -c "python3 -m jupyter lab --generate-config" 2>/dev/null || echo "警告: Jupyter配置生成失败"
+fi
 
 # 配置Jupyter Lab
-cat > /home/$DEV_USER/.jupyter/jupyter_lab_config.py << EOF
+if mkdir -p /home/$DEV_USER/.jupyter; then
+    cat > /home/$DEV_USER/.jupyter/jupyter_lab_config.py << EOF
 c.ServerApp.ip = '0.0.0.0'
 c.ServerApp.port = 8888
 c.ServerApp.allow_root = True
@@ -65,20 +97,28 @@ c.ServerApp.allow_remote_access = True
 c.ServerApp.root_dir = '/home/$DEV_USER'
 EOF
 
+    chown $DEV_UID:$DEV_GID /home/$DEV_USER/.jupyter/jupyter_lab_config.py 2>/dev/null
+fi
+
 # 配置code-server
-cat > /home/$DEV_USER/.config/code-server/config.yaml << EOF
+if mkdir -p /home/$DEV_USER/.config/code-server; then
+    cat > /home/$DEV_USER/.config/code-server/config.yaml << EOF
 bind-addr: 0.0.0.0:8080
 auth: none
 cert: false
 EOF
 
-# 设置配置文件权限
-chown $DEV_UID:$DEV_GID /home/$DEV_USER/.jupyter/jupyter_lab_config.py
-chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server
+    chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server 2>/dev/null
+fi
 
 # 启动SSH服务
-service ssh start
-echo "SSH服务已启动"
+echo "启动SSH服务..."
+if service ssh start; then
+    echo "SSH服务启动成功"
+else
+    echo "警告: SSH服务启动失败，尝试手动启动..."
+    /usr/sbin/sshd -D &
+fi
 
 # 创建启动脚本
 cat > /home/$DEV_USER/start_services.sh << 'EOF'
@@ -116,11 +156,14 @@ echo "  TensorBoard: /tmp/tensorboard.log"
 EOF
 
 # 设置启动脚本权限
-chmod +x /home/$DEV_USER/start_services.sh
-chown $DEV_UID:$DEV_GID /home/$DEV_USER/start_services.sh
+if [ -f /home/$DEV_USER/start_services.sh ]; then
+    chmod +x /home/$DEV_USER/start_services.sh
+    chown $DEV_UID:$DEV_GID /home/$DEV_USER/start_services.sh 2>/dev/null
+fi
 
 # 创建欢迎信息
-cat > /home/$DEV_USER/README.md << EOF
+if mkdir -p /home/$DEV_USER; then
+    cat > /home/$DEV_USER/README.md << EOF
 # 开发环境使用指南
 
 ## 服务访问
@@ -155,12 +198,22 @@ cat > /home/$DEV_USER/README.md << EOF
 
 EOF
 
-chown $DEV_UID:$DEV_GID /home/$DEV_USER/README.md
+    chown $DEV_UID:$DEV_GID /home/$DEV_USER/README.md 2>/dev/null
+fi
 
 # 切换到用户身份启动服务
 echo "切换到用户 $DEV_USER 启动服务..."
-su - $DEV_USER -c "/home/$DEV_USER/start_services.sh"
+if id -u $DEV_USER > /dev/null 2>&1 && [ -f /home/$DEV_USER/start_services.sh ]; then
+    su - $DEV_USER -c "/home/$DEV_USER/start_services.sh" 2>/dev/null || echo "警告: 服务启动失败"
+else
+    echo "警告: 用户不存在或启动脚本缺失，直接启动服务..."
+    # 直接启动基础服务
+    nohup jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --no-browser --token='' > /tmp/jupyter.log 2>&1 &
+    nohup code-server --bind-addr=0.0.0.0:8080 --auth=none > /tmp/code-server.log 2>&1 &
+fi
 
 # 保持容器运行
 echo "=== 容器启动完成 ==="
+echo "SSH登录: ssh -p PORT $DEV_USER@HOST"
+echo "密码: $DEV_PASSWORD"
 tail -f /dev/null

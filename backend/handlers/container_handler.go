@@ -29,6 +29,7 @@ func NewContainerHandler() (*ContainerHandler, error) {
 type CreateContainerRequest struct {
 	UserID     int    `json:"user_id"`
 	GPUDevices string `json:"gpu_devices"`
+	Password   string `json:"password,omitempty"` // 可选的SSH密码
 }
 
 func (h *ContainerHandler) CreateContainer(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +45,13 @@ func (h *ContainerHandler) CreateContainer(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	container, err := h.containerService.CreateContainer(user, req.GPUDevices)
+	// 如果没有提供密码，使用默认密码
+	password := req.Password
+	if password == "" {
+		password = "123456" // 默认密码
+	}
+	
+	container, err := h.containerService.CreateContainerWithPassword(user, req.GPUDevices, password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -359,9 +359,15 @@ async function loadUserOptions() {
 async function createContainer() {
     const userId = document.getElementById('container-user-id').value;
     const gpuDevices = document.getElementById('gpu-devices').value;
+    const password = document.getElementById('ssh-password').value;
     
     if (!userId) {
         showAlert('请选择用户', 'warning');
+        return;
+    }
+    
+    if (!password) {
+        showAlert('请设置SSH密码', 'warning');
         return;
     }
     
@@ -373,7 +379,8 @@ async function createContainer() {
             },
             body: JSON.stringify({ 
                 user_id: parseInt(userId), 
-                gpu_devices: gpuDevices 
+                gpu_devices: gpuDevices,
+                password: password
             }),
         });
         
