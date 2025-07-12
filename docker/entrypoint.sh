@@ -85,16 +85,20 @@ fi
 
 # 配置Jupyter Lab
 if mkdir -p /home/$DEV_USER/.jupyter; then
+    # 生成密码哈希
+    JUPYTER_PASSWORD_HASH=$(python3 -c "from jupyter_server.auth import passwd; print(passwd('$DEV_PASSWORD'))")
+    
     cat > /home/$DEV_USER/.jupyter/jupyter_lab_config.py << EOF
 c.ServerApp.ip = '0.0.0.0'
 c.ServerApp.port = 8888
 c.ServerApp.allow_root = True
 c.ServerApp.open_browser = False
 c.ServerApp.token = ''
-c.ServerApp.password = ''
+c.ServerApp.password = '$JUPYTER_PASSWORD_HASH'
 c.ServerApp.allow_origin = '*'
 c.ServerApp.allow_remote_access = True
 c.ServerApp.root_dir = '/home/$DEV_USER'
+c.ServerApp.disable_check_xsrf = True
 EOF
 
     chown $DEV_UID:$DEV_GID /home/$DEV_USER/.jupyter/jupyter_lab_config.py 2>/dev/null
@@ -104,7 +108,8 @@ fi
 if mkdir -p /home/$DEV_USER/.config/code-server; then
     cat > /home/$DEV_USER/.config/code-server/config.yaml << EOF
 bind-addr: 0.0.0.0:8080
-auth: none
+auth: password
+password: $DEV_PASSWORD
 cert: false
 EOF
 
@@ -121,33 +126,33 @@ else
 fi
 
 # 创建启动脚本
-cat > /home/$DEV_USER/start_services.sh << 'EOF'
+cat > /home/$DEV_USER/start_services.sh << EOF
 #!/bin/bash
 
 echo "=== 启动开发环境服务 ==="
 
 # 启动Jupyter Lab
 echo "启动Jupyter Lab..."
-nohup jupyter lab --config=/home/$DEV_USER/.jupyter/jupyter_lab_config.py > /tmp/jupyter.log 2>&1 &
-echo "Jupyter Lab PID: $!"
+nohup jupyter lab --config=/home/\$DEV_USER/.jupyter/jupyter_lab_config.py > /tmp/jupyter.log 2>&1 &
+echo "Jupyter Lab PID: \$!"
 
 # 启动code-server (VSCode Server)
 echo "启动VSCode Server..."
 nohup code-server > /tmp/code-server.log 2>&1 &
-echo "VSCode Server PID: $!"
+echo "VSCode Server PID: \$!"
 
 # 启动TensorBoard (可选)
-if [ -d "/home/$DEV_USER/logs" ]; then
+if [ -d "/home/\$DEV_USER/logs" ]; then
     echo "启动TensorBoard..."
-    nohup tensorboard --logdir=/home/$DEV_USER/logs --host=0.0.0.0 --port=6006 > /tmp/tensorboard.log 2>&1 &
-    echo "TensorBoard PID: $!"
+    nohup tensorboard --logdir=/home/\$DEV_USER/logs --host=0.0.0.0 --port=6006 > /tmp/tensorboard.log 2>&1 &
+    echo "TensorBoard PID: \$!"
 fi
 
 echo "=== 服务启动完成 ==="
-echo "SSH: 端口 22"
-echo "VSCode Server: 端口 8080"
-echo "Jupyter Lab: 端口 8888"
-echo "TensorBoard: 端口 6006"
+echo "SSH: 端口 22 (用户名: $DEV_USER, 密码: $DEV_PASSWORD)"
+echo "VSCode Server: 端口 8080 (密码: $DEV_PASSWORD)"
+echo "Jupyter Lab: 端口 8888 (密码: $DEV_PASSWORD)"
+echo "TensorBoard: 端口 6006 (无需认证)"
 echo ""
 echo "日志文件位置:"
 echo "  Jupyter Lab: /tmp/jupyter.log"
@@ -169,9 +174,9 @@ if mkdir -p /home/$DEV_USER; then
 ## 服务访问
 
 - **SSH**: 使用用户名 \`$DEV_USER\` 和密码 \`$DEV_PASSWORD\` 登录
-- **VSCode Server**: 浏览器访问 http://host:port
-- **Jupyter Lab**: 浏览器访问 http://host:port  
-- **TensorBoard**: 浏览器访问 http://host:port
+- **VSCode Server**: 浏览器访问 http://host:port，密码: \`$DEV_PASSWORD\`
+- **Jupyter Lab**: 浏览器访问 http://host:port，密码: \`$DEV_PASSWORD\`
+- **TensorBoard**: 浏览器访问 http://host:port (无需认证)
 
 ## 目录结构
 
@@ -208,8 +213,8 @@ if id -u $DEV_USER > /dev/null 2>&1 && [ -f /home/$DEV_USER/start_services.sh ];
 else
     echo "警告: 用户不存在或启动脚本缺失，直接启动服务..."
     # 直接启动基础服务
-    nohup jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --no-browser --token='' > /tmp/jupyter.log 2>&1 &
-    nohup code-server --bind-addr=0.0.0.0:8080 --auth=none > /tmp/code-server.log 2>&1 &
+    nohup jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --no-browser --PasswordIdentityProvider.hashed_password="$(python3 -c "from jupyter_server.auth import passwd; print(passwd('$DEV_PASSWORD'))")" > /tmp/jupyter.log 2>&1 &
+    nohup code-server --bind-addr=0.0.0.0:8080 --auth=password --password="$DEV_PASSWORD" > /tmp/code-server.log 2>&1 &
 fi
 
 # 保持容器运行

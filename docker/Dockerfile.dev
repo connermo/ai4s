@@ -62,6 +62,10 @@ RUN pip3 install --ignore-installed \
     plotly \
     dash
 
+# 安装JupyterLab的Plotly扩展
+RUN jupyter labextension install @plotly/plotly-jupyterlab-extension --no-build || true
+RUN jupyter lab build --dev-build=False --minimize=False || true
+
 # Node.js和npm已安装，验证版本
 RUN node --version && npm --version
 

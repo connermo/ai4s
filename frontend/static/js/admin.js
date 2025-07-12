@@ -251,7 +251,7 @@ async function createContainerRow(container) {
         if (portResponse.ok) {
             const data = await portResponse.json();
             const p = data.ports;
-            ports = `SSH:${p.ssh}, VSCode:${p.vscode}, Jupyter:${p.jupyter}, TB:${p.tensorboard}, Apps:${p.app1}-${p.app6}`;
+            ports = `SSH:${p.ssh} VSCode:${p.vscode} Jupyter:${p.jupyter} TB:${p.tensorboard}`;
         }
     } catch (error) {
         console.error('获取端口信息失败:', error);
@@ -425,7 +425,8 @@ async function createContainer() {
         });
         
         if (response.ok) {
-            showAlert('容器创建成功', 'success');
+            const passwordType = useUserPassword ? '用户登录密码' : '设置的SSH密码';
+            showAlert(`容器创建成功！SSH、VSCode和Jupyter登录密码均为：${passwordType}`, 'success');
             document.getElementById('createContainerForm').reset();
             
             // 恢复密码类型选择的默认状态
