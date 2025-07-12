@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"../services"
+	"gpu-dev-platform/services"
 	"github.com/gorilla/mux"
 )
 

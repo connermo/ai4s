@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 	
-	"../database"
-	"../models"
+	"gpu-dev-platform/database"
+	"gpu-dev-platform/models"
 )
 
 type UserService struct {

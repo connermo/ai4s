@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"./database"
-	"./handlers"
+	"gpu-dev-platform/database"
+	"gpu-dev-platform/handlers"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 )

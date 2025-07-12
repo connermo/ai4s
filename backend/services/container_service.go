@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"../database"
-	"../models"
+	"gpu-dev-platform/database"
+	"gpu-dev-platform/models"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"

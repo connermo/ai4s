@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"../services"
+	"gpu-dev-platform/services"
 	"github.com/gorilla/mux"
 )
 
