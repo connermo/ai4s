@@ -62,8 +62,17 @@ func createTables() error {
 }
 
 func ensureTablesExist() error {
+	// 首先检查当前连接的数据库
+	var currentDB string
+	err := DB.QueryRow("SELECT DATABASE()").Scan(&currentDB)
+	if err != nil {
+		return fmt.Errorf("failed to get current database: %v", err)
+	}
+	fmt.Printf("DEBUG: Current database: %s\n", currentDB)
+
 	// 确保状态表存在
-	_, err := DB.Exec(`CREATE TABLE IF NOT EXISTS db_init_status (
+	fmt.Printf("DEBUG: Creating db_init_status table\n")
+	_, err = DB.Exec(`CREATE TABLE IF NOT EXISTS db_init_status (
 		id INT AUTO_INCREMENT PRIMARY KEY,
 		component VARCHAR(50) UNIQUE NOT NULL,
 		initialized BOOLEAN DEFAULT FALSE,
@@ -74,6 +83,7 @@ func ensureTablesExist() error {
 	}
 
 	// 确保用户表存在
+	fmt.Printf("DEBUG: Creating users table\n")
 	_, err = DB.Exec(`CREATE TABLE IF NOT EXISTS users (
 		id INT AUTO_INCREMENT PRIMARY KEY,
 		username VARCHAR(50) UNIQUE NOT NULL,
@@ -91,7 +101,16 @@ func ensureTablesExist() error {
 		return fmt.Errorf("failed to create users table: %v", err)
 	}
 
+	// 立即验证用户表是否存在
+	var userTableExists int
+	err = DB.QueryRow("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'users'").Scan(&userTableExists)
+	if err != nil {
+		return fmt.Errorf("failed to verify users table existence: %v", err)
+	}
+	fmt.Printf("DEBUG: Users table exists: %v\n", userTableExists > 0)
+
 	// 确保容器表存在
+	fmt.Printf("DEBUG: Creating containers table\n")
 	_, err = DB.Exec(`CREATE TABLE IF NOT EXISTS containers (
 		id VARCHAR(64) PRIMARY KEY,
 		user_id INT NOT NULL,
@@ -111,6 +130,7 @@ func ensureTablesExist() error {
 	}
 
 	// 确保容器统计表存在
+	fmt.Printf("DEBUG: Creating container_stats table\n")
 	_, err = DB.Exec(`CREATE TABLE IF NOT EXISTS container_stats (
 		id INT AUTO_INCREMENT PRIMARY KEY,
 		container_id VARCHAR(64) NOT NULL,
@@ -125,6 +145,7 @@ func ensureTablesExist() error {
 	}
 
 	// 确保默认管理员用户存在
+	fmt.Printf("DEBUG: Creating default admin user\n")
 	_, err = DB.Exec(`INSERT IGNORE INTO users (username, password, email, is_admin, base_port) 
 		VALUES ('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@example.com', TRUE, 9001)`)
 	if err != nil {
