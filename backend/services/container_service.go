@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"gpu-dev-platform/database"
@@ -34,7 +35,7 @@ func NewContainerService() (*ContainerService, error) {
 }
 
 func (s *ContainerService) CreateContainer(user *models.User, gpuDevices string) (*models.Container, error) {
-	return s.CreateContainerWithPassword(user, gpuDevices, "123456")
+	return s.CreateContainerWithPassword(user, gpuDevices, "defaultpass")
 }
 
 func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDevices, password string) (*models.Container, error) {
@@ -299,6 +300,160 @@ func (s *ContainerService) getExposedPorts(user *models.User) nat.PortSet {
 	}
 	
 	return exposed
+}
+
+func (s *ContainerService) ResetContainerPassword(containerID, newPassword string) error {
+	// 检查容器是否存在
+	container, err := s.GetContainerByID(containerID)
+	if err != nil {
+		return fmt.Errorf("容器不存在: %v", err)
+	}
+
+	// 检查容器是否在运行
+	containerInfo, err := s.dockerClient.ContainerInspect(context.Background(), containerID)
+	if err != nil {
+		return fmt.Errorf("无法获取容器状态: %v", err)
+	}
+
+	if !containerInfo.State.Running {
+		return fmt.Errorf("容器未运行，无法重置密码")
+	}
+
+	// 准备重置密码的命令
+	commands := [][]string{
+		// 重置系统用户密码
+		{"chpasswd"},
+		// 重新生成Jupyter配置
+		{"python3", "-c", "from jupyter_server.auth import passwd; print(passwd('" + newPassword + "'))"},
+	}
+
+	// 获取容器内的用户名
+	var username string
+	for _, env := range containerInfo.Config.Env {
+		if strings.HasPrefix(env, "DEV_USER=") {
+			username = strings.TrimPrefix(env, "DEV_USER=")
+			break
+		}
+	}
+	if username == "" {
+		username = "developer" // 默认用户名
+	}
+
+	// 执行密码重置命令
+	// 1. 重置系统用户密码
+	passwordInput := fmt.Sprintf("%s:%s", username, newPassword)
+	execConfig := types.ExecConfig{
+		Cmd:          []string{"chpasswd"},
+		AttachStdin:  true,
+		AttachStdout: true,
+		AttachStderr: true,
+	}
+
+	execResp, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, execConfig)
+	if err != nil {
+		return fmt.Errorf("创建密码重置命令失败: %v", err)
+	}
+
+	execAttachResp, err := s.dockerClient.ContainerExecAttach(context.Background(), execResp.ID, types.ExecStartCheck{})
+	if err != nil {
+		return fmt.Errorf("执行密码重置命令失败: %v", err)
+	}
+	defer execAttachResp.Close()
+
+	// 发送密码数据
+	_, err = execAttachResp.Conn.Write([]byte(passwordInput + "\n"))
+	if err != nil {
+		return fmt.Errorf("写入密码数据失败: %v", err)
+	}
+	execAttachResp.Close()
+
+	// 2. 更新Jupyter配置
+	jupyterConfigScript := fmt.Sprintf(`
+import os
+from jupyter_server.auth import passwd
+
+password_hash = passwd('%s')
+config_content = '''c.ServerApp.ip = '0.0.0.0'
+c.ServerApp.port = 8888
+c.ServerApp.allow_root = True
+c.ServerApp.open_browser = False
+c.ServerApp.token = ''
+c.ServerApp.password = '%s'
+c.ServerApp.allow_origin = '*'
+c.ServerApp.allow_remote_access = True
+c.ServerApp.root_dir = '/home/%s'
+c.ServerApp.disable_check_xsrf = True'''
+
+os.makedirs('/home/%s/.jupyter', exist_ok=True)
+with open('/home/%s/.jupyter/jupyter_lab_config.py', 'w') as f:
+    f.write(config_content)
+`, newPassword, "' + password_hash + '", username, username, username)
+
+	execConfig2 := types.ExecConfig{
+		Cmd:          []string{"python3", "-c", jupyterConfigScript},
+		AttachStdout: true,
+		AttachStderr: true,
+	}
+
+	execResp2, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, execConfig2)
+	if err != nil {
+		return fmt.Errorf("创建Jupyter配置更新命令失败: %v", err)
+	}
+
+	err = s.dockerClient.ContainerExecStart(context.Background(), execResp2.ID, types.ExecStartCheck{})
+	if err != nil {
+		return fmt.Errorf("执行Jupyter配置更新失败: %v", err)
+	}
+
+	// 3. 更新code-server配置
+	codeServerConfig := fmt.Sprintf(`bind-addr: 0.0.0.0:8080
+auth: password
+password: %s
+cert: false`, newPassword)
+
+	execConfig3 := types.ExecConfig{
+		Cmd: []string{"sh", "-c", fmt.Sprintf("mkdir -p /home/%s/.config/code-server && echo '%s' > /home/%s/.config/code-server/config.yaml", username, codeServerConfig, username)},
+		AttachStdout: true,
+		AttachStderr: true,
+	}
+
+	execResp3, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, execConfig3)
+	if err != nil {
+		return fmt.Errorf("创建VSCode配置更新命令失败: %v", err)
+	}
+
+	err = s.dockerClient.ContainerExecStart(context.Background(), execResp3.ID, types.ExecStartCheck{})
+	if err != nil {
+		return fmt.Errorf("执行VSCode配置更新失败: %v", err)
+	}
+
+	// 4. 重启服务（可选，杀死现有进程让它们重启）
+	killServicesScript := `
+pkill -f "jupyter lab" || true
+pkill -f "code-server" || true
+sleep 2
+# 重启服务
+su - ` + username + ` -c "nohup jupyter lab --config=/home/` + username + `/.jupyter/jupyter_lab_config.py > /tmp/jupyter.log 2>&1 &"
+su - ` + username + ` -c "nohup code-server > /tmp/code-server.log 2>&1 &"
+`
+
+	execConfig4 := types.ExecConfig{
+		Cmd:          []string{"sh", "-c", killServicesScript},
+		AttachStdout: true,
+		AttachStderr: true,
+	}
+
+	execResp4, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, execConfig4)
+	if err != nil {
+		return fmt.Errorf("创建服务重启命令失败: %v", err)
+	}
+
+	err = s.dockerClient.ContainerExecStart(context.Background(), execResp4.ID, types.ExecStartCheck{})
+	if err != nil {
+		return fmt.Errorf("执行服务重启失败: %v", err)
+	}
+
+	return nil
 }
 
 func (s *ContainerService) getPortBindings(user *models.User) nat.PortMap {

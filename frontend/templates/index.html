@@ -205,9 +205,9 @@
                             <div class="form-text">可选，指定GPU设备ID，用逗号分隔</div>
                         </div>
                         <div class="mb-3">
-                            <label for="service-password" class="form-label">服务登录密码</label>
-                            <input type="password" class="form-control" id="service-password" value="123456">
-                            <div class="form-text">用于所有服务(SSH、VSCode、Jupyter)登录的密码</div>
+                            <label for="service-password" class="form-label">服务登录密码 <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="service-password" placeholder="请输入服务登录密码" required minlength="6">
+                            <div class="form-text">用于所有服务(SSH、VSCode、Jupyter)登录的密码，至少6位字符</div>
                         </div>
                     </form>
                 </div>
@@ -259,6 +259,40 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                     <button type="button" class="btn btn-primary" onclick="updateUser()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重置容器密码模态框 -->
+    <div class="modal fade" id="resetContainerPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">重置容器服务密码</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="resetContainerPasswordForm">
+                        <input type="hidden" id="reset-container-id">
+                        <div class="mb-3">
+                            <label for="reset-container-name" class="form-label">容器名称</label>
+                            <input type="text" class="form-control" id="reset-container-name" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reset-new-password" class="form-label">新密码 <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="reset-new-password" required minlength="6">
+                            <div class="form-text">用于SSH、VSCode、Jupyter等所有服务的新密码，至少6位字符</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reset-confirm-password" class="form-label">确认密码 <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="reset-confirm-password" required minlength="6">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-warning" onclick="resetContainerPassword()">重置密码</button>
                 </div>
             </div>
         </div>

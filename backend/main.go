@@ -49,6 +49,7 @@ func main() {
 	api.HandleFunc("/containers/{id}/start", containerHandler.StartContainer).Methods("POST")
 	api.HandleFunc("/containers/{id}/stop", containerHandler.StopContainer).Methods("POST")
 	api.HandleFunc("/containers/{id}", containerHandler.RemoveContainer).Methods("DELETE")
+	api.HandleFunc("/containers/{id}/reset-password", containerHandler.ResetContainerPassword).Methods("PUT")
 	api.HandleFunc("/users/{userId:[0-9]+}/container", containerHandler.GetUserContainer).Methods("GET")
 
 	// 静态文件服务

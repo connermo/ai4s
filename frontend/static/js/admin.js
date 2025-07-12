@@ -251,6 +251,9 @@ async function createContainerRow(container) {
                 ? `<button class="btn btn-sm btn-outline-warning" onclick="stopContainer('${container.id}')"><i class="bi bi-stop"></i></button>`
                 : `<button class="btn btn-sm btn-outline-success" onclick="startContainer('${container.id}')"><i class="bi bi-play"></i></button>`
             }
+            <button class="btn btn-sm btn-outline-info" onclick="resetContainerPasswordDialog('${container.id}', '${container.name}')" title="重置服务密码">
+                <i class="bi bi-key"></i>
+            </button>
             <button class="btn btn-sm btn-outline-danger" onclick="removeContainer('${container.id}', '${container.name}')">
                 <i class="bi bi-trash"></i>
             </button>
@@ -374,8 +377,13 @@ async function createContainer() {
         return;
     }
     
-    if (!password) {
+    if (!password || password.trim() === '') {
         showAlert('请设置服务登录密码', 'warning');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showAlert('服务密码长度至少6位', 'warning');
         return;
     }
     
@@ -397,7 +405,6 @@ async function createContainer() {
         if (response.ok) {
             showAlert('容器创建成功！已设置所有服务的登录密码', 'success');
             document.getElementById('createContainerForm').reset();
-            document.getElementById('service-password').value = '123456';
             
             bootstrap.Modal.getInstance(document.getElementById('createContainerModal')).hide();
             loadContainers();
@@ -596,5 +603,61 @@ async function updatePassword() {
     } catch (error) {
         console.error('修改密码失败:', error);
         showAlert('修改密码失败', 'danger');
+    }
+}
+
+// 显示重置容器密码对话框
+function resetContainerPasswordDialog(containerId, containerName) {
+    // 填充表单
+    document.getElementById('reset-container-id').value = containerId;
+    document.getElementById('reset-container-name').value = containerName;
+    document.getElementById('reset-new-password').value = '';
+    document.getElementById('reset-confirm-password').value = '';
+    
+    // 显示模态框
+    new bootstrap.Modal(document.getElementById('resetContainerPasswordModal')).show();
+}
+
+// 重置容器服务密码
+async function resetContainerPassword() {
+    const containerId = document.getElementById('reset-container-id').value;
+    const newPassword = document.getElementById('reset-new-password').value;
+    const confirmPassword = document.getElementById('reset-confirm-password').value;
+    
+    if (!newPassword) {
+        showAlert('新密码不能为空', 'warning');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        showAlert('两次输入的密码不一致', 'warning');
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        showAlert('密码长度至少6位', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/containers/${containerId}/reset-password`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ password: newPassword }),
+        });
+        
+        if (response.ok) {
+            showAlert('容器服务密码重置成功！新密码已应用到SSH、VSCode和Jupyter服务', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('resetContainerPasswordModal')).hide();
+            loadContainers(); // 刷新容器列表
+        } else {
+            const error = await response.text();
+            showAlert(`密码重置失败: ${error}`, 'danger');
+        }
+    } catch (error) {
+        console.error('重置容器密码失败:', error);
+        showAlert('重置容器密码失败', 'danger');
     }
 }

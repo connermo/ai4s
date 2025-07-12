@@ -45,11 +45,13 @@ func (h *ContainerHandler) CreateContainer(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// 使用提供的密码，如果没有则使用默认密码
-	password := req.Password
-	if password == "" {
-		password = "123456" // 默认密码
+	// 验证密码是否提供
+	if req.Password == "" {
+		http.Error(w, "服务登录密码不能为空", http.StatusBadRequest)
+		return
 	}
+	
+	password := req.Password
 	
 	container, err := h.containerService.CreateContainerWithPassword(user, req.GPUDevices, password)
 	if err != nil {
@@ -155,4 +157,39 @@ func (h *ContainerHandler) GetUserContainer(w http.ResponseWriter, r *http.Reque
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+type ResetPasswordRequest struct {
+	Password string `json:"password"`
+}
+
+func (h *ContainerHandler) ResetContainerPassword(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	containerID := vars["id"]
+
+	var req ResetPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// 验证新密码
+	if req.Password == "" {
+		http.Error(w, "新密码不能为空", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.Password) < 6 {
+		http.Error(w, "密码长度至少6位", http.StatusBadRequest)
+		return
+	}
+
+	// 重置容器服务密码
+	if err := h.containerService.ResetContainerPassword(containerID, req.Password); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("密码重置成功"))
 }
