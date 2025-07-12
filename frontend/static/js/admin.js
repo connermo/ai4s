@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', function() {
     loadContainers();
     loadUserOptions();
     
+    // 设置密码类型切换事件
+    setupPasswordTypeToggle();
+    
     // 每30秒刷新一次数据
     setInterval(() => {
         if (currentSection === 'users') {
@@ -19,6 +22,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 30000);
 });
+
+// 设置密码类型切换
+function setupPasswordTypeToggle() {
+    const customRadio = document.getElementById('use-custom-password');
+    const userRadio = document.getElementById('use-user-password');
+    const customField = document.getElementById('custom-password-field');
+    const userField = document.getElementById('user-password-field');
+    
+    if (customRadio && userRadio && customField && userField) {
+        customRadio.addEventListener('change', function() {
+            if (this.checked) {
+                customField.style.display = 'block';
+                userField.style.display = 'none';
+            }
+        });
+        
+        userRadio.addEventListener('change', function() {
+            if (this.checked) {
+                customField.style.display = 'none';
+                userField.style.display = 'block';
+            }
+        });
+    }
+}
 
 // 显示指定section
 function showSection(sectionName) {
@@ -131,7 +158,7 @@ async function createUser() {
         });
         
         if (response.ok) {
-            showAlert('用户创建成功', 'success');
+            showAlert('用户创建成功！创建容器时可选择使用此密码作为SSH密码', 'success');
             document.getElementById('addUserForm').reset();
             bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
             loadUsers();
@@ -359,16 +386,33 @@ async function loadUserOptions() {
 async function createContainer() {
     const userId = document.getElementById('container-user-id').value;
     const gpuDevices = document.getElementById('gpu-devices').value;
-    const password = document.getElementById('ssh-password').value;
+    const useUserPassword = document.getElementById('use-user-password').checked;
     
     if (!userId) {
         showAlert('请选择用户', 'warning');
         return;
     }
     
-    if (!password) {
-        showAlert('请设置SSH密码', 'warning');
-        return;
+    let requestBody = {
+        user_id: parseInt(userId),
+        gpu_devices: gpuDevices
+    };
+    
+    if (useUserPassword) {
+        const userPassword = document.getElementById('user-password').value;
+        if (!userPassword) {
+            showAlert('请输入用户登录密码', 'warning');
+            return;
+        }
+        requestBody.use_user_password = true;
+        requestBody.user_password = userPassword;
+    } else {
+        const customPassword = document.getElementById('ssh-password').value;
+        if (!customPassword) {
+            showAlert('请设置SSH密码', 'warning');
+            return;
+        }
+        requestBody.password = customPassword;
     }
     
     try {
@@ -377,16 +421,19 @@ async function createContainer() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ 
-                user_id: parseInt(userId), 
-                gpu_devices: gpuDevices,
-                password: password
-            }),
+            body: JSON.stringify(requestBody),
         });
         
         if (response.ok) {
             showAlert('容器创建成功', 'success');
             document.getElementById('createContainerForm').reset();
+            
+            // 恢复密码类型选择的默认状态
+            document.getElementById('use-custom-password').checked = true;
+            document.getElementById('custom-password-field').style.display = 'block';
+            document.getElementById('user-password-field').style.display = 'none';
+            document.getElementById('ssh-password').value = '123456';
+            
             bootstrap.Modal.getInstance(document.getElementById('createContainerModal')).hide();
             loadContainers();
             loadUserOptions(); // 刷新用户选项
