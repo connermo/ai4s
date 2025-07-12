@@ -35,7 +35,7 @@ cp .env.example .env
 # 根据需要修改 .env 文件中的配置：
 # 1. 端口配置：
 #    DEFAULT_PORT_PREFIX=9000  # 用户端口起始前缀
-#    PORT_STEP=100            # 每个用户的端口步长
+#    PORT_STEP=10             # 每个用户的端口步长 (占用10个端口)
 # 2. 数据存储路径：
 #    USERS_DATA_PATH=/your/data/path/users
 #    SHARED_DATA_PATH=/your/data/path/shared  
@@ -80,12 +80,12 @@ mkdir -p users shared workspace
 3. 创建并启动容器
 
 **用户服务访问:**
-根据配置的 DEFAULT_PORT_PREFIX (默认9000) 和 PORT_STEP (默认100)：
-- SSH: `ssh username@host -p {base_port+22}` (如9022)
-- VSCode: `http://host:{base_port+80}` (如9080)
-- Jupyter: `http://host:{base_port+88}` (如9088)
-- TensorBoard: `http://host:{base_port+6}` (如9006)
-- 备用应用端口: `http://host:{base_port+66}` (如9066)
+根据配置的 DEFAULT_PORT_PREFIX (默认9000) 和 PORT_STEP (默认10)：
+- SSH: `ssh username@host -p {base_port+0}` (如9000, 9010, 9020...)
+- VSCode: `http://host:{base_port+1}` (如9001, 9011, 9021...)
+- Jupyter: `http://host:{base_port+2}` (如9002, 9012, 9022...)
+- TensorBoard: `http://host:{base_port+3}` (如9003, 9013, 9023...)
+- 备用应用端口: `http://host:{base_port+4}` 到 `{base_port+9}` (如9004-9009, 9014-9019...)
 
 ### 管理脚本
 

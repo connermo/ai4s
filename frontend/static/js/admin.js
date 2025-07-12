@@ -76,7 +76,7 @@ function createUserRow(user) {
     const statusClass = user.is_active ? 'status-active' : 'status-inactive';
     const statusText = user.is_active ? '活跃' : '禁用';
     const adminText = user.is_admin ? '是' : '否';
-    const ports = `${user.base_port + 22}-${user.base_port + 88}`;
+    const ports = `${user.base_port}-${user.base_port + 9}`;
     
     row.innerHTML = `
         <td>${user.id}</td>
@@ -215,7 +215,7 @@ async function createContainerRow(container) {
         if (portResponse.ok) {
             const data = await portResponse.json();
             const p = data.ports;
-            ports = `SSH:${p.ssh}, VSCode:${p.vscode}, Jupyter:${p.jupyter}, TB:${p.tensorboard}, App:${p.app}`;
+            ports = `SSH:${p.ssh}, VSCode:${p.vscode}, Jupyter:${p.jupyter}, TB:${p.tensorboard}, Apps:${p.app1}-${p.app6}`;
         }
     } catch (error) {
         console.error('获取端口信息失败:', error);
