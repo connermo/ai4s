@@ -31,14 +31,14 @@ func InitDB(dataSourceName string) error {
 }
 
 func createTables() error {
-	// 先执行基础表和数据初始化
-	if err := executeSQL("database/init.sql"); err != nil {
-		return fmt.Errorf("failed to initialize tables: %v", err)
-	}
-
-	// 确保所有核心表都存在（防御性编程）
+	// 直接创建表，不依赖外部文件
 	if err := ensureTablesExist(); err != nil {
 		return fmt.Errorf("failed to ensure tables exist: %v", err)
+	}
+
+	// 验证关键表是否真的存在
+	if err := verifyTablesExist(); err != nil {
+		return fmt.Errorf("table verification failed: %v", err)
 	}
 
 	// 检查是否已经创建了索引
@@ -47,7 +47,7 @@ func createTables() error {
 	
 	// 如果查询出错或者计数为0，需要创建索引
 	if err != nil || count == 0 {
-		if err := executeIndexes(); err != nil {
+		if err := createIndexesDirectly(); err != nil {
 			return fmt.Errorf("failed to create indexes: %v", err)
 		}
 		
@@ -131,6 +131,48 @@ func ensureTablesExist() error {
 		return fmt.Errorf("failed to create default admin user: %v", err)
 	}
 
+	return nil
+}
+
+func verifyTablesExist() error {
+	tables := []string{"users", "containers", "container_stats", "db_init_status"}
+	
+	for _, table := range tables {
+		var exists int
+		err := DB.QueryRow("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?", table).Scan(&exists)
+		if err != nil {
+			return fmt.Errorf("failed to check if table %s exists: %v", table, err)
+		}
+		
+		if exists == 0 {
+			return fmt.Errorf("table %s does not exist after creation attempt", table)
+		}
+	}
+	
+	return nil
+}
+
+func createIndexesDirectly() error {
+	indexes := []string{
+		"CREATE INDEX idx_users_username ON users(username)",
+		"CREATE INDEX idx_users_base_port ON users(base_port)",
+		"CREATE INDEX idx_containers_user_id ON containers(user_id)",
+		"CREATE INDEX idx_containers_status ON containers(status)",
+		"CREATE INDEX idx_container_stats_container_id ON container_stats(container_id)",
+		"CREATE INDEX idx_container_stats_timestamp ON container_stats(timestamp)",
+	}
+	
+	for _, indexSQL := range indexes {
+		_, err := DB.Exec(indexSQL)
+		if err != nil {
+			// 忽略重复索引错误
+			if strings.Contains(err.Error(), "Duplicate key name") {
+				continue
+			}
+			return fmt.Errorf("failed to create index '%s': %v", indexSQL, err)
+		}
+	}
+	
 	return nil
 }
 
