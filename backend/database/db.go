@@ -32,14 +32,41 @@ func InitDB(dataSourceName string) error {
 }
 
 func createTables() error {
-	schemaFile := filepath.Join("database", "schema.sql")
-	schema, err := ioutil.ReadFile(schemaFile)
-	if err != nil {
-		return fmt.Errorf("failed to read schema file: %v", err)
+	// 先执行基础表和数据初始化
+	if err := executeSQL("database/init.sql"); err != nil {
+		return fmt.Errorf("failed to initialize tables: %v", err)
 	}
 
-	// 将schema分割成单独的语句执行
-	statements := strings.Split(string(schema), ";")
+	// 检查是否已经创建了索引
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM db_init_status WHERE component = 'indexes' AND initialized = TRUE").Scan(&count)
+	if err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("failed to check index status: %v", err)
+	}
+
+	// 如果索引还没有创建，则创建索引
+	if count == 0 {
+		if err := executeIndexes(); err != nil {
+			return fmt.Errorf("failed to create indexes: %v", err)
+		}
+		
+		// 标记索引已创建
+		_, err = DB.Exec("INSERT IGNORE INTO db_init_status (component, initialized) VALUES ('indexes', TRUE)")
+		if err != nil {
+			return fmt.Errorf("failed to mark indexes as initialized: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func executeSQL(filename string) error {
+	content, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("failed to read file %s: %v", filename, err)
+	}
+
+	statements := strings.Split(string(content), ";")
 	for _, stmt := range statements {
 		stmt = strings.TrimSpace(stmt)
 		if stmt == "" || strings.HasPrefix(stmt, "--") {
@@ -51,7 +78,31 @@ func createTables() error {
 			return fmt.Errorf("failed to execute statement '%s': %v", stmt, err)
 		}
 	}
+	return nil
+}
 
+func executeIndexes() error {
+	content, err := ioutil.ReadFile("database/indexes.sql")
+	if err != nil {
+		return fmt.Errorf("failed to read indexes file: %v", err)
+	}
+
+	statements := strings.Split(string(content), ";")
+	for _, stmt := range statements {
+		stmt = strings.TrimSpace(stmt)
+		if stmt == "" || strings.HasPrefix(stmt, "--") {
+			continue
+		}
+		
+		_, err = DB.Exec(stmt)
+		if err != nil {
+			// 忽略索引已存在的错误
+			if strings.Contains(err.Error(), "Duplicate key name") {
+				continue
+			}
+			return fmt.Errorf("failed to create index '%s': %v", stmt, err)
+		}
+	}
 	return nil
 }
 

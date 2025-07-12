@@ -1,4 +1,5 @@
--- 用户表
+-- 数据库初始化脚本
+-- 创建用户表
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
@@ -13,7 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
     last_login TIMESTAMP NULL
 );
 
--- 容器表
+-- 创建容器表
 CREATE TABLE IF NOT EXISTS containers (
     id VARCHAR(64) PRIMARY KEY,
     user_id INT NOT NULL,
@@ -29,7 +30,7 @@ CREATE TABLE IF NOT EXISTS containers (
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
--- 容器统计表
+-- 创建容器统计表
 CREATE TABLE IF NOT EXISTS container_stats (
     id INT AUTO_INCREMENT PRIMARY KEY,
     container_id VARCHAR(64) NOT NULL,
@@ -40,14 +41,17 @@ CREATE TABLE IF NOT EXISTS container_stats (
     FOREIGN KEY (container_id) REFERENCES containers (id) ON DELETE CASCADE
 );
 
--- 创建索引（MySQL不支持IF NOT EXISTS，使用数据库初始化处理）
-CREATE INDEX idx_users_username ON users(username);
-CREATE INDEX idx_users_base_port ON users(base_port);
-CREATE INDEX idx_containers_user_id ON containers(user_id);
-CREATE INDEX idx_containers_status ON containers(status);
-CREATE INDEX idx_container_stats_container_id ON container_stats(container_id);
-CREATE INDEX idx_container_stats_timestamp ON container_stats(timestamp);
+-- 创建初始化状态表
+CREATE TABLE IF NOT EXISTS db_init_status (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    component VARCHAR(50) UNIQUE NOT NULL,
+    initialized BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- 插入默认管理员用户 (密码: admin123)
 INSERT IGNORE INTO users (username, password, email, is_admin, base_port) 
 VALUES ('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@example.com', TRUE, 9001);
+
+-- 标记基础数据已初始化
+INSERT IGNORE INTO db_init_status (component, initialized) VALUES ('base_data', TRUE);
