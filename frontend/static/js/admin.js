@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
         createContainerModal.addEventListener('shown.bs.modal', function() {
             console.log('创建容器模态框打开，刷新用户列表...');
             loadUserOptions(0); // 实时获取最新用户列表，重置重试计数
+            generateSecurePassword(); // 自动生成密码
         });
         
         // 备用事件监听（防止Bootstrap事件失效）
@@ -345,6 +346,9 @@ async function createContainerRow(container) {
                 ? `<button class="btn btn-sm btn-outline-warning" onclick="stopContainer('${container.id}')"><i class="bi bi-stop"></i></button>`
                 : `<button class="btn btn-sm btn-outline-success" onclick="startContainer('${container.id}')"><i class="bi bi-play"></i></button>`
             }
+            <button class="btn btn-sm btn-outline-secondary" onclick="copyUsageInstructions('${container.id}', '${username}', '${container.name}')" title="复制使用说明">
+                <i class="bi bi-clipboard-data"></i>
+            </button>
             <button class="btn btn-sm btn-outline-info" onclick="resetContainerPasswordDialog('${container.id}', '${container.name}')" title="重置服务密码">
                 <i class="bi bi-key"></i>
             </button>
@@ -563,8 +567,8 @@ async function createContainer() {
         return;
     }
     
-    if (password.length < 6) {
-        showAlert('服务密码长度至少6位', 'warning');
+    if (password.length < 8) {
+        showAlert('服务密码长度至少8位', 'warning');
         return;
     }
     
@@ -892,5 +896,117 @@ async function resetContainerPassword() {
     } catch (error) {
         console.error('重置容器密码失败:', error);
         showAlert('重置容器密码失败', 'danger');
+    }
+}
+
+// 生成安全密码
+function generateSecurePassword() {
+    const upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowerCase = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const specialChars = '!@#$%^&*';
+    
+    // 确保每种字符类型至少有一个
+    let password = '';
+    password += upperCase[Math.floor(Math.random() * upperCase.length)];
+    password += lowerCase[Math.floor(Math.random() * lowerCase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += specialChars[Math.floor(Math.random() * specialChars.length)];
+    
+    // 填充剩余位数
+    const allChars = upperCase + lowerCase + numbers + specialChars;
+    for (let i = 4; i < 8; i++) {
+        password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+    
+    // 打乱密码字符顺序
+    password = password.split('').sort(() => Math.random() - 0.5).join('');
+    
+    document.getElementById('service-password').value = password;
+    
+    // 显示生成成功提示
+    showAlert('已生成安全密码', 'success');
+}
+
+// 复制密码到剪贴板
+async function copyPassword() {
+    const passwordField = document.getElementById('service-password');
+    const password = passwordField.value;
+    
+    if (!password) {
+        showAlert('请先生成密码', 'warning');
+        return;
+    }
+    
+    try {
+        await navigator.clipboard.writeText(password);
+        showAlert('密码已复制到剪贴板', 'success');
+    } catch (error) {
+        console.error('复制密码失败:', error);
+        // 降级处理：选中文本
+        passwordField.select();
+        passwordField.setSelectionRange(0, 99999); // 对于移动设备
+        showAlert('请手动复制密码', 'info');
+    }
+}
+
+// 复制容器使用说明
+async function copyUsageInstructions(containerId, username, containerName) {
+    try {
+        // 获取用户的端口信息
+        const userResponse = await fetch(`${API_BASE}/users`);
+        const users = await userResponse.json();
+        const user = users.find(u => u.username === username);
+        
+        if (!user) {
+            showAlert('用户信息获取失败', 'danger');
+            return;
+        }
+        
+        // 获取容器端口信息
+        const portResponse = await fetch(`${API_BASE}/users/${user.id}/container`);
+        let ports = {};
+        if (portResponse.ok) {
+            const data = await portResponse.json();
+            ports = data.ports || {};
+        }
+        
+        // 获取服务器主机名或IP（这里使用当前页面的host）
+        const serverHost = window.location.hostname;
+        
+        // 构造使用说明
+        const instructions = `🚀 GPU开发环境使用说明
+
+📋 容器信息：
+- 容器名称：${containerName}
+- 用户名：${username}
+- 服务器地址：${serverHost}
+
+🔗 服务访问地址：
+- SSH 登录：ssh ${username}@${serverHost} -p ${ports.ssh || 'N/A'}
+- VSCode 服务器：http://${serverHost}:${ports.vscode || 'N/A'}
+- Jupyter Lab：http://${serverHost}:${ports.jupyter || 'N/A'}
+- TensorBoard：http://${serverHost}:${ports.tensorboard || 'N/A'}
+
+📁 目录说明：
+- 个人目录：/home/${username} (私有目录)
+- 共享目录：/shared (只读共享)
+- 工作空间：/workspace (读写共享)
+
+💡 使用提示：
+- 所有服务使用相同的登录密码
+- 支持GPU加速的PyTorch和TensorFlow环境
+- 预装常用AI/ML库和开发工具
+- 可通过SSH上传下载文件
+
+❓ 如有问题请联系管理员`;
+
+        // 复制到剪贴板
+        await navigator.clipboard.writeText(instructions);
+        showAlert('使用说明已复制到剪贴板，可直接发送给用户', 'success');
+        
+    } catch (error) {
+        console.error('复制使用说明失败:', error);
+        showAlert('复制使用说明失败: ' + error.message, 'danger');
     }
 }

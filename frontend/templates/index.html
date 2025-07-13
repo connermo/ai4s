@@ -212,8 +212,18 @@
                         </div>
                         <div class="mb-3">
                             <label for="service-password" class="form-label">服务登录密码 <span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" id="service-password" placeholder="请输入服务登录密码" required minlength="6">
-                            <div class="form-text">用于所有服务(SSH、VSCode、Jupyter)登录的密码，至少6位字符</div>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="service-password" placeholder="点击生成密码" required minlength="8" readonly>
+                                <button class="btn btn-outline-secondary" type="button" id="generate-password" onclick="generateSecurePassword()" title="生成安全密码">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" id="copy-password" onclick="copyPassword()" title="复制密码">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                自动生成的强密码包含大小写字母、数字和特殊字符，8位字符。用于SSH、VSCode、Jupyter等所有服务登录
+                            </div>
                         </div>
                     </form>
                 </div>
