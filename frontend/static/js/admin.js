@@ -49,14 +49,27 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 每30秒刷新一次数据
+    // 增强的定时刷新机制
     setInterval(() => {
         if (currentSection === 'users') {
             loadUsers();
         } else if (currentSection === 'containers') {
-            loadContainers();
+            // 容器页面使用强制刷新确保与Docker状态同步
+            loadContainers(true);
+        } else if (currentSection === 'dashboard') {
+            loadDashboard();
         }
     }, 30000);
+    
+    // 添加页面可见性检测，页面重新可见时强制刷新
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && currentSection === 'containers') {
+            console.log('页面重新可见，强制刷新容器状态...');
+            setTimeout(() => {
+                loadContainers(true);
+            }, 500);
+        }
+    });
 });
 
 // 设置密码类型切换（已简化，不再需要）
@@ -88,7 +101,8 @@ function showSection(sectionName) {
     if (sectionName === 'users') {
         loadUsers();
     } else if (sectionName === 'containers') {
-        loadContainers();
+        // 切换到容器页面时强制刷新确保状态同步
+        loadContainers(true);
     } else if (sectionName === 'dashboard') {
         loadDashboard();
     }
@@ -213,30 +227,74 @@ async function deleteUser(id, username) {
     }
 }
 
-// 加载容器列表
-async function loadContainers() {
+// 加载容器列表（增强实时同步）
+async function loadContainers(forceRefresh = false) {
     try {
-        const response = await fetch(`${API_BASE}/containers`);
+        console.log('正在加载容器列表...', forceRefresh ? '(强制刷新)' : '');
+        
+        // 添加缓存控制头确保获取最新数据
+        const headers = forceRefresh ? {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        } : {};
+        
+        const response = await fetch(`${API_BASE}/containers`, { headers });
         const containers = await response.json();
         
         const tbody = document.getElementById('containers-table-body');
-        tbody.innerHTML = '';
+        if (!tbody) {
+            console.warn('容器表格未找到');
+            return;
+        }
+        
+        // 显示加载状态
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">正在加载容器...</td></tr>';
         
         // 处理null或空数组的情况
-        if (containers && Array.isArray(containers)) {
-            for (const container of containers) {
-                const row = await createContainerRow(container);
-                tbody.appendChild(row);
-            }
-        } else if (!containers || containers.length === 0) {
+        if (containers && Array.isArray(containers) && containers.length > 0) {
+            // 清空加载状态
+            tbody.innerHTML = '';
+            
+            // 并行创建所有容器行以提高性能
+            const rowPromises = containers.map(container => createContainerRow(container));
+            const rows = await Promise.all(rowPromises);
+            
+            // 一次性添加所有行
+            rows.forEach(row => {
+                if (row) tbody.appendChild(row);
+            });
+            
+            console.log(`成功加载 ${containers.length} 个容器`);
+        } else {
             // 显示空状态
-            const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="8" class="text-center text-muted">暂无容器</td>';
-            tbody.appendChild(row);
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">暂无容器</td></tr>';
+            console.log('当前没有容器');
         }
+        
+        // 更新容器计数（如果在仪表板页面）
+        if (currentSection === 'dashboard') {
+            updateContainerStats(containers);
+        }
+        
     } catch (error) {
         console.error('加载容器失败:', error);
-        showAlert('加载容器失败', 'danger');
+        const tbody = document.getElementById('containers-table-body');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">加载失败，请刷新页面重试</td></tr>';
+        }
+        showAlert('加载容器失败: ' + error.message, 'danger');
+    }
+}
+
+// 更新容器统计信息
+function updateContainerStats(containers) {
+    if (containers && Array.isArray(containers)) {
+        const runningCount = containers.filter(c => c.status === 'running').length;
+        const runningElement = document.getElementById('running-containers');
+        if (runningElement) {
+            runningElement.textContent = runningCount;
+        }
     }
 }
 
@@ -299,64 +357,86 @@ async function createContainerRow(container) {
     return row;
 }
 
-// 启动容器
+// 启动容器（增强状态同步）
 async function startContainer(id) {
     try {
+        console.log(`正在启动容器 ${id}...`);
+        
         const response = await fetch(`${API_BASE}/containers/${id}/start`, {
             method: 'POST',
         });
         
         if (response.ok) {
             showAlert('容器启动成功', 'success');
-            loadContainers();
+            // 延迟后强制刷新确保状态同步
+            setTimeout(() => {
+                loadContainers(true); // 强制刷新
+            }, 1000);
         } else {
-            showAlert('启动失败', 'danger');
+            const error = await response.text();
+            showAlert(`启动失败: ${error}`, 'danger');
+            loadContainers(true); // 刷新显示真实状态
         }
     } catch (error) {
         console.error('启动容器失败:', error);
-        showAlert('启动容器失败', 'danger');
+        showAlert('启动容器失败: ' + error.message, 'danger');
+        loadContainers(true); // 刷新显示真实状态
     }
 }
 
-// 停止容器
+// 停止容器（增强状态同步）
 async function stopContainer(id) {
     try {
+        console.log(`正在停止容器 ${id}...`);
+        
         const response = await fetch(`${API_BASE}/containers/${id}/stop`, {
             method: 'POST',
         });
         
         if (response.ok) {
             showAlert('容器停止成功', 'success');
-            loadContainers();
+            // 延迟后强制刷新确保状态同步
+            setTimeout(() => {
+                loadContainers(true); // 强制刷新
+            }, 1000);
         } else {
-            showAlert('停止失败', 'danger');
+            const error = await response.text();
+            showAlert(`停止失败: ${error}`, 'danger');
+            loadContainers(true); // 刷新显示真实状态
         }
     } catch (error) {
         console.error('停止容器失败:', error);
-        showAlert('停止容器失败', 'danger');
+        showAlert('停止容器失败: ' + error.message, 'danger');
+        loadContainers(true); // 刷新显示真实状态
     }
 }
 
-// 删除容器
+// 删除容器（增强状态同步）
 async function removeContainer(id, name) {
     if (!confirm(`确定要删除容器 "${name}" 吗？`)) {
         return;
     }
     
     try {
+        console.log(`正在删除容器 ${id}...`);
+        
         const response = await fetch(`${API_BASE}/containers/${id}`, {
             method: 'DELETE',
         });
         
         if (response.ok) {
             showAlert('容器删除成功', 'success');
-            loadContainers();
+            loadContainers(true); // 立即强制刷新
+            loadUserOptions(0); // 刷新用户列表（用户可能重新可用）
         } else {
-            showAlert('删除失败', 'danger');
+            const error = await response.text();
+            showAlert(`删除失败: ${error}`, 'danger');
+            loadContainers(true); // 刷新显示真实状态
         }
     } catch (error) {
         console.error('删除容器失败:', error);
-        showAlert('删除容器失败', 'danger');
+        showAlert('删除容器失败: ' + error.message, 'danger');
+        loadContainers(true); // 刷新显示真实状态
     }
 }
 

@@ -87,10 +87,16 @@
                 <div id="containers-section" class="section" style="display: none;">
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                         <h1 class="h2">容器管理</h1>
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createContainerModal">
-                            <i class="bi bi-plus-circle"></i>
-                            创建容器
-                        </button>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-secondary" onclick="loadContainers(true)" title="刷新容器状态">
+                                <i class="bi bi-arrow-clockwise"></i>
+                                刷新
+                            </button>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createContainerModal">
+                                <i class="bi bi-plus-circle"></i>
+                                创建容器
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="table-responsive">
