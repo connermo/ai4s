@@ -33,9 +33,9 @@ services:
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
     volumes:
-      - "${USERS_DATA_PATH:-./users}:/app/users"
-      - "${SHARED_DATA_PATH:-./shared}:/app/shared"
-      - "${WORKSPACE_DATA_PATH:-./workspace}:/app/workspace"
+      - "./data/users:/app/users"
+      - "./shared:/app/shared"
+      - "./data/workspace:/app/workspace"
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PORT=${PORT:-8080}
