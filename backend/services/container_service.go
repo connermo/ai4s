@@ -304,7 +304,7 @@ func (s *ContainerService) getExposedPorts(user *models.User) nat.PortSet {
 
 func (s *ContainerService) ResetContainerPassword(containerID, newPassword string) error {
 	// 检查容器是否存在
-	container, err := s.GetContainerByID(containerID)
+	_, err := s.GetContainerByID(containerID)
 	if err != nil {
 		return fmt.Errorf("容器不存在: %v", err)
 	}
@@ -317,14 +317,6 @@ func (s *ContainerService) ResetContainerPassword(containerID, newPassword strin
 
 	if !containerInfo.State.Running {
 		return fmt.Errorf("容器未运行，无法重置密码")
-	}
-
-	// 准备重置密码的命令
-	commands := [][]string{
-		// 重置系统用户密码
-		{"chpasswd"},
-		// 重新生成Jupyter配置
-		{"python3", "-c", "from jupyter_server.auth import passwd; print(passwd('" + newPassword + "'))"},
 	}
 
 	// 获取容器内的用户名
