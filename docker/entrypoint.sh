@@ -240,7 +240,12 @@ export PATH="/opt/miniconda3/bin:/opt/miniconda3/condabin:/usr/local/bin:/home/\
 export EDITOR=vim
 export PYTHONPATH="/workspace:/shared:\$PYTHONPATH"
 
-# Conda initialization
+# Python 3.11 as default
+export PYTHON=/usr/bin/python3.11
+alias python=python3.11
+alias pip=pip3.11
+
+# Conda initialization (optional, base environment only)
 if [ -f "/opt/miniconda3/etc/profile.d/conda.sh" ]; then
     . "/opt/miniconda3/etc/profile.d/conda.sh"
     # 设置conda自动完成
@@ -265,7 +270,7 @@ echo "🚀 GPU开发环境已就绪!"
 echo "📁 个人目录: /home/\$USER"
 echo "📂 共享目录: /shared (只读)"
 echo "💼 工作空间: /workspace (读写)"
-echo "🐍 Python: \$(python3 --version 2>/dev/null || echo 'Not available')"
+echo "🐍 Python: \$(python3.11 --version 2>/dev/null || echo 'Not available')"
 echo "🐍 Conda: \$(conda --version 2>/dev/null || echo 'Not available')"
 echo "🔧 Git: \$(git --version 2>/dev/null || echo 'Not available')"
 echo "🎯 CUDA: \$(nvcc --version 2>/dev/null | head -1 || echo 'Not available')"
@@ -273,21 +278,17 @@ echo "📝 编辑器: \$EDITOR"
 echo ""
 echo "💡 快捷命令:"
 echo "   ll          - 详细列表"
-echo "   python      - Python 3"
+echo "   python      - Python 3.11"
 echo "   gs          - git status"
 echo "   ports       - 查看端口"
 echo "   gpu         - nvidia-smi"
-echo "   condaenv    - 查看conda环境"
 echo "   workspace   - 切换到工作目录"
 echo "   shared      - 切换到共享目录"
 echo ""
-echo "🐍 Conda环境快捷键:"
-echo "   py311       - 切换到Python 3.11 ML环境（包含PyTorch/TensorFlow）"
-echo "   condaenv    - 查看所有conda环境"
-echo ""
-echo "📦 包安装位置:"
-echo "   系统级: Jupyter Lab/Notebook (全局访问)"
-echo "   py311环境: 所有ML/AI包 (PyTorch, TensorFlow, transformers等)"
+echo "📦 环境信息:"
+echo "   默认Python: 3.11 (系统级安装)"
+echo "   所有包安装位置: 系统默认环境"
+echo "   预装ML/AI包: PyTorch, TensorFlow, transformers等"
 echo ""
 echo "🎯 GPU信息:"
 nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv,noheader,nounits 2>/dev/null | head -2 || echo "   GPU信息不可用"
@@ -331,19 +332,16 @@ alias pipinstall='pip3 install'
 alias piplist='pip3 list'
 alias pipshow='pip3 show'
 
-# Conda环境管理
+# Conda环境管理（基础功能）
 alias condaenv='conda info --envs'
-alias condaact='conda activate'
-alias condadeact='conda deactivate'
 alias condalist='conda list'
 alias condainstall='conda install'
-alias condacreate='conda create'
-alias condaremove='conda remove'
-alias condaupdate='conda update'
 alias condaclean='conda clean --all'
 
-# 快速环境切换
-alias py311='conda activate py311'
+# Python包管理
+alias piplist='pip list'
+alias pipshow='pip show'
+alias pipinstall='pip install'
 
 # Jupyter相关
 alias jlabstart='jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --no-browser'
