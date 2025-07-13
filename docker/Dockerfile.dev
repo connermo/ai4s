@@ -105,8 +105,7 @@ RUN pip3 install --no-cache-dir \
 RUN pip3 install --no-cache-dir torch==2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
 # 安装TensorFlow（较大，单独一层）
-RUN /opt/miniconda3/bin/conda run -n tf pip install "numpy<2.0" \
-    && /opt/miniconda3/bin/conda run -n tf pip install tensorflow==2.13.1 tensorboard==2.13.0
+RUN /opt/miniconda3/bin/conda run -n tf conda install tensorflow-gpu=2.13 cudatoolkit=11.8 tensorboard=2.13 -c conda-forge -y
 
 # 安装AI/ML相关包（版本可能变化）
 RUN pip3 install --no-cache-dir \
