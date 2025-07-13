@@ -139,6 +139,9 @@ RUN jupyter labextension install @plotly/plotly-jupyterlab-extension --no-build 
     && echo 'root:root' | chpasswd \
     && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
     && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config \
+    && echo "UseDNS no" >> /etc/ssh/sshd_config \
+    && echo "GSSAPIAuthentication no" >> /etc/ssh/sshd_config \
+    && ssh-keygen -A \
     # 创建工作目录
     && mkdir -p /shared /workspace \
     && chmod 755 /shared /workspace \

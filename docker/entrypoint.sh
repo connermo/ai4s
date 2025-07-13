@@ -533,11 +533,23 @@ echo "配置SSH服务..."
 # 确保SSH目录存在
 mkdir -p /var/run/sshd
 
-# 配置SSH允许密码登录和用户登录
+# 配置SSH允许密码登录和用户登录，禁用DNS解析加速启动
 sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
 sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+# 禁用DNS解析和GSSAPI认证以加速SSH连接
+sed -i 's/#UseDNS yes/UseDNS no/' /etc/ssh/sshd_config
+sed -i 's/#GSSAPIAuthentication yes/GSSAPIAuthentication no/' /etc/ssh/sshd_config
+echo "UseDNS no" >> /etc/ssh/sshd_config
+echo "GSSAPIAuthentication no" >> /etc/ssh/sshd_config
+
+# 生成SSH主机密钥（如果不存在）
+echo "检查SSH主机密钥..."
+if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
+    echo "生成SSH主机密钥..."
+    ssh-keygen -A
+fi
 
 # 启动SSH服务
 echo "启动SSH服务..."
