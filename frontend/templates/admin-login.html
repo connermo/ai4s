@@ -27,9 +27,7 @@
             margin-bottom: 2rem;
         }
         .login-header i {
-            font-size: 3rem;
-            color: #343a40;
-            margin-bottom: 1rem;
+            display: block;
         }
         .btn-admin {
             background: linear-gradient(135deg, #343a40 0%, #495057 100%);
@@ -61,7 +59,7 @@
 <body>
     <div class="login-card">
         <div class="login-header">
-            <i class="bi bi-gear">⚙️</i>
+            <i style="font-size: 3rem; color: #343a40; margin-bottom: 1rem;">⚙️</i>
             <h3>管理员控制台</h3>
             <p class="text-muted">GPU开发平台管理</p>
         </div>
@@ -70,7 +68,7 @@
             <div class="mb-3">
                 <label for="username" class="form-label">管理员用户名</label>
                 <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-person">👤</i></span>
+                    <span class="input-group-text">👤</span>
                     <input type="text" class="form-control" id="username" required>
                 </div>
             </div>
@@ -78,14 +76,13 @@
             <div class="mb-3">
                 <label for="password" class="form-label">管理员密码</label>
                 <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-lock">🔒</i></span>
+                    <span class="input-group-text">🔒</span>
                     <input type="password" class="form-control" id="password" required>
                 </div>
             </div>
             
             <button type="submit" class="btn btn-admin w-100">
-                <i class="bi bi-box-arrow-in-right me-2">➡️</i>
-                登录管理后台
+                ➡️ 登录管理后台
             </button>
         </form>
         
