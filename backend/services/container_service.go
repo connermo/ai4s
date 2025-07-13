@@ -103,12 +103,28 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	os.MkdirAll(sharedDataPath, 0755)  
 	os.MkdirAll(workspaceDataPath, 0755)
 
+	// 获取宿主机路径（用于用户容器挂载）
+	hostSharedPath := os.Getenv("HOST_SHARED_PATH")
+	if hostSharedPath == "" {
+		hostSharedPath = "./shared"  // 默认使用相对路径
+	}
+	
+	hostWorkspacePath := os.Getenv("HOST_WORKSPACE_PATH") 
+	if hostWorkspacePath == "" {
+		hostWorkspacePath = "./data/workspace"  // 默认使用相对路径
+	}
+	
+	hostUsersPath := os.Getenv("HOST_USERS_PATH")
+	if hostUsersPath == "" {
+		hostUsersPath = "./data/users"  // 默认使用相对路径
+	}
+
 	hostConfig := &container.HostConfig{
 		PortBindings: s.getPortBindings(user),
 		Binds: []string{
-			fmt.Sprintf("%s:%s/%s", userDir, containerHomePath, user.Username),
-			fmt.Sprintf("%s:%s:ro", sharedDataPath, containerSharedPath),
-			fmt.Sprintf("%s:%s", workspaceDataPath, containerWorkspacePath),
+			fmt.Sprintf("%s/%s:%s/%s", hostUsersPath, user.Username, containerHomePath, user.Username),
+			fmt.Sprintf("%s:%s:ro", hostSharedPath, containerSharedPath),
+			fmt.Sprintf("%s:%s", hostWorkspacePath, containerWorkspacePath),
 			"/usr/bin/nvidia-smi:/usr/bin/nvidia-smi:ro", // 挂载宿主机的nvidia-smi
 		},
 		// 不限制资源，让容器使用宿主机全部资源

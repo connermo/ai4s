@@ -48,6 +48,10 @@ services:
       - CONTAINER_HOME_PATH=${CONTAINER_HOME_PATH:-/home}
       - CONTAINER_SHARED_PATH=${CONTAINER_SHARED_PATH:-/shared}
       - CONTAINER_WORKSPACE_PATH=${CONTAINER_WORKSPACE_PATH:-/workspace}
+      # 宿主机路径配置（用于创建用户容器的挂载）
+      - HOST_USERS_PATH=${HOST_USERS_PATH:-./data/users}
+      - HOST_SHARED_PATH=${HOST_SHARED_PATH:-./shared}
+      - HOST_WORKSPACE_PATH=${HOST_WORKSPACE_PATH:-./data/workspace}
     depends_on:
       mysql:
         condition: service_healthy
