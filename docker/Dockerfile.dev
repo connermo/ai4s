@@ -153,17 +153,19 @@ RUN mkdir -p /shared /workspace && chmod 755 /shared /workspace
 # 安装code-server（可能变化的外部依赖）
 RUN curl -fsSL https://code-server.dev/install.sh | sh
 
-# 创建code-server扩展目录并预安装常用扩展（构建时有网络）
+# 超快扩展安装：全并行 + 快速失败 + 最小集合
 RUN mkdir -p /tmp/extensions \
-    && echo "开始安装VSCode扩展..." \
-    && timeout 300 code-server --install-extension ms-python.python --extensions-dir /tmp/extensions --force \
-    && timeout 300 code-server --install-extension ms-toolsai.jupyter --extensions-dir /tmp/extensions --force \
-    && timeout 300 code-server --install-extension ms-vscode.vscode-json --extensions-dir /tmp/extensions --force \
-    && timeout 300 code-server --install-extension redhat.vscode-yaml --extensions-dir /tmp/extensions --force \
-    && (timeout 180 code-server --install-extension ms-python.pylint --extensions-dir /tmp/extensions --force || echo "pylint安装失败") \
-    && (timeout 180 code-server --install-extension ms-python.black-formatter --extensions-dir /tmp/extensions --force || echo "black-formatter安装失败") \
-    && (timeout 120 code-server --install-extension GitHub.copilot --extensions-dir /tmp/extensions --force || echo "copilot安装失败") \
-    && echo "扩展安装完成，目录内容:" && find /tmp/extensions -name "*.json" -o -type d | head -10 \
+    && echo "🚀 并行安装VSCode扩展（快速模式）..." \
+    && export NODE_OPTIONS="--max-old-space-size=2048" \
+    # 全并行安装（30秒超时，快速失败）
+    && ( \
+        timeout 30 code-server --install-extension ms-python.python --extensions-dir /tmp/extensions --force & \
+        timeout 30 code-server --install-extension ms-toolsai.jupyter --extensions-dir /tmp/extensions --force & \
+        timeout 30 code-server --install-extension ms-vscode.vscode-json --extensions-dir /tmp/extensions --force & \
+        timeout 30 code-server --install-extension redhat.vscode-yaml --extensions-dir /tmp/extensions --force & \
+        wait \
+    ) \
+    && echo "✅ 快速安装完成，已安装扩展数量: $(find /tmp/extensions -maxdepth 1 -type d | grep -v "^/tmp/extensions$" | wc -l)" \
     && chmod -R 755 /tmp/extensions
 
 # 复制脚本文件（最经常变化的部分，放在最后）
