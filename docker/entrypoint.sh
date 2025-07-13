@@ -282,8 +282,8 @@ echo "   workspace   - 切换到工作目录"
 echo "   shared      - 切换到共享目录"
 echo ""
 echo "🐍 Conda环境快捷键:"
-echo "   py38/py39/py310/py311 - 切换Python版本"
-echo "   pytorch/tensorflow    - 切换ML框架环境"
+echo "   py312       - 切换到Python 3.12环境"
+echo "   condaenv    - 查看所有conda环境"
 echo ""
 echo "🎯 GPU信息:"
 nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv,noheader,nounits 2>/dev/null | head -2 || echo "   GPU信息不可用"
@@ -339,12 +339,7 @@ alias condaupdate='conda update'
 alias condaclean='conda clean --all'
 
 # 快速环境切换
-alias py38='conda activate py38'
-alias py39='conda activate py39'
-alias py310='conda activate py310'
-alias py311='conda activate py311'
-alias pytorch='conda activate pytorch'
-alias tensorflow='conda activate tensorflow'
+alias py312='conda activate py312'
 
 # Jupyter相关
 alias jlabstart='jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --no-browser'
