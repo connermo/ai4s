@@ -596,6 +596,11 @@ extensions-dir: /home/$DEV_USER/.local/share/code-server/extensions
 user-data-dir: /home/$DEV_USER/.local/share/code-server
 disable-telemetry: true
 disable-update-check: true
+# 插件安装优化
+enable-proposed-api: []
+log: info
+# 网络优化
+proxy-domain: []
 EOF
 
     # 创建VSCode用户设置
@@ -620,11 +625,45 @@ EOF
     # 复制预安装的扩展到用户目录
     if [ -d "/tmp/extensions" ]; then
         echo "复制预安装的VSCode扩展..."
-        cp -r /tmp/extensions/* /home/$DEV_USER/.local/share/code-server/extensions/ 2>/dev/null || true
+        echo "源目录内容: $(ls -la /tmp/extensions/ 2>/dev/null | wc -l) 个文件/目录"
+        
+        # 确保目标目录存在
+        mkdir -p /home/$DEV_USER/.local/share/code-server/extensions
+        
+        # 复制扩展文件
+        if cp -r /tmp/extensions/* /home/$DEV_USER/.local/share/code-server/extensions/ 2>/dev/null; then
+            echo "✅ 扩展复制成功"
+        else
+            echo "⚠️  扩展复制失败，尝试逐个复制..."
+            for ext_dir in /tmp/extensions/*/; do
+                if [ -d "$ext_dir" ]; then
+                    ext_name=$(basename "$ext_dir")
+                    echo "复制扩展: $ext_name"
+                    cp -r "$ext_dir" /home/$DEV_USER/.local/share/code-server/extensions/ || echo "复制失败: $ext_name"
+                fi
+            done
+        fi
+        
+        echo "复制后用户扩展目录内容: $(ls -la /home/$DEV_USER/.local/share/code-server/extensions/ 2>/dev/null | wc -l) 个文件/目录"
+    else
+        echo "⚠️  预安装扩展目录 /tmp/extensions 不存在"
     fi
 
     chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server 2>/dev/null
     chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.local/share/code-server 2>/dev/null
+    
+    # 验证扩展安装状态
+    echo "🔍 验证VSCode扩展安装状态..."
+    if command -v code-server &> /dev/null; then
+        echo "已安装的扩展列表:"
+        timeout 10 su - $DEV_USER -c "code-server --list-extensions" 2>/dev/null | sed 's/^/  /' || {
+            echo "⚠️  无法列出扩展，可能需要等待code-server首次启动"
+            echo "扩展目录内容:"
+            ls -la /home/$DEV_USER/.local/share/code-server/extensions/ 2>/dev/null | sed 's/^/  /' || echo "  目录为空或不存在"
+        }
+    else
+        echo "⚠️  code-server命令不可用"
+    fi
 fi
 
 # 配置SSH服务
@@ -666,6 +705,25 @@ else
         echo "[$(date '+%H:%M:%S')] 错误: SSH手动启动失败"
     fi
 fi
+
+# 复制调试脚本
+cp /usr/local/bin/debug-vscode-extensions.sh /home/$DEV_USER/debug-vscode-extensions.sh 2>/dev/null || {
+    # 如果调试脚本不存在，创建一个简化版本
+    cat > /home/$DEV_USER/debug-vscode-extensions.sh << 'DEBUGEOF'
+#!/bin/bash
+echo "=== VSCode扩展状态检查 ==="
+echo "扩展目录: ~/.local/share/code-server/extensions"
+ls -la ~/.local/share/code-server/extensions/ 2>/dev/null || echo "目录不存在"
+echo ""
+echo "已安装扩展:"
+code-server --list-extensions 2>/dev/null || echo "无法列出扩展"
+echo ""
+echo "VSCode配置:"
+cat ~/.config/code-server/config.yaml 2>/dev/null || echo "配置文件不存在"
+DEBUGEOF
+    chmod +x /home/$DEV_USER/debug-vscode-extensions.sh
+    chown $DEV_UID:$DEV_GID /home/$DEV_USER/debug-vscode-extensions.sh
+}
 
 # 创建启动脚本
 cat > /home/$DEV_USER/start_services.sh << EOF
