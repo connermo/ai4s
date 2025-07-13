@@ -16,10 +16,25 @@ cd "$VSIX_DIR"
 
 # 扩展列表
 extensions=(
+    # Python开发核心
     "ms-python.python"
     "ms-toolsai.jupyter"
+    "ms-python.pylint"
+    "ms-python.black-formatter"
+    "ms-python.isort"
+    
+    # 基础工具
     "ms-vscode.vscode-json"
     "redhat.vscode-yaml"
+    "ms-vscode.vscode-git"
+    "eamodio.gitlens"
+    
+    # 主题和图标
+    "PKief.material-icon-theme"
+    "zhuangtongfa.Material-theme"
+    
+    # 实用工具
+    "streetsidesoftware.code-spell-checker"
 )
 
 successful=0

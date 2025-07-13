@@ -19,36 +19,28 @@ echo ""
 mkdir -p "$VSIX_DIR"
 cd "$VSIX_DIR"
 
-# 扩展列表（包含发布者ID、扩展名和版本）
-declare -A EXTENSIONS=(
-    # Python开发
+# 扩展列表
+EXTENSIONS=(
+    "ms-python.python"
+    "ms-toolsai.jupyter"
+    "ms-vscode.vscode-json"
+    "redhat.vscode-yaml"
+    "ms-python.pylint"
+    "ms-python.black-formatter"
+    "eamodio.gitlens"
+    "PKief.material-icon-theme"
+)
+
+# 扩展描述
+declare -A EXT_DESC=(
     ["ms-python.python"]="Python语言支持"
     ["ms-toolsai.jupyter"]="Jupyter Notebook支持"
-    ["ms-python.pylint"]="Python代码检查"
-    ["ms-python.black-formatter"]="Python代码格式化"
-    ["ms-python.isort"]="Python导入排序"
-    ["ms-python.flake8"]="Python代码风格检查"
-    ["charliermarsh.ruff"]="Python快速代码检查"
-    ["ms-python.mypy-type-checker"]="Python类型检查"
-    ["njpwerner.autodocstring"]="Python文档字符串生成"
-    ["ms-python.debugpy"]="Python调试器"
-    
-    # 基础工具
     ["ms-vscode.vscode-json"]="JSON语言支持"
     ["redhat.vscode-yaml"]="YAML语言支持"
-    ["ms-vscode.vscode-git"]="Git集成"
+    ["ms-python.pylint"]="Python代码检查"
+    ["ms-python.black-formatter"]="Python代码格式化"
     ["eamodio.gitlens"]="Git增强工具"
-    
-    # AI/ML工具
-    ["ms-toolsai.vscode-ai"]="AI开发工具"
-    ["GitHub.copilot"]="GitHub Copilot"
-    
-    # 主题和图标
     ["PKief.material-icon-theme"]="Material图标主题"
-    ["zhuangtongfa.Material-theme"]="Material颜色主题"
-    
-    # 实用工具
-    ["streetsidesoftware.code-spell-checker"]="拼写检查"
 )
 
 # 下载函数
@@ -121,8 +113,8 @@ echo ""
 successful_downloads=0
 failed_downloads=0
 
-for ext_id in "${!EXTENSIONS[@]}"; do
-    description="${EXTENSIONS[$ext_id]}"
+for ext_id in "${EXTENSIONS[@]}"; do
+    description="${EXT_DESC[$ext_id]:-$ext_id}"
     if download_vsix "$ext_id" "$description"; then
         ((successful_downloads++))
     else
@@ -213,8 +205,8 @@ VSCode扩展VSIX离线包
 扩展列表:
 EOF
 
-for ext_id in "${!EXTENSIONS[@]}"; do
-    description="${EXTENSIONS[$ext_id]}"
+for ext_id in "${EXTENSIONS[@]}"; do
+    description="${EXT_DESC[$ext_id]:-$ext_id}"
     vsix_files=(${ext_id}-*.vsix)
     if [ -f "${vsix_files[0]}" ]; then
         echo "✅ $ext_id - $description" >> "extensions-manifest.txt"
