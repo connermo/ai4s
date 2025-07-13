@@ -122,10 +122,13 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		hostUsersPath = hostProjectRoot + "/data/users"  // 默认使用绝对路径
 	}
 
+	// 构建用户目录的宿主机绝对路径
+	hostUserDir := fmt.Sprintf("%s/%s", hostUsersPath, user.Username)
+
 	hostConfig := &container.HostConfig{
 		PortBindings: s.getPortBindings(user),
 		Binds: []string{
-			fmt.Sprintf("%s/%s:%s/%s", hostUsersPath, user.Username, containerHomePath, user.Username),
+			fmt.Sprintf("%s:%s/%s", hostUserDir, containerHomePath, user.Username),
 			fmt.Sprintf("%s:%s:ro", hostSharedPath, containerSharedPath),
 			fmt.Sprintf("%s:%s", hostWorkspacePath, containerWorkspacePath),
 			"/usr/bin/nvidia-smi:/usr/bin/nvidia-smi:ro", // 挂载宿主机的nvidia-smi
