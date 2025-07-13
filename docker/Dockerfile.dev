@@ -12,7 +12,7 @@ ENV CONDA_ALWAYS_YES=true
 ENV CONDA_AUTO_ACTIVATE_BASE=false
 ENV CONDA_CHANNELS="conda-forge,pytorch,nvidia,defaults"
 
-# 安装系统依赖（安装Python 3.11作为默认版本）
+# 安装系统依赖
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
@@ -31,25 +31,19 @@ RUN apt-get update && apt-get install -y \
     sudo \
     locales \
     tzdata \
-    # 安装Python 3.11
-    && add-apt-repository ppa:deadsnakes/ppa \
-    && apt-get update \
-    && apt-get install -y \
-    python3.11 \
-    python3.11-pip \
-    python3.11-venv \
-    python3.11-dev \
-    # 设置Python 3.11为默认python3
-    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
-    && update-alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.11 1 \
-    # 安装Node.js 20.x LTS
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装Node.js 20.x LTS
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
-    # 清理apt缓存
-    && rm -rf /var/lib/apt/lists/* \
-    # 配置时区
-    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
-    && echo $TZ > /etc/timezone
+    && rm -rf /var/lib/apt/lists/*
+
+# 配置时区
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # 安装Miniconda（仅用于包管理，不创建额外环境）
 RUN wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh \
