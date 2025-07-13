@@ -240,10 +240,10 @@ export PATH="/opt/miniconda3/bin:/opt/miniconda3/condabin:/usr/local/bin:/home/\
 export EDITOR=vim
 export PYTHONPATH="/workspace:/shared:\$PYTHONPATH"
 
-# Python (NGC镜像自带版本)
-export PYTHON=/usr/bin/python3
-alias python=python3
-alias pip=pip3
+# Python 3.11 as default
+export PYTHON=/usr/bin/python3.11
+alias python=python3.11
+alias pip=pip3.11
 
 # Conda initialization (optional, base environment only)
 if [ -f "/opt/miniconda3/etc/profile.d/conda.sh" ]; then
@@ -270,7 +270,7 @@ echo "🚀 GPU开发环境已就绪!"
 echo "📁 个人目录: /home/\$USER"
 echo "📂 共享目录: /shared (只读)"
 echo "💼 工作空间: /workspace (读写)"
-echo "🐍 Python: \$(python3 --version 2>/dev/null || echo 'Not available')"
+echo "🐍 Python: \$(python3.11 --version 2>/dev/null || echo 'Not available')"
 echo "🐍 Conda: \$(conda --version 2>/dev/null || echo 'Not available')"
 echo "🔧 Git: \$(git --version 2>/dev/null || echo 'Not available')"
 echo "🎯 CUDA: \$(nvcc --version 2>/dev/null | head -1 || echo 'Not available')"
@@ -278,7 +278,7 @@ echo "📝 编辑器: \$EDITOR"
 echo ""
 echo "💡 快捷命令:"
 echo "   ll          - 详细列表"
-echo "   python      - Python 3"
+echo "   python      - Python 3.11"
 echo "   gs          - git status"
 echo "   ports       - 查看端口"
 echo "   gpu         - nvidia-smi"
@@ -286,8 +286,10 @@ echo "   workspace   - 切换到工作目录"
 echo "   shared      - 切换到共享目录"
 echo ""
 echo "📦 环境信息:"
-echo "   默认Python: NGC自带版本"
-echo "   PyTorch: 预装（NVIDIA NGC优化版本）"
+echo "   默认Python: 3.11"
+echo "   PyTorch: 2.5.1 with CUDA 12.4"
+echo "   TensorFlow: 2.16+ with CUDA支持"
+echo "   CUDA: 12.4.1 + cuDNN"
 echo "   预装ML/AI包: PyTorch, TensorFlow, transformers等"
 echo ""
 echo "🎯 GPU信息:"
