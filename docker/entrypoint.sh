@@ -221,6 +221,11 @@ alias du='du -h'
 alias free='free -h'
 alias ports='netstat -tulpn'
 
+# 密码修改工具
+alias change-password='change-password.sh'
+alias changepass='change-password.sh'
+alias passwd-tool='change-password.sh'
+
 # Git aliases
 alias gs='git status'
 alias ga='git add'
@@ -295,6 +300,11 @@ alias home='cd ~'
 alias shared='cd ~/shared'
 alias workspace='cd ~/workspace'
 alias logs='cd /tmp && ls -la *.log'
+
+# 密码和安全工具
+alias change-password='change-password.sh'
+alias changepass='change-password.sh'
+alias passwd='echo "💡 提示: 使用 change-password 命令来修改所有服务的密码"'
 
 # Python开发
 alias pyenv='python3 -m venv'
@@ -682,6 +692,13 @@ if mkdir -p /home/$DEV_USER; then
 运行以下命令启动所有服务:
 \`\`\`bash
 ./start_services.sh
+\`\`\`
+
+## 密码管理
+
+修改SSH、VSCode和Jupyter的登录密码:
+\`\`\`bash
+change-password
 \`\`\`
 
 ## 深度学习环境

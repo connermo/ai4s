@@ -156,7 +156,8 @@ RUN curl -fsSL https://code-server.dev/install.sh | sh
 # 复制脚本文件（最经常变化的部分，放在最后）
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY docker/test_environments.sh /usr/local/bin/test_environments.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/test_environments.sh
+COPY docker/change-password.sh /usr/local/bin/change-password.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/test_environments.sh /usr/local/bin/change-password.sh
 
 # 暴露端口
 EXPOSE 22 8080 8888 6006
