@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"gpu-dev-platform/database"
 	"gpu-dev-platform/handlers"
