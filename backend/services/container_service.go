@@ -106,17 +106,17 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	// 从环境变量获取宿主机绝对路径
 	hostSharedPath := os.Getenv("HOST_SHARED_PATH")
 	if hostSharedPath == "" {
-		return "", fmt.Errorf("HOST_SHARED_PATH environment variable not set")
+		return nil, fmt.Errorf("HOST_SHARED_PATH environment variable not set")
 	}
 	
 	hostWorkspacePath := os.Getenv("HOST_WORKSPACE_PATH")
 	if hostWorkspacePath == "" {
-		return "", fmt.Errorf("HOST_WORKSPACE_PATH environment variable not set")
+		return nil, fmt.Errorf("HOST_WORKSPACE_PATH environment variable not set")
 	}
 	
 	hostUsersPath := os.Getenv("HOST_USERS_PATH")
 	if hostUsersPath == "" {
-		return "", fmt.Errorf("HOST_USERS_PATH environment variable not set")
+		return nil, fmt.Errorf("HOST_USERS_PATH environment variable not set")
 	}
 	
 	hostUserDir := fmt.Sprintf("%s/%s", hostUsersPath, user.Username)
