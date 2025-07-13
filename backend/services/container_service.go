@@ -97,6 +97,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 			fmt.Sprintf("%s:%s/%s", userDir, containerHomePath, user.Username),
 			fmt.Sprintf("%s:%s:ro", sharedDataPath, containerSharedPath),
 			fmt.Sprintf("%s:%s", workspaceDataPath, containerWorkspacePath),
+			"/usr/bin/nvidia-smi:/usr/bin/nvidia-smi:ro", // 挂载宿主机的nvidia-smi
 		},
 		// 不限制资源，让容器使用宿主机全部资源
 		Resources: container.Resources{},
@@ -107,14 +108,29 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 
 	// 如果有GPU设备，添加GPU配置
 	if gpuDevices != "" {
-		hostConfig.DeviceRequests = []container.DeviceRequest{
-			{
-				Driver:       "nvidia",
-				Count:        -1, // 所有GPU
-				DeviceIDs:    []string{gpuDevices},
-				Capabilities: [][]string{{"gpu"}},
-			},
+		// 解析GPU设备ID
+		deviceIDs := []string{}
+		if gpuDevices != "all" {
+			// 分割逗号分隔的设备ID
+			for _, id := range strings.Split(gpuDevices, ",") {
+				deviceIDs = append(deviceIDs, strings.TrimSpace(id))
+			}
 		}
+		
+		deviceRequest := container.DeviceRequest{
+			Driver:       "nvidia",
+			Capabilities: [][]string{{"gpu"}},
+		}
+		
+		if len(deviceIDs) > 0 {
+			// 指定特定GPU设备
+			deviceRequest.DeviceIDs = deviceIDs
+		} else {
+			// 使用所有GPU
+			deviceRequest.Count = -1
+		}
+		
+		hostConfig.DeviceRequests = []container.DeviceRequest{deviceRequest}
 	}
 
 	// 创建容器
