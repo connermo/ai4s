@@ -457,6 +457,11 @@ if [ -f "/opt/miniconda3/bin/conda" ]; then
     chown -R $DEV_UID:$DEV_GID /opt/miniconda3/envs 2>/dev/null || echo "警告: conda envs权限设置失败"
     chown -R $DEV_UID:$DEV_GID /opt/miniconda3/pkgs 2>/dev/null || echo "警告: conda pkgs权限设置失败"
     
+    # 确保CUDA库符号链接存在（用于TensorFlow GPU支持）
+    ln -sf /usr/lib/x86_64-linux-gnu/libcuda.so.1 /usr/local/cuda/lib64/libcuda.so.1 2>/dev/null || true
+    ln -sf /usr/lib/x86_64-linux-gnu/libcuda.so.1 /usr/local/cuda/lib64/libcuda.so 2>/dev/null || true
+    ldconfig 2>/dev/null || true
+    
     # 设置用户级conda配置
     su - $DEV_USER -c "conda config --set auto_activate_base false" 2>/dev/null || true
     su - $DEV_USER -c "conda config --add channels conda-forge" 2>/dev/null || true

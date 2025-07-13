@@ -105,8 +105,9 @@ ENV CUDA_HOME=/usr/local/cuda
 ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/targets/x86_64-linux/lib:${LD_LIBRARY_PATH}
 ENV PATH=/usr/local/cuda/bin:${PATH}
 
-# 在TensorFlow环境中安装GPU版本的TensorFlow和TensorBoard（使用conda安装兼容版本）
-RUN /opt/miniconda3/bin/conda run -n tf conda install tensorflow-gpu=2.13 cudatoolkit=11.8 tensorboard=2.13 -c conda-forge -y \
+# 在TensorFlow环境中安装GPU版本的TensorFlow和TensorBoard（使用pip安装兼容版本）
+RUN /opt/miniconda3/bin/conda run -n tf pip install "numpy<2.0" \
+    && /opt/miniconda3/bin/conda run -n tf pip install tensorflow==2.13.1 tensorboard==2.13.0 \
     && chmod -R 777 /opt/miniconda3/envs/tf \
     && chmod -R 777 /opt/miniconda3/pkgs
 
