@@ -219,9 +219,12 @@ function createUserRow(user) {
             <button class="btn btn-sm btn-outline-warning" onclick="changePassword(${user.id})">
                 <i class="bi bi-key"></i>
             </button>
-            <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${user.id}, '${user.username}')">
-                <i class="bi bi-trash"></i>
-            </button>
+            ${user.username !== 'admin' ? 
+                `<button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${user.id}, '${user.username}')">
+                    <i class="bi bi-trash"></i>
+                 </button>` : 
+                '<span class="text-muted small">系统管理员</span>'
+            }
         </td>
     `;
     
@@ -267,6 +270,12 @@ async function createUser() {
 
 // 删除用户
 async function deleteUser(id, username) {
+    // 防止删除admin用户
+    if (username === 'admin') {
+        showAlert('不能删除系统管理员账户！', 'warning');
+        return;
+    }
+    
     if (!confirm(`确定要删除用户 "${username}" 吗？`)) {
         return;
     }
