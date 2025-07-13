@@ -144,7 +144,9 @@ RUN mkdir /var/run/sshd \
     && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config \
     && echo "UseDNS no" >> /etc/ssh/sshd_config \
     && echo "GSSAPIAuthentication no" >> /etc/ssh/sshd_config \
-    && ssh-keygen -A
+    && service haveged start \
+    && ssh-keygen -A \
+    && service haveged stop
 
 # 创建工作目录
 RUN mkdir -p /shared /workspace && chmod 755 /shared /workspace

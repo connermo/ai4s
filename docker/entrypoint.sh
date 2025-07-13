@@ -533,10 +533,6 @@ EOF
     chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server 2>/dev/null
 fi
 
-# 启动熵值守护进程以加速SSH密钥生成
-echo "[$(date '+%H:%M:%S')] 启动熵值守护进程..."
-service haveged start 2>/dev/null || echo "haveged启动失败，继续执行"
-
 # 配置SSH服务
 echo "[$(date '+%H:%M:%S')] 开始配置SSH服务..."
 
@@ -544,26 +540,16 @@ echo "[$(date '+%H:%M:%S')] 开始配置SSH服务..."
 echo "[$(date '+%H:%M:%S')] 创建SSH运行目录..."
 mkdir -p /var/run/sshd
 
-# 配置SSH允许密码登录和用户登录，禁用DNS解析加速启动
-echo "[$(date '+%H:%M:%S')] 配置SSH设置..."
-sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
-sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
-# 禁用DNS解析和GSSAPI认证以加速SSH连接
-sed -i 's/#UseDNS yes/UseDNS no/' /etc/ssh/sshd_config
-sed -i 's/#GSSAPIAuthentication yes/GSSAPIAuthentication no/' /etc/ssh/sshd_config
-echo "UseDNS no" >> /etc/ssh/sshd_config
-echo "GSSAPIAuthentication no" >> /etc/ssh/sshd_config
-
-# 生成SSH主机密钥（如果不存在）
-echo "[$(date '+%H:%M:%S')] 检查SSH主机密钥..."
-if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
-    echo "[$(date '+%H:%M:%S')] 生成SSH主机密钥（这可能需要一些时间）..."
-    ssh-keygen -A
-    echo "[$(date '+%H:%M:%S')] SSH密钥生成完成"
-else
+# 验证SSH密钥存在（应该在构建时已生成）
+echo "[$(date '+%H:%M:%S')] 验证SSH主机密钥..."
+if [ -f /etc/ssh/ssh_host_rsa_key ]; then
     echo "[$(date '+%H:%M:%S')] SSH主机密钥已存在"
+else
+    echo "[$(date '+%H:%M:%S')] 警告: SSH主机密钥缺失，快速生成..."
+    service haveged start 2>/dev/null
+    ssh-keygen -A
+    service haveged stop 2>/dev/null
+    echo "[$(date '+%H:%M:%S')] SSH密钥生成完成"
 fi
 
 # 启动SSH服务
