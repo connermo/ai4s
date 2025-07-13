@@ -1051,9 +1051,9 @@ async function copyUsageInstructions(containerId, username, containerName) {
 - TensorBoard：http://${serverHost}:${ports.tensorboard || 'N/A'}
 
 📁 目录说明：
-- 个人目录：/home/${username} (私有目录)
-- 共享目录：/shared (只读共享)
-- 工作空间：/workspace (读写共享)
+- 个人目录：~/ 或 /home/${username} (私有目录)  
+- 共享目录：~/shared 或 /shared (只读共享)
+- 工作空间：~/workspace 或 /workspace (读写共享)
 
 💡 使用提示：
 - 所有服务使用相同的登录密码

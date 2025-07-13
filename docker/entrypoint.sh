@@ -292,8 +292,8 @@ alias mkdir='mkdir -p'
 
 # 快速导航
 alias home='cd ~'
-alias shared='cd /shared'
-alias workspace='cd /workspace'
+alias shared='cd ~/shared'
+alias workspace='cd ~/workspace'
 alias logs='cd /tmp && ls -la *.log'
 
 # Python开发
@@ -525,6 +525,21 @@ else
     echo "警告: shared目录不存在"
 fi
 
+# 在用户主目录创建便捷访问的符号链接
+echo "[$(date '+%H:%M:%S')] 创建目录快捷方式..."
+if [ -d "/workspace" ]; then
+    ln -sf /workspace /home/$DEV_USER/workspace
+    echo "创建workspace快捷方式: ~/workspace -> /workspace"
+fi
+
+if [ -d "/shared" ]; then
+    ln -sf /shared /home/$DEV_USER/shared
+    echo "创建shared快捷方式: ~/shared -> /shared"
+fi
+
+# 设置符号链接的所有者
+chown -h $DEV_UID:$DEV_GID /home/$DEV_USER/workspace /home/$DEV_USER/shared 2>/dev/null
+
 # 生成Jupyter配置
 if id -u $DEV_USER > /dev/null 2>&1; then
     su - $DEV_USER -c "python3 -m jupyter lab --generate-config" 2>/dev/null || echo "警告: Jupyter配置生成失败"
@@ -658,9 +673,9 @@ if mkdir -p /home/$DEV_USER; then
 
 ## 目录结构
 
-- \`/home/$DEV_USER\`: 个人主目录 (读写，私有)
-- \`/shared\`: 共享只读目录 (所有用户共享，只读)
-- \`/workspace\`: 共享工作区 (所有用户共享，可读写)
+- \`~/\` 或 \`/home/$DEV_USER\`: 个人主目录 (读写，私有)
+- \`~/shared\` 或 \`/shared\`: 共享只读目录 (所有用户共享，只读)
+- \`~/workspace\` 或 \`/workspace\`: 共享工作区 (所有用户共享，可读写)
 
 ## 启动服务
 
