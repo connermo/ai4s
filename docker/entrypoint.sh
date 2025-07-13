@@ -236,9 +236,9 @@ alias dps='docker ps'
 alias dimg='docker images'
 
 # Development environment info
-export PATH="/opt/miniconda3/bin:/opt/miniconda3/condabin:/usr/local/bin:/home/$USER/.local/bin:$PATH"
+export PATH="/opt/miniconda3/bin:/opt/miniconda3/condabin:/usr/local/bin:/home/\$USER/.local/bin:\$PATH"
 export EDITOR=vim
-export PYTHONPATH="/workspace:/shared:$PYTHONPATH"
+export PYTHONPATH="/workspace:/shared:\$PYTHONPATH"
 
 # Conda initialization
 if [ -f "/opt/miniconda3/etc/profile.d/conda.sh" ]; then
@@ -246,30 +246,30 @@ if [ -f "/opt/miniconda3/etc/profile.d/conda.sh" ]; then
     # 设置conda自动完成
     conda config --set auto_activate_base false 2>/dev/null || true
 else
-    export PATH="/opt/miniconda3/bin:$PATH"
+    export PATH="/opt/miniconda3/bin:\$PATH"
 fi
 
 # CUDA and development tools
 export CUDA_HOME=/usr/local/cuda
-export PATH=$CUDA_HOME/bin:$PATH
-export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+export PATH=\$CUDA_HOME/bin:\$PATH
+export LD_LIBRARY_PATH=\$CUDA_HOME/lib64:\$LD_LIBRARY_PATH
 
 # Node.js and npm
-export PATH=/usr/local/lib/nodejs/bin:$PATH
+export PATH=/usr/local/lib/nodejs/bin:\$PATH
 
 # Code-server and development services
-export PATH=/usr/local/bin:/opt/code-server/bin:$PATH
+export PATH=/usr/local/bin:/opt/code-server/bin:\$PATH
 
 # Welcome message
 echo "🚀 GPU开发环境已就绪!"
-echo "📁 个人目录: /home/$USER"
+echo "📁 个人目录: /home/\$USER"
 echo "📂 共享目录: /shared (只读)"
 echo "💼 工作空间: /workspace (读写)"
-echo "🐍 Python: $(python3 --version 2>/dev/null || echo 'Not available')"
-echo "🐍 Conda: $(conda --version 2>/dev/null || echo 'Not available')"
-echo "🔧 Git: $(git --version 2>/dev/null || echo 'Not available')"
-echo "🎯 CUDA: $(nvcc --version 2>/dev/null | head -1 || echo 'Not available')"
-echo "📝 编辑器: $EDITOR"
+echo "🐍 Python: \$(python3 --version 2>/dev/null || echo 'Not available')"
+echo "🐍 Conda: \$(conda --version 2>/dev/null || echo 'Not available')"
+echo "🔧 Git: \$(git --version 2>/dev/null || echo 'Not available')"
+echo "🎯 CUDA: \$(nvcc --version 2>/dev/null | head -1 || echo 'Not available')"
+echo "📝 编辑器: \$EDITOR"
 echo ""
 echo "💡 快捷命令:"
 echo "   ll          - 详细列表"
