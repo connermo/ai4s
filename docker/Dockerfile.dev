@@ -94,8 +94,8 @@ RUN pip3 install --no-cache-dir \
 # 安装PyTorch 2.6.0 + CUDA 12.4（完整生态系统兼容）
 RUN pip3 install --no-cache-dir torch==2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
-# 安装TensorFlow（兼容CUDA 12.4）
-RUN pip3 install --no-cache-dir "tensorflow[and-cuda]>=2.16.0"
+# 安装TensorFlow（尝试最新版本，如失败则跳过）
+RUN pip3 install --no-cache-dir "tensorflow[and-cuda]" || echo "TensorFlow安装失败，跳过（可在容器内手动安装）"
 
 # 安装额外的AI/ML包（NGC镜像可能未包含的）
 RUN pip3 install --no-cache-dir \
