@@ -118,8 +118,8 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		}
 		
 		deviceRequest := container.DeviceRequest{
-			Driver:       "nvidia",
-			Capabilities: [][]string{{"gpu"}},
+				Driver:       "nvidia",
+				Capabilities: [][]string{{"gpu"}},
 		}
 		
 		if len(deviceIDs) > 0 {
@@ -221,19 +221,17 @@ func (s *ContainerService) RemoveContainer(containerID string) error {
 	err := s.dockerClient.ContainerRemove(context.Background(), containerID, 
 		types.ContainerRemoveOptions{Force: true})
 	if err != nil {
+		msg := strings.ToLower(err.Error())
+		if !(strings.Contains(msg, "no such container") || strings.Contains(msg, "not found") || strings.Contains(msg, "does not exist")) {
 		return err
+		}
 	}
-
-	// 从数据库删除
+	// 无论如何都要删数据库
 	_, err = s.db.Exec("DELETE FROM containers WHERE id = ?", containerID)
-	if err != nil {
-		return err
-	}
-
+	// 忽略数据库已无记录的情况
 	// 清除用户的容器ID
-	_, err = s.db.Exec("UPDATE users SET container_id = '' WHERE container_id = ?", 
-		containerID)
-	return err
+	_, _ = s.db.Exec("UPDATE users SET container_id = '' WHERE container_id = ?", containerID)
+	return nil
 }
 
 func (s *ContainerService) GetContainerByID(containerID string) (*models.Container, error) {
@@ -258,7 +256,22 @@ func (s *ContainerService) GetContainerByID(containerID string) (*models.Contain
 	return container, nil
 }
 
-func (s *ContainerService) ListContainers() ([]*models.Container, error) {
+func (s *ContainerService) GetContainerActualStatus(containerID string) (string, error) {
+	// 从Docker获取容器的实际状态
+	containerInfo, err := s.dockerClient.ContainerInspect(context.Background(), containerID)
+	if err != nil {
+		return "", fmt.Errorf("无法获取容器状态: %v", err)
+	}
+
+	// 根据Docker状态返回我们的状态格式
+	if containerInfo.State.Running {
+		return "running", nil
+	} else {
+		return "stopped", nil
+	}
+}
+
+func (s *ContainerService) ListContainers() ([]interface{}, error) {
 	query := `
 		SELECT id, user_id, name, status, image_name, cpu_limit, memory_limit, 
 		       COALESCE(gpu_devices, ''), created_at, updated_at, last_seen
@@ -271,7 +284,7 @@ func (s *ContainerService) ListContainers() ([]*models.Container, error) {
 	}
 	defer rows.Close()
 	
-	var containers []*models.Container
+	var containers []interface{}
 	for rows.Next() {
 		container := &models.Container{}
 		err := rows.Scan(
@@ -283,14 +296,37 @@ func (s *ContainerService) ListContainers() ([]*models.Container, error) {
 		if err != nil {
 			return nil, err
 		}
-		containers = append(containers, container)
+
+		// 新增：实时检查Docker实际状态
+		actualStatus := "missing"
+		info, err := s.dockerClient.ContainerInspect(context.Background(), container.ID)
+		if err == nil {
+			if info.State.Running {
+				actualStatus = "running"
+			} else {
+				actualStatus = "stopped"
+			}
+		}
+		// 用map扩展返回
+		containerMap := map[string]interface{}{
+			"id": container.ID,
+			"user_id": container.UserID,
+			"name": container.Name,
+			"status": container.Status,
+			"image_name": container.ImageName,
+			"cpu_limit": container.CPULimit,
+			"memory_limit": container.MemoryLimit,
+			"gpu_devices": container.GPUDevices,
+			"created_at": container.CreatedAt,
+			"updated_at": container.UpdatedAt,
+			"last_seen": container.LastSeen,
+			"actual_status": actualStatus,
+		}
+		containers = append(containers, containerMap)
 	}
-	
-	// 确保返回空数组而不是nil
 	if containers == nil {
-		containers = []*models.Container{}
+		containers = []interface{}{}
 	}
-	
 	return containers, nil
 }
 

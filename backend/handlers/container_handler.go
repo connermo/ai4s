@@ -77,6 +77,24 @@ func (h *ContainerHandler) GetContainer(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(container)
 }
 
+func (h *ContainerHandler) GetContainerStatus(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	containerID := vars["id"]
+
+	status, err := h.containerService.GetContainerActualStatus(containerID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]string{
+		"status": status,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 func (h *ContainerHandler) ListContainers(w http.ResponseWriter, r *http.Request) {
 	containers, err := h.containerService.ListContainers()
 	if err != nil {

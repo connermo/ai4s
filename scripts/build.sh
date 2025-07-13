@@ -53,7 +53,7 @@ echo -e "${GREEN}✓ 目录创建完成${NC}"
 
 # 构建开发环境镜像
 echo "构建GPU开发环境镜像..."
-docker build -t gpu-dev-env:latest -f docker/Dockerfile.dev docker/
+docker build -t gpu-dev-env:latest -f docker/Dockerfile.dev .
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ 开发环境镜像构建成功${NC}"

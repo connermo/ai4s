@@ -204,9 +204,11 @@ if ! shopt -oq posix; then
   fi
 fi
 
+# 确保PATH包含所有必要的路径
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/miniconda3/bin:/opt/miniconda3/condabin:$PATH"
+
 # Custom aliases for development environment
-alias python=python3
-alias pip=pip3
+# 只保留ll/ls等，不设置python/pip别名
 alias ll='ls -alF --color=auto'
 alias la='ls -A --color=auto'
 alias l='ls -CF --color=auto'
@@ -236,65 +238,31 @@ alias dps='docker ps'
 alias dimg='docker images'
 
 # Development environment info
-export PATH="/opt/miniconda3/bin:/opt/miniconda3/condabin:/usr/local/bin:/home/\$USER/.local/bin:\$PATH"
+export PATH="/opt/miniconda3/bin:/opt/miniconda3/condabin:/usr/local/bin:/home/$USER/.local/bin:$PATH"
 export EDITOR=vim
-export PYTHONPATH="/workspace:/shared:\$PYTHONPATH"
+export PYTHONPATH="/workspace:/shared:$PYTHONPATH"
 
 # Python 3.11 as default
 export PYTHON=/usr/bin/python3.11
-alias python=python3.11
-alias pip=pip3.11
+# 不设置python/pip别名，让系统和conda各自管理
 
 # Conda initialization (optional, base environment only)
-if [ -f "/opt/miniconda3/etc/profile.d/conda.sh" ]; then
-    . "/opt/miniconda3/etc/profile.d/conda.sh"
-    # 设置conda自动完成
-    conda config --set auto_activate_base false 2>/dev/null || true
-else
-    export PATH="/opt/miniconda3/bin:\$PATH"
-fi
+# 注意：conda会自动在.bashrc末尾添加初始化代码，这里只设置基本配置
+export PATH="/opt/miniconda3/bin:$PATH"
 
 # CUDA and development tools
 export CUDA_HOME=/usr/local/cuda
-export PATH=\$CUDA_HOME/bin:\$PATH
-export LD_LIBRARY_PATH=\$CUDA_HOME/lib64:\$LD_LIBRARY_PATH
+export PATH=$CUDA_HOME/bin:$PATH
+# 修复：确保LD_LIBRARY_PATH包含nvidia驱动库
+if [[ ":$LD_LIBRARY_PATH:" != *":/usr/lib/x86_64-linux-gnu:"* ]]; then
+  export LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+fi
 
 # Node.js and npm
-export PATH=/usr/local/lib/nodejs/bin:\$PATH
+export PATH=/usr/local/lib/nodejs/bin:$PATH
 
 # Code-server and development services
-export PATH=/usr/local/bin:/opt/code-server/bin:\$PATH
-
-# Welcome message
-echo "🚀 GPU开发环境已就绪!"
-echo "📁 个人目录: /home/\$USER"
-echo "📂 共享目录: /shared (只读)"
-echo "💼 工作空间: /workspace (读写)"
-echo "🐍 Python: \$(python3.11 --version 2>/dev/null || echo 'Not available')"
-echo "🐍 Conda: \$(conda --version 2>/dev/null || echo 'Not available')"
-echo "🔧 Git: \$(git --version 2>/dev/null || echo 'Not available')"
-echo "🎯 CUDA: \$(nvcc --version 2>/dev/null | head -1 || echo 'Not available')"
-echo "📝 编辑器: \$EDITOR"
-echo ""
-echo "💡 快捷命令:"
-echo "   ll          - 详细列表"
-echo "   python      - Python 3.11"
-echo "   gs          - git status"
-echo "   ports       - 查看端口"
-echo "   gpu         - nvidia-smi"
-echo "   workspace   - 切换到工作目录"
-echo "   shared      - 切换到共享目录"
-echo ""
-echo "📦 环境信息:"
-echo "   默认Python: 3.11"
-echo "   PyTorch: 2.6.0 with CUDA 12.4"
-echo "   TensorFlow: 尝试安装（可手动安装特定版本）"
-echo "   CUDA: 12.4.1 + cuDNN"
-echo "   预装ML/AI包: PyTorch, transformers, OpenCV等"
-echo ""
-echo "🎯 GPU信息:"
-nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv,noheader,nounits 2>/dev/null | head -2 || echo "   GPU信息不可用"
-echo ""
+export PATH=/usr/local/bin:/opt/code-server/bin:$PATH
 EOF
 
 # 创建.bash_aliases文件
@@ -340,6 +308,13 @@ alias condalist='conda list'
 alias condainstall='conda install'
 alias condaclean='conda clean --all'
 
+# TensorFlow环境管理
+alias tf='conda activate tf'
+alias tfexit='conda deactivate'
+alias tfjupyter='conda activate tf && jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --no-browser'
+alias tftest='conda activate tf && python -c "import tensorflow as tf; print(f\"TensorFlow版本: {tf.__version__}\"); print(f\"GPU可用: {tf.config.list_physical_devices(\"GPU\")}\")"'
+alias testenv='/usr/local/bin/test_environments.sh'
+
 # Python包管理
 alias piplist='pip list'
 alias pipshow='pip show'
@@ -348,6 +323,14 @@ alias pipinstall='pip install'
 # Jupyter相关
 alias jlabstart='jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --no-browser'
 alias jnbstart='jupyter notebook --ip=0.0.0.0 --port=8888 --allow-root --no-browser'
+
+# 确保基本命令可用
+alias ls='ls --color=auto'
+alias ll='ls -alF --color=auto'
+alias la='ls -A --color=auto'
+alias l='ls -CF --color=auto'
+alias python='python3'
+alias pip='pip3'
 EOF
 
 # 创建.profile文件
@@ -370,6 +353,9 @@ if [ -n "$BASH_VERSION" ]; then
     fi
 fi
 
+# 确保PATH包含所有必要的路径
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/miniconda3/bin:/opt/miniconda3/condabin:$PATH"
+
 # set PATH so it includes user's private bin if it exists
 if [ -d "$HOME/bin" ] ; then
     PATH="$HOME/bin:$PATH"
@@ -385,6 +371,19 @@ if [ -f "/opt/miniconda3/etc/profile.d/conda.sh" ]; then
     . "/opt/miniconda3/etc/profile.d/conda.sh"
 fi
 export PATH="/opt/miniconda3/bin:/opt/miniconda3/condabin:$PATH"
+
+# CUDA and development tools
+export CUDA_HOME=/usr/local/cuda
+export PATH=$CUDA_HOME/bin:$PATH
+# 修复：确保LD_LIBRARY_PATH包含nvidia驱动库
+if [[ ":$LD_LIBRARY_PATH:" != *":/usr/lib/x86_64-linux-gnu:"* ]]; then
+  export LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+fi
+
+# Development environment variables
+export EDITOR=vim
+export PYTHONPATH="/workspace:/shared:$PYTHONPATH"
+export PYTHON=/usr/bin/python3.11
 EOF
 
 # 创建vim配置
@@ -594,15 +593,43 @@ if mkdir -p /home/$DEV_USER; then
 ./start_services.sh
 \`\`\`
 
+## 深度学习环境
+
+### PyTorch环境 (主环境)
+- 默认Python环境已安装PyTorch 2.6.0 + CUDA 12.4
+- 可直接使用: \`python3 -c "import torch; print(torch.__version__)"\`
+- 测试GPU: \`python3 -c "import torch; print(torch.cuda.is_available())"\`
+
+### TensorFlow环境 (conda环境)
+- 使用conda环境管理，避免版本冲突
+- 激活环境: \`tf\` 或 \`conda activate tf\`
+- 退出环境: \`tfexit\` 或 \`conda deactivate\`
+- 测试环境: \`tftest\`
+- TensorFlow专用Jupyter: \`tfjupyter\`
+
+### 环境切换示例
+\`\`\`bash
+# 使用PyTorch (默认环境)
+python3 -c "import torch; print('PyTorch:', torch.__version__)"
+
+# 切换到TensorFlow环境
+tf
+python -c "import tensorflow as tf; print('TensorFlow:', tf.__version__)"
+
+# 退出TensorFlow环境
+tfexit
+\`\`\`
+
 ## 预装软件
 
-- Python 3 + 常用AI/ML库 (TensorFlow, PyTorch, Jupyter等)
-- Git, Vim, htop等开发工具
+- Python 3.11 + PyTorch 2.6.0 (主环境)
+- TensorFlow 2.15.0 (conda环境)
+- Jupyter Lab, Git, Vim等开发工具
 - Node.js和npm
 
 ## GPU支持
 
-容器已配置NVIDIA CUDA支持，可直接使用GPU进行深度学习训练。
+容器已配置NVIDIA CUDA 12.4支持，两个框架都可使用GPU加速。
 
 EOF
 

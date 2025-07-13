@@ -46,6 +46,7 @@ func main() {
 	api.HandleFunc("/containers", containerHandler.ListContainers).Methods("GET")
 	api.HandleFunc("/containers", containerHandler.CreateContainer).Methods("POST")
 	api.HandleFunc("/containers/{id}", containerHandler.GetContainer).Methods("GET")
+	api.HandleFunc("/containers/{id}/status", containerHandler.GetContainerStatus).Methods("GET")
 	api.HandleFunc("/containers/{id}/start", containerHandler.StartContainer).Methods("POST")
 	api.HandleFunc("/containers/{id}/stop", containerHandler.StopContainer).Methods("POST")
 	api.HandleFunc("/containers/{id}", containerHandler.RemoveContainer).Methods("DELETE")

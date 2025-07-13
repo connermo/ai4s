@@ -98,8 +98,13 @@ RUN pip3 install --no-cache-dir torch==2.6.0 torchvision torchaudio --index-url 
 
 # 创建TensorFlow conda环境
 RUN conda create -n tf python=3.11 -y \
-    && conda install -n tf -c conda-forge tensorflow=2.15.0 tensorboard=2.15.0 -y \
     && conda clean -afy
+
+# 在TensorFlow环境中安装GPU版本的TensorFlow和TensorBoard
+RUN /opt/miniconda3/bin/conda run -n tf pip install "numpy<2.0" && /opt/miniconda3/bin/conda run -n tf pip install tensorflow==2.13.0 tensorboard==2.13.0
+
+# 创建cuDNN库的符号链接到CUDA lib64目录
+RUN ln -sf /usr/lib/x86_64-linux-gnu/libcudnn* /usr/local/cuda/lib64/
 
 # 安装额外的AI/ML包（NGC镜像可能未包含的）
 RUN pip3 install --no-cache-dir \
@@ -130,8 +135,8 @@ RUN jupyter labextension install @plotly/plotly-jupyterlab-extension --no-build 
     && curl -fsSL https://code-server.dev/install.sh | sh
 
 # 复制启动脚本和测试脚本
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-COPY test_environments.sh /usr/local/bin/test_environments.sh
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY docker/test_environments.sh /usr/local/bin/test_environments.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/test_environments.sh
 
 # 暴露端口
