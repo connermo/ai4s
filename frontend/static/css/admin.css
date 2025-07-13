@@ -250,25 +250,21 @@ main {
     font-size: 1.1rem;
 }
 
-.toast.text-bg-success {
-    background-color: rgba(25, 135, 84, 0.95) !important;
-}
-
-.toast.text-bg-danger {
-    background-color: rgba(220, 53, 69, 0.95) !important;
-}
-
-.toast.text-bg-warning {
-    background-color: rgba(255, 193, 7, 0.95) !important;
-    color: #000 !important;
-}
-
-.toast.text-bg-warning .btn-close {
-    filter: invert(1) grayscale(100%) brightness(200%);
-}
-
+/* 统一所有Toast为深蓝底白字样式 */
+.toast.text-bg-success,
+.toast.text-bg-danger,
+.toast.text-bg-warning,
 .toast.text-bg-info {
-    background-color: rgba(13, 202, 240, 0.95) !important;
+    background-color: rgba(30, 58, 138, 0.95) !important;
+    color: #ffffff !important;
+    border: 1px solid #3b82f6;
+}
+
+.toast.text-bg-success .btn-close,
+.toast.text-bg-danger .btn-close,
+.toast.text-bg-warning .btn-close,
+.toast.text-bg-info .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
 }
 
 /* 平滑动画 */
