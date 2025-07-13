@@ -70,6 +70,19 @@ RUN pip3 install --upgrade pip \
     "tqdm>=4.60.0" \
     "ipywidgets>=7.6.0"
 
+# 安装PyTorch with CUDA 12.1 support
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# 安装TensorFlow with GPU support
+RUN pip3 install "tensorflow[and-cuda]>=2.13.0,<2.16.0"
+
+# 安装其他常用AI/ML包
+RUN pip3 install \
+    "opencv-python>=4.5.0" \
+    "tensorboard>=2.13.0" \
+    "plotly>=5.0.0" \
+    "seaborn>=0.11.0"
+
 # 安装JupyterLab的Plotly扩展
 RUN jupyter labextension install @plotly/plotly-jupyterlab-extension --no-build || true
 RUN jupyter lab build --dev-build=False --minimize=False || true
