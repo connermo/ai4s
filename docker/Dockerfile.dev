@@ -153,19 +153,18 @@ RUN mkdir -p /shared /workspace && chmod 755 /shared /workspace
 # 安装code-server（可能变化的外部依赖）
 RUN curl -fsSL https://code-server.dev/install.sh | sh
 
-# 并行扩展安装：合理超时 + 高效并行
+# 使用预下载的VSIX文件快速安装扩展
+COPY vsix-extensions/ /tmp/vsix-extensions/
 RUN mkdir -p /tmp/extensions \
-    && echo "🚀 并行安装VSCode扩展..." \
-    && export NODE_OPTIONS="--max-old-space-size=2048" \
-    # 并行安装（合理的超时时间）
-    && ( \
-        timeout 120 code-server --install-extension ms-python.python --extensions-dir /tmp/extensions --force & \
-        timeout 120 code-server --install-extension ms-toolsai.jupyter --extensions-dir /tmp/extensions --force & \
-        timeout 60 code-server --install-extension ms-vscode.vscode-json --extensions-dir /tmp/extensions --force & \
-        timeout 60 code-server --install-extension redhat.vscode-yaml --extensions-dir /tmp/extensions --force & \
-        wait \
-    ) \
-    && echo "✅ 并行安装完成，已安装扩展数量: $(find /tmp/extensions -maxdepth 1 -type d | grep -v "^/tmp/extensions$" | wc -l)" \
+    && echo "🚀 使用VSIX文件快速安装扩展..." \
+    && cd /tmp/vsix-extensions \
+    && for vsix in *.vsix; do \
+        if [ -f "$vsix" ]; then \
+            echo "安装: $vsix"; \
+            code-server --install-extension "$vsix" --extensions-dir /tmp/extensions --force; \
+        fi; \
+    done \
+    && echo "✅ VSIX安装完成，已安装扩展数量: $(find /tmp/extensions -maxdepth 1 -type d | grep -v "^/tmp/extensions$" | wc -l)" \
     && ls -la /tmp/extensions/ \
     && chmod -R 755 /tmp/extensions
 
