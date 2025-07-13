@@ -103,10 +103,22 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	os.MkdirAll(sharedDataPath, 0755)  
 	os.MkdirAll(workspaceDataPath, 0755)
 
-	// 硬编码宿主机绝对路径（最简单直接的方法）
-	hostSharedPath := "/Users/connermo/work/ai4s/shared"
-	hostWorkspacePath := "/Users/connermo/work/ai4s/data/workspace"  
-	hostUsersPath := "/Users/connermo/work/ai4s/data/users"
+	// 从环境变量获取宿主机绝对路径
+	hostSharedPath := os.Getenv("HOST_SHARED_PATH")
+	if hostSharedPath == "" {
+		return "", fmt.Errorf("HOST_SHARED_PATH environment variable not set")
+	}
+	
+	hostWorkspacePath := os.Getenv("HOST_WORKSPACE_PATH")
+	if hostWorkspacePath == "" {
+		return "", fmt.Errorf("HOST_WORKSPACE_PATH environment variable not set")
+	}
+	
+	hostUsersPath := os.Getenv("HOST_USERS_PATH")
+	if hostUsersPath == "" {
+		return "", fmt.Errorf("HOST_USERS_PATH environment variable not set")
+	}
+	
 	hostUserDir := fmt.Sprintf("%s/%s", hostUsersPath, user.Username)
 
 	hostConfig := &container.HostConfig{
