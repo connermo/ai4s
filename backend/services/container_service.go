@@ -103,20 +103,23 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	os.MkdirAll(sharedDataPath, 0755)  
 	os.MkdirAll(workspaceDataPath, 0755)
 
-	// 获取宿主机路径（用于用户容器挂载）
+	// 获取宿主机项目根目录（通过docker挂载获得）
+	hostProjectRoot := "/host_project_root"
+	
+	// 构建宿主机绝对路径（用于用户容器挂载）
 	hostSharedPath := os.Getenv("HOST_SHARED_PATH")
 	if hostSharedPath == "" {
-		hostSharedPath = "./shared"  // 默认使用相对路径
+		hostSharedPath = hostProjectRoot + "/shared"  // 默认使用绝对路径
 	}
 	
 	hostWorkspacePath := os.Getenv("HOST_WORKSPACE_PATH") 
 	if hostWorkspacePath == "" {
-		hostWorkspacePath = "./data/workspace"  // 默认使用相对路径
+		hostWorkspacePath = hostProjectRoot + "/data/workspace"  // 默认使用绝对路径
 	}
 	
 	hostUsersPath := os.Getenv("HOST_USERS_PATH")
 	if hostUsersPath == "" {
-		hostUsersPath = "./data/users"  // 默认使用相对路径
+		hostUsersPath = hostProjectRoot + "/data/users"  // 默认使用绝对路径
 	}
 
 	hostConfig := &container.HostConfig{

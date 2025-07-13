@@ -37,6 +37,7 @@ services:
       - "./shared:/shared"
       - "./data/workspace:/workspace"
       - /var/run/docker.sock:/var/run/docker.sock
+      - "${PWD}:/host_project_root"
     environment:
       - PORT=${PORT:-8080}
       - DB_DSN=${DB_DSN:-platform:platform123@tcp(mysql:3306)/gpu_platform?charset=utf8mb4&parseTime=True&loc=Local}
