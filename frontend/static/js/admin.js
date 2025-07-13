@@ -1056,8 +1056,7 @@ function generateSecurePassword() {
     
     document.getElementById('service-password').value = password;
     
-    // 显示生成成功提示
-    showAlert('已生成安全密码', 'success');
+    // 密码已生成，无需额外提示
 }
 
 // 复制密码到剪贴板
