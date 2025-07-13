@@ -623,30 +623,54 @@ EOF
 EOF
 
     # 复制预安装的扩展到用户目录
+    echo "🔍 检查预安装扩展..."
     if [ -d "/tmp/extensions" ]; then
-        echo "复制预安装的VSCode扩展..."
-        echo "源目录内容: $(ls -la /tmp/extensions/ 2>/dev/null | wc -l) 个文件/目录"
+        echo "预安装扩展目录存在，内容:"
+        ls -la /tmp/extensions/ | sed 's/^/  /'
         
         # 确保目标目录存在
         mkdir -p /home/$DEV_USER/.local/share/code-server/extensions
         
-        # 复制扩展文件
-        if cp -r /tmp/extensions/* /home/$DEV_USER/.local/share/code-server/extensions/ 2>/dev/null; then
-            echo "✅ 扩展复制成功"
-        else
-            echo "⚠️  扩展复制失败，尝试逐个复制..."
+        # 检查是否有实际的扩展目录（不只是extensions.json）
+        ext_count=$(find /tmp/extensions -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+        if [ "$ext_count" -gt 0 ]; then
+            echo "发现 $ext_count 个预安装扩展，开始复制..."
+            
+            # 复制所有扩展目录
             for ext_dir in /tmp/extensions/*/; do
                 if [ -d "$ext_dir" ]; then
                     ext_name=$(basename "$ext_dir")
                     echo "复制扩展: $ext_name"
-                    cp -r "$ext_dir" /home/$DEV_USER/.local/share/code-server/extensions/ || echo "复制失败: $ext_name"
+                    if cp -r "$ext_dir" /home/$DEV_USER/.local/share/code-server/extensions/; then
+                        echo "  ✅ $ext_name 复制成功"
+                    else
+                        echo "  ❌ $ext_name 复制失败"
+                    fi
                 fi
             done
+        else
+            echo "⚠️  /tmp/extensions 目录为空，需要手动安装基础扩展"
+            
+            # 如果预安装失败，在这里手动安装基础扩展
+            echo "🚀 手动安装基础扩展..."
+            su - $DEV_USER -c "timeout 60 code-server --install-extension ms-python.python --force" 2>/dev/null || echo "Python扩展安装失败"
+            su - $DEV_USER -c "timeout 60 code-server --install-extension ms-toolsai.jupyter --force" 2>/dev/null || echo "Jupyter扩展安装失败"
+            su - $DEV_USER -c "timeout 60 code-server --install-extension ms-vscode.vscode-json --force" 2>/dev/null || echo "JSON扩展安装失败"
         fi
         
-        echo "复制后用户扩展目录内容: $(ls -la /home/$DEV_USER/.local/share/code-server/extensions/ 2>/dev/null | wc -l) 个文件/目录"
+        echo "用户扩展目录最终内容:"
+        ls -la /home/$DEV_USER/.local/share/code-server/extensions/ 2>/dev/null | sed 's/^/  /' || echo "  目录为空"
     else
-        echo "⚠️  预安装扩展目录 /tmp/extensions 不存在"
+        echo "⚠️  预安装扩展目录 /tmp/extensions 不存在，手动安装基础扩展"
+        
+        # 确保目标目录存在
+        mkdir -p /home/$DEV_USER/.local/share/code-server/extensions
+        
+        # 手动安装基础扩展
+        echo "🚀 手动安装基础扩展..."
+        su - $DEV_USER -c "timeout 60 code-server --install-extension ms-python.python --force" 2>/dev/null || echo "Python扩展安装失败"
+        su - $DEV_USER -c "timeout 60 code-server --install-extension ms-toolsai.jupyter --force" 2>/dev/null || echo "Jupyter扩展安装失败"
+        su - $DEV_USER -c "timeout 60 code-server --install-extension ms-vscode.vscode-json --force" 2>/dev/null || echo "JSON扩展安装失败"
     fi
 
     chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server 2>/dev/null
