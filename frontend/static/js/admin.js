@@ -414,6 +414,7 @@ async function createContainerRow(container) {
     
     // 获取端口信息
     let ports = '-';
+    let portsTitle = '-';
     try {
         const portResponse = await fetch(`${API_BASE}/users/${container.user_id}/container`, {
             headers: getAdminHeaders()
@@ -421,7 +422,17 @@ async function createContainerRow(container) {
         if (portResponse.ok) {
             const data = await portResponse.json();
             const p = data.ports;
-            ports = `SSH:${p.ssh} VSCode:${p.vscode} Jupyter:${p.jupyter}`;
+            const serverHost = window.location.hostname;
+            
+            // 纯文本版本用于title属性
+            portsTitle = `SSH:${p.ssh} VSCode:${p.vscode} Jupyter:${p.jupyter}`;
+            
+            // 只有在容器运行时才显示可点击链接
+            if (container.status === 'running') {
+                ports = `SSH:${p.ssh} <a href="http://${serverHost}:${p.vscode}" target="_blank" class="text-primary" title="点击访问VSCode">VSCode:${p.vscode}</a> <a href="http://${serverHost}:${p.jupyter}" target="_blank" class="text-primary" title="点击访问Jupyter">Jupyter:${p.jupyter}</a>`;
+            } else {
+                ports = portsTitle;
+            }
         }
     } catch (error) {
         console.error('获取端口信息失败:', error);
@@ -432,7 +443,7 @@ async function createContainerRow(container) {
         <td>${container.name}</td>
         <td><span class="status-badge ${statusClass}">${statusText}</span></td>
         <td>${gpuDevices}</td>
-        <td class="text-truncate" title="${ports}">${ports}</td>
+        <td class="text-truncate" title="${portsTitle}">${ports}</td>
         <td>
             ${container.status === 'running' 
                 ? `<button class="btn btn-sm btn-outline-warning" onclick="stopContainer('${container.id}')"><i class="bi bi-stop"></i></button>`
