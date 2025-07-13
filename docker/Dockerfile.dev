@@ -153,9 +153,10 @@ RUN mkdir -p /shared /workspace && chmod 755 /shared /workspace
 # 安装code-server（可能变化的外部依赖）
 RUN curl -fsSL https://code-server.dev/install.sh | sh
 
-# 创建扩展目录，扩展将在运行时安装
+# 创建基础扩展目录（无网络环境）
 RUN mkdir -p /tmp/extensions \
-    && echo "扩展将在容器启动时安装" > /tmp/extensions/README.txt
+    && echo "离线环境，无预装扩展" > /tmp/extensions/README.txt \
+    && echo "请使用VSIX文件进行离线安装" >> /tmp/extensions/README.txt
 
 # 复制脚本文件（最经常变化的部分，放在最后）
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh

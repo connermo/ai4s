@@ -649,28 +649,25 @@ EOF
                 fi
             done
         else
-            echo "⚠️  /tmp/extensions 目录为空，需要手动安装基础扩展"
-            
-            # 如果预安装失败，在这里手动安装基础扩展
-            echo "🚀 手动安装基础扩展..."
-            su - $DEV_USER -c "timeout 60 code-server --install-extension ms-python.python --force" 2>/dev/null || echo "Python扩展安装失败"
-            su - $DEV_USER -c "timeout 60 code-server --install-extension ms-toolsai.jupyter --force" 2>/dev/null || echo "Jupyter扩展安装失败"
-            su - $DEV_USER -c "timeout 60 code-server --install-extension ms-vscode.vscode-json --force" 2>/dev/null || echo "JSON扩展安装失败"
+            echo "⚠️  /tmp/extensions 目录为空（离线环境）"
+            echo "💡 提示：可以通过以下方式安装扩展："
+            echo "   1. 使用VSIX文件离线安装"
+            echo "   2. 运行: ./install-extensions.sh"
+            echo "   3. 手动上传扩展文件到容器"
         fi
         
         echo "用户扩展目录最终内容:"
         ls -la /home/$DEV_USER/.local/share/code-server/extensions/ 2>/dev/null | sed 's/^/  /' || echo "  目录为空"
     else
-        echo "⚠️  预安装扩展目录 /tmp/extensions 不存在，手动安装基础扩展"
+        echo "⚠️  预安装扩展目录 /tmp/extensions 不存在（离线环境）"
         
         # 确保目标目录存在
         mkdir -p /home/$DEV_USER/.local/share/code-server/extensions
         
-        # 手动安装基础扩展
-        echo "🚀 手动安装基础扩展..."
-        su - $DEV_USER -c "timeout 60 code-server --install-extension ms-python.python --force" 2>/dev/null || echo "Python扩展安装失败"
-        su - $DEV_USER -c "timeout 60 code-server --install-extension ms-toolsai.jupyter --force" 2>/dev/null || echo "Jupyter扩展安装失败"
-        su - $DEV_USER -c "timeout 60 code-server --install-extension ms-vscode.vscode-json --force" 2>/dev/null || echo "JSON扩展安装失败"
+        echo "💡 离线环境提示："
+        echo "   - VSCode扩展需要手动安装"
+        echo "   - 可以使用VSIX文件进行离线安装"
+        echo "   - 参考: ~/install-extensions.sh 和 ~/manage-extensions.sh"
     fi
 
     chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server 2>/dev/null
