@@ -213,8 +213,8 @@
                         <div class="mb-3">
                             <label for="service-password" class="form-label">服务登录密码 <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <input type="text" class="form-control" id="service-password" placeholder="点击生成密码" required minlength="8" readonly>
-                                <button class="btn btn-outline-secondary" type="button" id="generate-password" onclick="generateSecurePassword()" title="生成安全密码">
+                                <input type="text" class="form-control" id="service-password" placeholder="可手动输入或点击生成密码" required minlength="8">
+                                <button class="btn btn-outline-secondary" type="button" id="generate-password" onclick="generateSecurePassword()" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="custom-tooltip" title="生成强密码，底色深蓝，字体白色">
                                     <i class="bi bi-arrow-clockwise"></i>
                                 </button>
                                 <button class="btn btn-outline-secondary" type="button" id="copy-password" onclick="copyPassword()" title="复制密码">

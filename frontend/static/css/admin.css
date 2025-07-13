@@ -159,6 +159,15 @@ main {
     transform: translateX(100%);
 }
 
+/* 自定义深蓝底白字tooltip */
+.custom-tooltip.bs-tooltip-auto[x-placement^=top] .tooltip-inner,
+.custom-tooltip.bs-tooltip-top .tooltip-inner {
+    background-color: #003366 !important;
+    color: #fff !important;
+    border-radius: 0.4rem;
+    font-weight: 500;
+}
+
 @media (max-width: 767.98px) {
     .sidebar {
         top: 56px;

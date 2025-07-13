@@ -71,6 +71,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 500);
         }
     });
+
+    // 初始化自定义tooltip
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 });
 
 // 设置密码类型切换（已简化，不再需要）
@@ -995,7 +1001,7 @@ async function copyUsageInstructions(containerId, username, containerName) {
 
 💡 使用提示：
 - 所有服务使用相同的登录密码
-- 支持GPU加速的PyTorch和TensorFlow环境
+- 支持GPU加速的PyTorch环境 + TensorFlow conda环境
 - 预装常用AI/ML库和开发工具
 - 可通过SSH上传下载文件
 
