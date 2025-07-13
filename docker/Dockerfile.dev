@@ -153,18 +153,9 @@ RUN mkdir -p /shared /workspace && chmod 755 /shared /workspace
 # 安装code-server（可能变化的外部依赖）
 RUN curl -fsSL https://code-server.dev/install.sh | sh
 
-# 创建code-server扩展目录并预安装常用扩展
+# 创建扩展目录，扩展将在运行时安装
 RUN mkdir -p /tmp/extensions \
-    && echo "开始安装VSCode扩展..." \
-    && code-server --install-extension ms-python.python --extensions-dir /tmp/extensions --force \
-    && code-server --install-extension ms-toolsai.jupyter --extensions-dir /tmp/extensions --force \
-    && code-server --install-extension ms-vscode.vscode-json --extensions-dir /tmp/extensions --force \
-    && code-server --install-extension redhat.vscode-yaml --extensions-dir /tmp/extensions --force \
-    && (code-server --install-extension ms-python.pylint --extensions-dir /tmp/extensions --force || echo "pylint安装失败") \
-    && (code-server --install-extension ms-python.black-formatter --extensions-dir /tmp/extensions --force || echo "black-formatter安装失败") \
-    && (code-server --install-extension GitHub.copilot --extensions-dir /tmp/extensions --force || echo "copilot安装失败") \
-    && echo "扩展安装完成，目录内容:" && ls -la /tmp/extensions/ \
-    && chmod -R 755 /tmp/extensions
+    && echo "扩展将在容器启动时安装" > /tmp/extensions/README.txt
 
 # 复制脚本文件（最经常变化的部分，放在最后）
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
