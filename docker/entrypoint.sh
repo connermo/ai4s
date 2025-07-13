@@ -240,7 +240,7 @@ export PATH="/opt/miniconda3/bin:/opt/miniconda3/condabin:/usr/local/bin:/home/\
 export EDITOR=vim
 export PYTHONPATH="/workspace:/shared:\$PYTHONPATH"
 
-# Python 3 as default
+# Python (NGC镜像自带版本)
 export PYTHON=/usr/bin/python3
 alias python=python3
 alias pip=pip3
@@ -286,8 +286,8 @@ echo "   workspace   - 切换到工作目录"
 echo "   shared      - 切换到共享目录"
 echo ""
 echo "📦 环境信息:"
-echo "   默认Python: 3 (系统级安装)"
-echo "   所有包安装位置: 系统默认环境"
+echo "   默认Python: NGC自带版本"
+echo "   PyTorch: 预装（NVIDIA NGC优化版本）"
 echo "   预装ML/AI包: PyTorch, TensorFlow, transformers等"
 echo ""
 echo "🎯 GPU信息:"
