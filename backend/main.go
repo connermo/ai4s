@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"gpu-dev-platform/database"
 	"gpu-dev-platform/handlers"
@@ -28,14 +29,36 @@ func main() {
 	// API 路由
 	api := router.PathPrefix("/api").Subrouter()
 
+	// 认证处理器
+	authHandler := handlers.NewAuthHandler()
+	
+	// 用户自助服务处理器
+	userSelfHandler, err := handlers.NewUserSelfHandler()
+	if err != nil {
+		log.Fatal("Failed to create user self handler:", err)
+	}
+
+	// 公开的认证路由
+	api.HandleFunc("/user/login", authHandler.Login).Methods("POST")
+	api.HandleFunc("/admin/login", authHandler.AdminLogin).Methods("POST")
+
+	// 用户自助路由 (需要认证)
+	userAPI := api.PathPrefix("/user").Subrouter()
+	userAPI.HandleFunc("/info", authHandler.RequireAuth(userSelfHandler.GetSelfInfo)).Methods("GET")
+	userAPI.HandleFunc("/container", authHandler.RequireAuth(userSelfHandler.GetSelfContainer)).Methods("GET")
+	userAPI.HandleFunc("/container/reset-password", authHandler.RequireAuth(userSelfHandler.ResetContainerPassword)).Methods("PUT")
+
+	// 管理员路由 (需要管理员权限)
+	adminAPI := api.PathPrefix("").Subrouter()
+	
 	// 用户管理路由
 	userHandler := handlers.NewUserHandler()
-	api.HandleFunc("/users", userHandler.ListUsers).Methods("GET")
-	api.HandleFunc("/users", userHandler.CreateUser).Methods("POST")
-	api.HandleFunc("/users/{id:[0-9]+}", userHandler.GetUser).Methods("GET")
-	api.HandleFunc("/users/{id:[0-9]+}", userHandler.UpdateUser).Methods("PUT")
-	api.HandleFunc("/users/{id:[0-9]+}", userHandler.DeleteUser).Methods("DELETE")
-	api.HandleFunc("/users/{id:[0-9]+}/password", userHandler.ChangePassword).Methods("PUT")
+	adminAPI.HandleFunc("/users", authHandler.RequireAdmin(userHandler.ListUsers)).Methods("GET")
+	adminAPI.HandleFunc("/users", authHandler.RequireAdmin(userHandler.CreateUser)).Methods("POST")
+	adminAPI.HandleFunc("/users/{id:[0-9]+}", authHandler.RequireAdmin(userHandler.GetUser)).Methods("GET")
+	adminAPI.HandleFunc("/users/{id:[0-9]+}", authHandler.RequireAdmin(userHandler.UpdateUser)).Methods("PUT")
+	adminAPI.HandleFunc("/users/{id:[0-9]+}", authHandler.RequireAdmin(userHandler.DeleteUser)).Methods("DELETE")
+	adminAPI.HandleFunc("/users/{id:[0-9]+}/password", authHandler.RequireAdmin(userHandler.ChangePassword)).Methods("PUT")
 
 	// 容器管理路由
 	containerHandler, err := handlers.NewContainerHandler()
@@ -43,23 +66,48 @@ func main() {
 		log.Fatal("Failed to create container handler:", err)
 	}
 	
-	api.HandleFunc("/containers", containerHandler.ListContainers).Methods("GET")
-	api.HandleFunc("/containers", containerHandler.CreateContainer).Methods("POST")
-	api.HandleFunc("/containers/{id}", containerHandler.GetContainer).Methods("GET")
-	api.HandleFunc("/containers/{id}/status", containerHandler.GetContainerStatus).Methods("GET")
-	api.HandleFunc("/containers/{id}/start", containerHandler.StartContainer).Methods("POST")
-	api.HandleFunc("/containers/{id}/stop", containerHandler.StopContainer).Methods("POST")
-	api.HandleFunc("/containers/{id}", containerHandler.RemoveContainer).Methods("DELETE")
-	api.HandleFunc("/containers/{id}/reset-password", containerHandler.ResetContainerPassword).Methods("PUT")
-	api.HandleFunc("/users/{userId:[0-9]+}/container", containerHandler.GetUserContainer).Methods("GET")
+	adminAPI.HandleFunc("/containers", authHandler.RequireAdmin(containerHandler.ListContainers)).Methods("GET")
+	adminAPI.HandleFunc("/containers", authHandler.RequireAdmin(containerHandler.CreateContainer)).Methods("POST")
+	adminAPI.HandleFunc("/containers/{id}", authHandler.RequireAuth(containerHandler.GetContainer)).Methods("GET")
+	adminAPI.HandleFunc("/containers/{id}/status", authHandler.RequireAdmin(containerHandler.GetContainerStatus)).Methods("GET")
+	adminAPI.HandleFunc("/containers/{id}/start", authHandler.RequireAdmin(containerHandler.StartContainer)).Methods("POST")
+	adminAPI.HandleFunc("/containers/{id}/stop", authHandler.RequireAdmin(containerHandler.StopContainer)).Methods("POST")
+	adminAPI.HandleFunc("/containers/{id}", authHandler.RequireAdmin(containerHandler.RemoveContainer)).Methods("DELETE")
+	adminAPI.HandleFunc("/containers/{id}/reset-password", authHandler.RequireAdmin(containerHandler.ResetContainerPassword)).Methods("PUT")
+	adminAPI.HandleFunc("/users/{userId:[0-9]+}/container", authHandler.RequireAuth(containerHandler.GetUserContainer)).Methods("GET")
 
 	// 静态文件服务
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", 
 		http.FileServer(http.Dir("./static/"))))
 
-	// 前端路由 (如果没有API路径，则服务前端)
-	router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 前端页面路由
+	router.HandleFunc("/user-login", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./templates/user-login.html")
+	})
+	
+	router.HandleFunc("/user-dashboard", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./templates/user-dashboard.html")
+	})
+	
+	router.HandleFunc("/admin-login", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./templates/admin-login.html")
+	})
+	
+	router.HandleFunc("/admin", func(w http.ResponseWriter, r *http.Request) {
+		// 简单的前端认证检查（实际的API调用仍然需要后端验证）
+		// 这里只是为了用户体验，真正的安全由API认证保障
 		http.ServeFile(w, r, "./templates/index.html")
+	})
+
+	// 默认路由 - 重定向到用户登录页面
+	router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 如果访问根路径，重定向到用户登录页面
+		if r.URL.Path == "/" {
+			http.Redirect(w, r, "/user-login", http.StatusFound)
+			return
+		}
+		// 其他未匹配路径返回404
+		http.NotFound(w, r)
 	})
 
 	// CORS设置

@@ -160,12 +160,33 @@ main {
 }
 
 /* 自定义深蓝底白字tooltip */
-.custom-tooltip.bs-tooltip-auto[x-placement^=top] .tooltip-inner,
-.custom-tooltip.bs-tooltip-top .tooltip-inner {
+.custom-tooltip .tooltip-inner {
     background-color: #003366 !important;
     color: #fff !important;
     border-radius: 0.4rem;
     font-weight: 500;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.custom-tooltip .tooltip-arrow::before {
+    border-top-color: #003366 !important;
+}
+
+.custom-tooltip.bs-tooltip-top .tooltip-arrow::before {
+    border-top-color: #003366 !important;
+}
+
+.custom-tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+    border-bottom-color: #003366 !important;
+}
+
+.custom-tooltip.bs-tooltip-start .tooltip-arrow::before {
+    border-left-color: #003366 !important;
+}
+
+.custom-tooltip.bs-tooltip-end .tooltip-arrow::before {
+    border-right-color: #003366 !important;
 }
 
 @media (max-width: 767.98px) {

@@ -4,12 +4,52 @@ const API_BASE = '/api';
 // 当前显示的section
 let currentSection = 'users';
 
+// 检查管理员认证
+function checkAdminAuth() {
+    const admin = sessionStorage.getItem('admin');
+    const adminToken = sessionStorage.getItem('adminToken');
+    
+    if (!admin || !adminToken) {
+        // 未登录，跳转到管理员登录页面
+        window.location.href = '/admin-login';
+        return;
+    }
+    
+    try {
+        const adminData = JSON.parse(admin);
+        if (!adminData.is_admin) {
+            // 不是管理员，跳转到管理员登录页面
+            sessionStorage.removeItem('admin');
+            sessionStorage.removeItem('adminToken');
+            window.location.href = '/admin-login';
+            return;
+        }
+    } catch (error) {
+        console.error('解析管理员信息失败:', error);
+        sessionStorage.removeItem('admin');
+        sessionStorage.removeItem('adminToken');
+        window.location.href = '/admin-login';
+    }
+}
+
+// 获取管理员认证头
+function getAdminHeaders() {
+    const adminToken = sessionStorage.getItem('adminToken');
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminToken}`
+    };
+}
+
 // 防抖变量
 let containerLoadTimeout = null;
 let isContainerLoading = false;
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
+    // 检查管理员认证
+    checkAdminAuth();
+    
     loadUsers();
     loadContainers();
     loadUserOptions();
@@ -129,7 +169,9 @@ function showSection(sectionName) {
 // 加载用户列表
 async function loadUsers() {
     try {
-        const response = await fetch(`${API_BASE}/users`);
+        const response = await fetch(`${API_BASE}/users`, {
+            headers: getAdminHeaders()
+        });
         const users = await response.json();
         
         const tbody = document.getElementById('users-table-body');
@@ -771,9 +813,12 @@ function showAlert(message, type = 'info') {
 
 // 退出登录
 function logout() {
-    if (confirm('确定要退出吗？')) {
-        // 这里可以添加实际的退出逻辑
-        window.location.reload();
+    if (confirm('确定要退出管理后台吗？')) {
+        // 清除管理员认证信息
+        sessionStorage.removeItem('admin');
+        sessionStorage.removeItem('adminToken');
+        // 跳转到管理员登录页面
+        window.location.href = '/admin-login';
     }
 }
 

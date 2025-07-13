@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员登录 - GPU开发平台</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-header i {
+            font-size: 3rem;
+            color: #343a40;
+            margin-bottom: 1rem;
+        }
+        .btn-admin {
+            background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+            border: none;
+            padding: 12px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            color: white;
+        }
+        .btn-admin:hover {
+            background: linear-gradient(135deg, #2c3034 0%, #3d4448 100%);
+            transform: translateY(-1px);
+            color: white;
+        }
+        .user-link {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        .user-link a {
+            color: #343a40;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .user-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-header">
+            <i class="bi bi-gear">⚙️</i>
+            <h3>管理员控制台</h3>
+            <p class="text-muted">GPU开发平台管理</p>
+        </div>
+        
+        <form id="adminLoginForm">
+            <div class="mb-3">
+                <label for="username" class="form-label">管理员用户名</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person">👤</i></span>
+                    <input type="text" class="form-control" id="username" required>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="password" class="form-label">管理员密码</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock">🔒</i></span>
+                    <input type="password" class="form-control" id="password" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-admin w-100">
+                <i class="bi bi-box-arrow-in-right me-2">➡️</i>
+                登录管理后台
+            </button>
+        </form>
+        
+        <div class="user-link">
+            <a href="/user-login">普通用户入口</a>
+        </div>
+    </div>
+
+    <!-- Toast通知容器 -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 11000;">
+        <!-- Toast消息将动态插入这里 -->
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 显示Toast消息
+        function showAlert(message, type = 'info') {
+            const toastContainer = document.querySelector('.toast-container');
+            const toastId = 'toast-' + Date.now();
+            
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.id = toastId;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            // 自动移除
+            toast.addEventListener('hidden.bs.toast', () => {
+                toastContainer.removeChild(toast);
+            });
+        }
+
+        // 处理管理员登录表单提交
+        document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showAlert('请输入用户名和密码', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }),
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // 检查是否为管理员
+                    if (!data.user.is_admin) {
+                        showAlert('此账户没有管理员权限', 'danger');
+                        return;
+                    }
+                    
+                    // 保存管理员信息到sessionStorage
+                    sessionStorage.setItem('admin', JSON.stringify(data.user));
+                    sessionStorage.setItem('adminToken', data.token);
+                    
+                    showAlert('登录成功，正在跳转...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin';
+                    }, 1000);
+                } else {
+                    const error = await response.text();
+                    showAlert(`登录失败: ${error}`, 'danger');
+                }
+            } catch (error) {
+                console.error('登录错误:', error);
+                showAlert('登录失败，请检查网络连接', 'danger');
+            }
+        });
+    </script>
+</body>
+</html>
