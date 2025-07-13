@@ -528,6 +528,17 @@ EOF
     chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server 2>/dev/null
 fi
 
+# 配置SSH服务
+echo "配置SSH服务..."
+# 确保SSH目录存在
+mkdir -p /var/run/sshd
+
+# 配置SSH允许密码登录和用户登录
+sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+
 # 启动SSH服务
 echo "启动SSH服务..."
 if service ssh start; then
