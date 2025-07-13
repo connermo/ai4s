@@ -22,30 +22,8 @@ if ! docker compose version &> /dev/null; then
     exit 1
 fi
 
-# 检查NVIDIA Docker运行时
-nvidia_runtime_found=false
-
-# 方法1: 检查docker info中的runtimes
-if docker info 2>/dev/null | grep -q -E "(nvidia|runtime.*nvidia)"; then
-    nvidia_runtime_found=true
-fi
-
-# 方法2: 检查docker info中的runtimes section
-if docker info --format '{{json .Runtimes}}' 2>/dev/null | grep -q nvidia; then
-    nvidia_runtime_found=true
-fi
-
-# 方法3: 尝试运行nvidia-smi容器测试
-if docker run --rm --gpus all nvidia/cuda:12.1-base-ubuntu22.04 nvidia-smi &>/dev/null; then
-    nvidia_runtime_found=true
-fi
-
-if [ "$nvidia_runtime_found" = false ]; then
-    echo -e "${YELLOW}警告: 未检测到NVIDIA Docker运行时，GPU功能可能不可用${NC}"
-    echo -e "${YELLOW}请确保已安装NVIDIA Container Toolkit并重启Docker服务${NC}"
-else
-    echo -e "${GREEN}✓ NVIDIA Docker运行时已检测到${NC}"
-fi
+# GPU支持说明
+echo "注意: 此平台需要NVIDIA GPU和Container Toolkit支持"
 
 echo -e "${GREEN}✓ 环境检查通过${NC}"
 
