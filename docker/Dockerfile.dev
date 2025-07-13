@@ -109,7 +109,7 @@ ENV PATH=/usr/local/cuda/bin:${PATH}
 RUN /opt/miniconda3/bin/conda run -n tf pip install "numpy<2.0" \
     && /opt/miniconda3/bin/conda run -n tf pip install tensorflow==2.13.1 tensorboard==2.13.0 \
     && chmod -R 777 /opt/miniconda3/envs/tf \
-    && chmod -R 777 /opt/miniconda3/pkgs
+    && mkdir -p /opt/miniconda3/pkgs && chmod -R 777 /opt/miniconda3/pkgs
 
 # 创建完整的CUDA库符号链接
 RUN ln -sf /usr/lib/x86_64-linux-gnu/libcudnn* /usr/local/cuda/lib64/ \
