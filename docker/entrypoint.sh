@@ -479,6 +479,36 @@ else
     echo "警告: Conda未找到，跳过conda初始化"
 fi
 
+# 配置pip源
+echo "[$(date '+%H:%M:%S')] 配置pip源..."
+if [ -n "$PIP_INDEX_URL" ]; then
+    echo "[$(date '+%H:%M:%S')] 使用内部pip源: $PIP_INDEX_URL"
+    
+    # 创建pip配置目录
+    mkdir -p /etc/pip /home/$DEV_USER/.pip
+    
+    # 生成系统级pip配置
+    cat > /etc/pip/pip.conf << EOF
+[global]
+index-url = $PIP_INDEX_URL
+trusted-host = $PIP_TRUSTED_HOST
+timeout = ${PIP_TIMEOUT:-60}
+EOF
+    
+    # 生成用户级pip配置
+    cat > /home/$DEV_USER/.pip/pip.conf << EOF
+[global]
+index-url = $PIP_INDEX_URL
+trusted-host = $PIP_TRUSTED_HOST
+timeout = ${PIP_TIMEOUT:-60}
+EOF
+    
+    chown $DEV_UID:$DEV_GID /home/$DEV_USER/.pip/pip.conf
+    echo "[$(date '+%H:%M:%S')] pip源配置完成"
+else
+    echo "[$(date '+%H:%M:%S')] 使用默认pip源"
+fi
+
 # 确保挂载目录存在并设置权限
 if [ -d "/workspace" ]; then
     chown -R $DEV_UID:$DEV_GID /workspace 2>/dev/null || echo "警告: workspace权限设置失败，但目录可用"

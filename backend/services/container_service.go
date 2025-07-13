@@ -22,6 +22,14 @@ type ContainerService struct {
 	dockerClient *client.Client
 }
 
+// 辅助函数：获取环境变量，如果不存在则返回默认值
+func getEnvWithDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
 func NewContainerService() (*ContainerService, error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -50,6 +58,10 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 			fmt.Sprintf("DEV_UID=%d", user.ID+1000),
 			fmt.Sprintf("DEV_GID=%d", user.ID+1000),
 			fmt.Sprintf("DEV_PASSWORD=%s", password), // 使用传入的密码
+			// Pip源配置
+			fmt.Sprintf("PIP_INDEX_URL=%s", os.Getenv("PIP_INDEX_URL")),
+			fmt.Sprintf("PIP_TRUSTED_HOST=%s", os.Getenv("PIP_TRUSTED_HOST")),
+			fmt.Sprintf("PIP_TIMEOUT=%s", getEnvWithDefault("PIP_TIMEOUT", "60")),
 		},
 		ExposedPorts: s.getExposedPorts(user),
 	}
