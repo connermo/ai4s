@@ -13,6 +13,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // 设置密码类型切换事件
     setupPasswordTypeToggle();
     
+    // 监听创建容器模态框显示事件，实时刷新用户列表
+    const createContainerModal = document.getElementById('createContainerModal');
+    if (createContainerModal) {
+        createContainerModal.addEventListener('shown.bs.modal', function() {
+            console.log('创建容器模态框打开，刷新用户列表...');
+            loadUserOptions(); // 实时获取最新用户列表
+        });
+    }
+    
     // 每30秒刷新一次数据
     setInterval(() => {
         if (currentSection === 'users') {
