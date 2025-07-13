@@ -77,8 +77,8 @@ RUN conda init bash \
     && conda config --set channel_priority strict \
     && conda clean -afy
 
-# 创建TensorFlow conda环境（稳定）
-RUN conda create -n tf python=3.11 -y && conda clean -afy
+# 创建额外的Python环境（预留给用户自定义使用）
+RUN conda create -n ml python=3.11 -y && conda clean -afy
 
 # 设置CUDA环境变量（稳定）
 ENV CUDA_HOME=/usr/local/cuda \
@@ -104,9 +104,8 @@ RUN pip3 install --no-cache-dir \
 # 安装PyTorch（较大，单独一层）
 RUN pip3 install --no-cache-dir torch==2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
-# 安装TensorFlow GPU环境（使用之前验证成功的方案）
-RUN /opt/miniconda3/bin/conda run -n tf pip uninstall tensorflow -y 2>/dev/null || true \
-    && /opt/miniconda3/bin/conda run -n tf conda install tensorflow-gpu=2.13 cudatoolkit=11.8 tensorboard=2.13 -c conda-forge -y --solver=classic
+# TensorFlow已移除，PyTorch作为主要深度学习框架
+# 用户可在ml环境中根据需要自行安装TensorFlow
 
 # 安装AI/ML相关包（版本可能变化）
 RUN pip3 install --no-cache-dir \
@@ -124,7 +123,7 @@ RUN pip3 install --no-cache-dir \
     "uvicorn>=0.20.0"
 
 # 配置conda权限
-RUN chmod -R 777 /opt/miniconda3/envs/tf \
+RUN chmod -R 777 /opt/miniconda3/envs/ml \
     && mkdir -p /opt/miniconda3/pkgs && chmod -R 777 /opt/miniconda3/pkgs
 
 # 创建CUDA库符号链接
