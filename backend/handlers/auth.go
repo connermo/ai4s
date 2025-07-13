@@ -30,7 +30,7 @@ type LoginResponse struct {
 }
 
 type Claims struct {
-	UserID   uint   `json:"user_id"`
+	UserID   int    `json:"user_id"`
 	Username string `json:"username"`
 	IsAdmin  bool   `json:"is_admin"`
 	jwt.RegisteredClaims
@@ -60,12 +60,12 @@ func (h *AuthHandler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 
 	// 查询用户
 	user := &models.User{}
-	query := `SELECT id, username, email, password_hash, is_active, is_admin, 
+	query := `SELECT id, username, email, password, is_active, is_admin, 
 	          created_at, updated_at, COALESCE(container_id, '') as container_id 
 	          FROM users WHERE username = ? AND is_admin = 1`
 	
 	err := h.db.QueryRow(query, req.Username).Scan(
-		&user.ID, &user.Username, &user.Email, &user.PasswordHash,
+		&user.ID, &user.Username, &user.Email, &user.Password,
 		&user.IsActive, &user.IsAdmin, &user.CreatedAt, &user.UpdatedAt,
 		&user.ContainerID,
 	)
@@ -86,7 +86,7 @@ func (h *AuthHandler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 验证密码
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		http.Error(w, "用户名或密码错误", http.StatusUnauthorized)
 		return
 	}
@@ -99,7 +99,7 @@ func (h *AuthHandler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 清除密码hash，不返回给客户端
-	user.PasswordHash = ""
+	user.Password = ""
 
 	response := LoginResponse{
 		Token: token,
@@ -125,12 +125,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	// 查询用户
 	user := &models.User{}
-	query := `SELECT id, username, email, password_hash, is_active, is_admin, 
+	query := `SELECT id, username, email, password, is_active, is_admin, 
 	          created_at, updated_at, COALESCE(container_id, '') as container_id 
 	          FROM users WHERE username = ?`
 	
 	err := h.db.QueryRow(query, req.Username).Scan(
-		&user.ID, &user.Username, &user.Email, &user.PasswordHash,
+		&user.ID, &user.Username, &user.Email, &user.Password,
 		&user.IsActive, &user.IsAdmin, &user.CreatedAt, &user.UpdatedAt,
 		&user.ContainerID,
 	)
@@ -151,7 +151,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 验证密码
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		http.Error(w, "用户名或密码错误", http.StatusUnauthorized)
 		return
 	}
@@ -164,7 +164,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 清除密码hash，不返回给客户端
-	user.PasswordHash = ""
+	user.Password = ""
 
 	response := LoginResponse{
 		Token: token,
@@ -236,7 +236,7 @@ func (h *AuthHandler) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// 将用户信息添加到请求上下文
-		r.Header.Set("X-User-ID", strconv.Itoa(int(claims.UserID)))
+		r.Header.Set("X-User-ID", strconv.Itoa(claims.UserID))
 		r.Header.Set("X-Username", claims.Username)
 		r.Header.Set("X-Is-Admin", strconv.FormatBool(claims.IsAdmin))
 
