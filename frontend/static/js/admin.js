@@ -349,8 +349,8 @@ async function createContainerRow(container) {
     
     const statusClass = container.status === 'running' ? 'status-running' : 'status-stopped';
     const statusText = container.status === 'running' ? '运行中' : '已停止';
-    const gpuDevices = container.gpu_devices || '无';
-    const resources = container.cpu_limit === 'unlimited' ? 'CPU: 无限制, 内存: 无限制' : `CPU: ${container.cpu_limit}, 内存: ${container.memory_limit}`;
+    // GPU设备默认显示"全部"，除非明确指定了特定设备
+    const gpuDevices = container.gpu_devices && container.gpu_devices !== '' ? container.gpu_devices : '全部';
     
     // 获取端口信息
     let ports = '-';
@@ -366,12 +366,10 @@ async function createContainerRow(container) {
     }
     
     row.innerHTML = `
-        <td class="text-truncate" title="${container.id}">${container.id.substring(0, 12)}</td>
         <td>${username}</td>
         <td>${container.name}</td>
         <td><span class="status-badge ${statusClass}">${statusText}</span></td>
         <td>${gpuDevices}</td>
-        <td>${resources}</td>
         <td class="text-truncate" title="${ports}">${ports}</td>
         <td>
             ${container.status === 'running' 
