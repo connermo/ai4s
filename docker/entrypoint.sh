@@ -644,23 +644,14 @@ echo "启动VSCode Server..."
 nohup code-server > /tmp/code-server.log 2>&1 &
 echo "VSCode Server PID: \$!"
 
-# 启动TensorBoard (可选)
-if [ -d "/home/\$DEV_USER/logs" ]; then
-    echo "启动TensorBoard..."
-    nohup tensorboard --logdir=/home/\$DEV_USER/logs --host=0.0.0.0 --port=6006 > /tmp/tensorboard.log 2>&1 &
-    echo "TensorBoard PID: \$!"
-fi
-
 echo "=== 服务启动完成 ==="
-echo "SSH: 端口 22 (用户名: $DEV_USER, 密码: $DEV_PASSWORD)"
-echo "VSCode Server: 端口 8080 (密码: $DEV_PASSWORD)"
-echo "Jupyter Lab: 端口 8888 (密码: $DEV_PASSWORD)"
-echo "TensorBoard: 端口 6006 (无需认证)"
+echo "SSH: 端口 22 (用户名: $DEV_USER)"
+echo "VSCode Server: 端口 8080"
+echo "Jupyter Lab: 端口 8888"
 echo ""
 echo "日志文件位置:"
 echo "  Jupyter Lab: /tmp/jupyter.log"
 echo "  VSCode Server: /tmp/code-server.log"
-echo "  TensorBoard: /tmp/tensorboard.log"
 EOF
 
 # 设置启动脚本权限
@@ -676,10 +667,9 @@ if mkdir -p /home/$DEV_USER; then
 
 ## 服务访问
 
-- **SSH**: 使用用户名 \`$DEV_USER\` 和密码 \`$DEV_PASSWORD\` 登录
-- **VSCode Server**: 浏览器访问 http://host:port，密码: \`$DEV_PASSWORD\`
-- **Jupyter Lab**: 浏览器访问 http://host:port，密码: \`$DEV_PASSWORD\`
-- **TensorBoard**: 浏览器访问 http://host:port (无需认证)
+- **SSH**: 使用用户名 \`$DEV_USER\` 登录
+- **VSCode Server**: 浏览器访问分配的VSCode端口
+- **Jupyter Lab**: 浏览器访问分配的Jupyter端口
 
 ## 目录结构
 
@@ -758,5 +748,5 @@ fi
 # 保持容器运行
 echo "=== 容器启动完成 ==="
 echo "SSH登录: ssh -p PORT $DEV_USER@HOST"
-echo "密码: $DEV_PASSWORD"
+echo "请联系管理员获取登录密码和端口信息"
 tail -f /dev/null
