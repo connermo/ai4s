@@ -412,7 +412,7 @@ async function createContainerRow(container) {
         if (portResponse.ok) {
             const data = await portResponse.json();
             const p = data.ports;
-            ports = `SSH:${p.ssh} VSCode:${p.vscode} Jupyter:${p.jupyter} TB:${p.tensorboard}`;
+            ports = `SSH:${p.ssh} VSCode:${p.vscode} Jupyter:${p.jupyter}`;
         }
     } catch (error) {
         console.error('获取端口信息失败:', error);
@@ -1276,9 +1276,9 @@ async function showUserNotificationModal(userId, password, containerData) {
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle me-2"></i>
-                            <strong>管理员提示：</strong>以下信息包含用户的登录密码，请通过安全渠道发送给用户 <strong>${user.username}</strong>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>重要提醒：</strong>此页面仅展示一次！请立即复制用户信息并通过安全渠道发送给用户 <strong>${user.username}</strong>
                         </div>
                         <textarea class="form-control" rows="20" readonly style="font-family: monospace; font-size: 13px; line-height: 1.4;">${userNotification}</textarea>
                     </div>
