@@ -453,6 +453,10 @@ if [ -f "/opt/miniconda3/bin/conda" ]; then
     mkdir -p /home/$DEV_USER/.conda
     chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.conda 2>/dev/null
     
+    # 确保conda环境权限正确
+    chown -R $DEV_UID:$DEV_GID /opt/miniconda3/envs 2>/dev/null || echo "警告: conda envs权限设置失败"
+    chown -R $DEV_UID:$DEV_GID /opt/miniconda3/pkgs 2>/dev/null || echo "警告: conda pkgs权限设置失败"
+    
     # 设置用户级conda配置
     su - $DEV_USER -c "conda config --set auto_activate_base false" 2>/dev/null || true
     su - $DEV_USER -c "conda config --add channels conda-forge" 2>/dev/null || true
