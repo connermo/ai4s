@@ -13,12 +13,39 @@ document.addEventListener('DOMContentLoaded', function() {
     // 设置密码类型切换事件
     setupPasswordTypeToggle();
     
-    // 监听创建容器模态框显示事件，实时刷新用户列表
+    // 监听创建容器模态框显示事件，实时刷新用户列表（增强健壮性）
     const createContainerModal = document.getElementById('createContainerModal');
     if (createContainerModal) {
+        // 主要事件监听
         createContainerModal.addEventListener('shown.bs.modal', function() {
             console.log('创建容器模态框打开，刷新用户列表...');
-            loadUserOptions(); // 实时获取最新用户列表
+            loadUserOptions(0); // 实时获取最新用户列表，重置重试计数
+        });
+        
+        // 备用事件监听（防止Bootstrap事件失效）
+        createContainerModal.addEventListener('show.bs.modal', function() {
+            console.log('模态框准备显示，预加载用户列表...');
+            // 预加载，但不重置已有的选项（除非失败）
+            const select = document.getElementById('container-user-id');
+            if (select && (select.innerHTML === '' || select.innerHTML.includes('加载失败'))) {
+                loadUserOptions(0);
+            }
+        });
+    }
+    
+    // 添加创建容器按钮点击事件作为最后的保障
+    const createContainerButton = document.querySelector('[data-bs-target="#createContainerModal"]');
+    if (createContainerButton) {
+        createContainerButton.addEventListener('click', function() {
+            console.log('创建容器按钮被点击，确保用户列表最新...');
+            // 延迟一点确保模态框已经显示
+            setTimeout(() => {
+                const select = document.getElementById('container-user-id');
+                if (select && select.children.length <= 1) {
+                    console.log('检测到用户列表为空或仅有默认选项，强制刷新...');
+                    loadUserOptions(0);
+                }
+            }, 200);
         });
     }
     
@@ -333,18 +360,50 @@ async function removeContainer(id, name) {
     }
 }
 
-// 加载用户选项
-async function loadUserOptions() {
+// 加载用户选项（增强健壮性）
+async function loadUserOptions(retryCount = 0) {
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1秒
+    
     try {
-        const response = await fetch(`${API_BASE}/users`);
+        console.log(`正在加载用户选项... (尝试 ${retryCount + 1}/${maxRetries + 1})`);
+        
+        // 添加超时控制
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+        
+        const response = await fetch(`${API_BASE}/users`, {
+            signal: controller.signal,
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const users = await response.json();
         
         const select = document.getElementById('container-user-id');
-        select.innerHTML = '<option value="">选择用户</option>';
+        if (!select) {
+            console.warn('用户选择框未找到');
+            return;
+        }
+        
+        // 显示加载状态
+        select.innerHTML = '<option value="">正在加载用户...</option>';
         
         // 处理null或空数组的情况
         if (users && Array.isArray(users)) {
-            const availableUsers = users.filter(user => !user.container_id);
+            const availableUsers = users.filter(user => user && !user.container_id);
+            
+            // 清空并重新填充选项
+            select.innerHTML = '<option value="">选择用户</option>';
             
             if (availableUsers.length === 0) {
                 const option = document.createElement('option');
@@ -354,24 +413,57 @@ async function loadUserOptions() {
                 select.appendChild(option);
             } else {
                 availableUsers.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.id;
-                    option.textContent = user.username;
-                    select.appendChild(option);
+                    if (user && user.id && user.username) {
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = user.username;
+                        select.appendChild(option);
+                    }
                 });
+                console.log(`成功加载 ${availableUsers.length} 个可用用户`);
             }
         } else {
             // 没有用户数据
-            const option = document.createElement('option');
-            option.value = '';
-            option.textContent = '暂无用户，请先创建用户';
-            option.disabled = true;
-            select.appendChild(option);
+            select.innerHTML = '<option value="">暂无用户，请先创建用户</option>';
         }
+        
+        // 重置重试计数
+        return true;
+        
     } catch (error) {
-        console.error('加载用户选项失败:', error);
+        console.error(`加载用户选项失败 (尝试 ${retryCount + 1}):`, error);
+        
         const select = document.getElementById('container-user-id');
-        select.innerHTML = '<option value="" disabled>加载用户失败</option>';
+        if (select) {
+            if (retryCount < maxRetries) {
+                // 显示重试状态
+                select.innerHTML = `<option value="" disabled>加载失败，正在重试... (${retryCount + 1}/${maxRetries})</option>`;
+                
+                // 延迟后重试
+                setTimeout(() => {
+                    loadUserOptions(retryCount + 1);
+                }, retryDelay * (retryCount + 1)); // 递增延迟
+                
+            } else {
+                // 最终失败处理
+                select.innerHTML = `
+                    <option value="" disabled>加载用户失败，请刷新页面重试</option>
+                    <option value="refresh" style="color: red;">点击刷新用户列表</option>
+                `;
+                
+                // 添加刷新选项的事件处理
+                select.addEventListener('change', function(e) {
+                    if (e.target.value === 'refresh') {
+                        e.target.value = '';
+                        loadUserOptions(0); // 重新开始重试
+                    }
+                });
+                
+                showAlert('用户列表加载失败，请检查网络连接或刷新页面', 'warning');
+            }
+        }
+        
+        return false;
     }
 }
 
