@@ -1,0 +1,53 @@
+/* Bootstrap Icons - Core Icons Only for Internal Network */
+/* Simplified version for internal use - includes common icons used in the application */
+
+@font-face {
+  font-family: "bootstrap-icons";
+  src: data:font/woff2;base64,/* Font data would be here in production */
+}
+
+.bi::before,
+[class^="bi-"]::before,
+[class*=" bi-"]::before {
+  display: inline-block;
+  font-family: bootstrap-icons !important;
+  font-style: normal;
+  font-weight: normal !important;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  vertical-align: -.125em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Icon mappings - simplified for common icons */
+.bi-gpu-card::before { content: "🎮"; }
+.bi-people::before { content: "👥"; }
+.bi-box::before { content: "📦"; }
+.bi-graph-up::before { content: "📈"; }
+.bi-plus-circle::before { content: "➕"; }
+.bi-arrow-clockwise::before { content: "🔄"; }
+.bi-clipboard::before { content: "📋"; }
+.bi-person::before { content: "👤"; }
+.bi-lock::before { content: "🔒"; }
+.bi-box-arrow-in-right::before { content: "➡️"; }
+.bi-box-arrow-right::before { content: "↗️"; }
+.bi-person-circle::before { content: "👤"; }
+.bi-person-badge::before { content: "🏷️"; }
+.bi-key::before { content: "🔑"; }
+.bi-globe::before { content: "🌐"; }
+.bi-terminal::before { content: "💻"; }
+.bi-code-slash::before { content: "💻"; }
+.bi-journal-code::before { content: "📓"; }
+.bi-exclamation-triangle::before { content: "⚠️"; }
+.bi-x-circle::before { content: "❌"; }
+.bi-check-circle::before { content: "✅"; }
+.bi-info-circle::before { content: "ℹ️"; }
+.bi-gear::before { content: "⚙️"; }
+.bi-trash::before { content: "🗑️"; }
+.bi-pencil::before { content: "✏️"; }
+.bi-eye::before { content: "👁️"; }
+.bi-play::before { content: "▶️"; }
+.bi-stop::before { content: "⏹️"; }
+.bi-pause::before { content: "⏸️"; }

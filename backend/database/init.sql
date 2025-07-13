@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS db_init_status (
 
 -- 插入默认管理员用户 (密码: admin123)
 INSERT IGNORE INTO users (username, password, email, is_admin, base_port) 
-VALUES ('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@example.com', TRUE, 9001);
+VALUES ('admin', '$2a$10$7kCbgG3FCL5wfatLw7RnL.qefBo7t1OwiGxfWma3vGHZSkYy67k12', 'admin@example.com', TRUE, 9001);
 
 -- 标记基础数据已初始化
 INSERT IGNORE INTO db_init_status (component, initialized) VALUES ('base_data', TRUE);

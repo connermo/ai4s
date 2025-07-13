@@ -30,22 +30,9 @@ func main() {
 
 	// 认证处理器
 	authHandler := handlers.NewAuthHandler()
-	
-	// 用户自助服务处理器
-	userSelfHandler, err := handlers.NewUserSelfHandler()
-	if err != nil {
-		log.Fatal("Failed to create user self handler:", err)
-	}
 
 	// 公开的认证路由
-	api.HandleFunc("/user/login", authHandler.Login).Methods("POST")
 	api.HandleFunc("/admin/login", authHandler.AdminLogin).Methods("POST")
-
-	// 用户自助路由 (需要认证)
-	userAPI := api.PathPrefix("/user").Subrouter()
-	userAPI.HandleFunc("/info", authHandler.RequireAuth(userSelfHandler.GetSelfInfo)).Methods("GET")
-	userAPI.HandleFunc("/container", authHandler.RequireAuth(userSelfHandler.GetSelfContainer)).Methods("GET")
-	userAPI.HandleFunc("/container/reset-password", authHandler.RequireAuth(userSelfHandler.ResetContainerPassword)).Methods("PUT")
 
 	// 管理员路由 (需要管理员权限)
 	adminAPI := api.PathPrefix("").Subrouter()
@@ -80,29 +67,19 @@ func main() {
 		http.FileServer(http.Dir("./static/"))))
 
 	// 前端页面路由
-	router.HandleFunc("/user-login", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./templates/user-login.html")
-	})
-	
-	router.HandleFunc("/user-dashboard", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./templates/user-dashboard.html")
-	})
-	
 	router.HandleFunc("/admin-login", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./templates/admin-login.html")
 	})
 	
 	router.HandleFunc("/admin", func(w http.ResponseWriter, r *http.Request) {
-		// 简单的前端认证检查（实际的API调用仍然需要后端验证）
-		// 这里只是为了用户体验，真正的安全由API认证保障
 		http.ServeFile(w, r, "./templates/index.html")
 	})
 
-	// 默认路由 - 重定向到用户登录页面
+	// 默认路由 - 重定向到管理员登录页面
 	router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 如果访问根路径，重定向到用户登录页面
+		// 如果访问根路径，重定向到管理员登录页面
 		if r.URL.Path == "/" {
-			http.Redirect(w, r, "/user-login", http.StatusFound)
+			http.Redirect(w, r, "/admin-login", http.StatusFound)
 			return
 		}
 		// 其他未匹配路径返回404
