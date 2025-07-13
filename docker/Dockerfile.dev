@@ -1,18 +1,16 @@
 # 基于NVIDIA CUDA 12.4 + cuDNN基础镜像
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
 
-# 设置环境变量
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Asia/Shanghai
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
+# 设置环境变量（最稳定的层）
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Asia/Shanghai \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    CONDA_ALWAYS_YES=true \
+    CONDA_AUTO_ACTIVATE_BASE=false \
+    CONDA_CHANNELS="conda-forge,pytorch,nvidia,defaults"
 
-# 优化conda安装的环境变量
-ENV CONDA_ALWAYS_YES=true
-ENV CONDA_AUTO_ACTIVATE_BASE=false
-ENV CONDA_CHANNELS="conda-forge,pytorch,nvidia,defaults"
-
-# 安装系统依赖
+# 安装系统依赖（很少变化）
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
@@ -33,9 +31,10 @@ RUN apt-get update && apt-get install -y \
     tzdata \
     && rm -rf /var/lib/apt/lists/*
 
-# 不安装NVIDIA工具包，改为挂载宿主机的nvidia-smi
+# 配置时区（稳定）
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# 安装Python 3.11
+# 安装Python 3.11（较稳定）
 RUN add-apt-repository ppa:deadsnakes/ppa \
     && apt-get update \
     && apt-get install -y \
@@ -43,29 +42,29 @@ RUN add-apt-repository ppa:deadsnakes/ppa \
     python3.11-venv \
     python3.11-dev \
     python3.11-distutils \
-    && rm -rf /var/lib/apt/lists/* \
-    # 下载并安装pip for Python 3.11
-    && curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装pip for Python 3.11（分离下载和安装）
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
     && python3.11 get-pip.py \
     && rm get-pip.py \
-    # 设置Python 3.11为默认python3和pip3
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 100 \
     && update-alternatives --install /usr/bin/pip3 pip3 /usr/local/bin/pip3.11 100
 
-# 安装Node.js 20.x LTS
+# 安装Node.js 20.x LTS（较稳定）
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# 配置时区
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+# 升级pip并安装基础工具（稳定）
+RUN pip3 install --upgrade pip setuptools wheel
 
-# 安装Miniconda（仅用于包管理，不创建额外环境）
+# 安装Miniconda（稳定）
 RUN wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh \
     && bash /tmp/miniconda.sh -b -p /opt/miniconda3 \
     && rm /tmp/miniconda.sh
 
-# 配置conda环境（优化设置，但只使用base环境）
+# 设置conda环境变量和配置（稳定）
 ENV PATH="/opt/miniconda3/bin:$PATH"
 RUN conda init bash \
     && conda config --add channels conda-forge \
@@ -77,87 +76,87 @@ RUN conda init bash \
     && conda config --set channel_priority strict \
     && conda clean -afy
 
-# 升级pip并安装基础工具（Docker缓存友好）
-RUN pip3 install --upgrade pip setuptools wheel
+# 创建TensorFlow conda环境（稳定）
+RUN conda create -n tf python=3.11 -y && conda clean -afy
 
-# 安装Jupyter和基础科学计算包
+# 设置CUDA环境变量（稳定）
+ENV CUDA_HOME=/usr/local/cuda \
+    LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/targets/x86_64-linux/lib:${LD_LIBRARY_PATH} \
+    PATH=/usr/local/cuda/bin:${PATH}
+
+# 安装基础科学计算包（版本相对稳定）
 RUN pip3 install --no-cache-dir \
-    "jupyter>=1.0.0" \
-    "jupyterlab>=4.0.0" \
-    "notebook>=6.5.0" \
-    "ipywidgets>=8.0.0" \
-    "ipykernel" \
     "numpy>=1.24.0" \
     "pandas>=2.0.0" \
     "matplotlib>=3.7.0" \
     "scikit-learn>=1.3.0" \
     "seaborn>=0.11.0"
 
-# 安装PyTorch 2.6.0 + CUDA 12.4（主Python环境）
+# 安装Jupyter相关包（版本相对稳定）
+RUN pip3 install --no-cache-dir \
+    "jupyter>=1.0.0" \
+    "jupyterlab>=4.0.0" \
+    "notebook>=6.5.0" \
+    "ipywidgets>=8.0.0" \
+    "ipykernel"
+
+# 安装PyTorch（较大，单独一层）
 RUN pip3 install --no-cache-dir torch==2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
-# 创建TensorFlow conda环境
-RUN conda create -n tf python=3.11 -y \
-    && conda clean -afy
-
-# 设置CUDA环境变量
-ENV CUDA_HOME=/usr/local/cuda
-ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/targets/x86_64-linux/lib:${LD_LIBRARY_PATH}
-ENV PATH=/usr/local/cuda/bin:${PATH}
-
-# 在TensorFlow环境中安装GPU版本的TensorFlow和TensorBoard（使用pip安装兼容版本）
+# 安装TensorFlow（较大，单独一层）
 RUN /opt/miniconda3/bin/conda run -n tf pip install "numpy<2.0" \
-    && /opt/miniconda3/bin/conda run -n tf pip install tensorflow==2.13.1 tensorboard==2.13.0 \
-    && chmod -R 777 /opt/miniconda3/envs/tf \
-    && mkdir -p /opt/miniconda3/pkgs && chmod -R 777 /opt/miniconda3/pkgs
+    && /opt/miniconda3/bin/conda run -n tf pip install tensorflow==2.13.1 tensorboard==2.13.0
 
-# 创建必要的CUDA库符号链接（仅创建TensorFlow需要的关键库）
-RUN ln -sf /usr/lib/x86_64-linux-gnu/libcudnn* /usr/local/cuda/lib64/ 2>/dev/null || true \
-    && ln -sf /usr/lib/x86_64-linux-gnu/libcuda.so.1 /usr/local/cuda/lib64/libcuda.so.1 \
-    && ln -sf /usr/lib/x86_64-linux-gnu/libcuda.so.1 /usr/local/cuda/lib64/libcuda.so \
-    && ldconfig
-
-# 安装额外的AI/ML包（NGC镜像可能未包含的）
+# 安装AI/ML相关包（版本可能变化）
 RUN pip3 install --no-cache-dir \
     "opencv-python-headless>=4.5.0" \
     "plotly>=5.14.0" \
     "transformers>=4.20.0" \
     "datasets>=2.0.0" \
-    "accelerate>=0.20.0" \
+    "accelerate>=0.20.0"
+
+# 安装Web框架包（版本可能变化）
+RUN pip3 install --no-cache-dir \
     "wandb>=0.15.0" \
     "flask>=2.0.0" \
     "fastapi>=0.95.0" \
     "uvicorn>=0.20.0"
 
-# 安装JupyterLab扩展和配置（合并操作）
+# 配置conda权限
+RUN chmod -R 777 /opt/miniconda3/envs/tf \
+    && mkdir -p /opt/miniconda3/pkgs && chmod -R 777 /opt/miniconda3/pkgs
+
+# 创建CUDA库符号链接
+RUN ln -sf /usr/lib/x86_64-linux-gnu/libcudnn* /usr/local/cuda/lib64/ 2>/dev/null || true \
+    && ln -sf /usr/lib/x86_64-linux-gnu/libcuda.so.1 /usr/local/cuda/lib64/libcuda.so.1 \
+    && ln -sf /usr/lib/x86_64-linux-gnu/libcuda.so.1 /usr/local/cuda/lib64/libcuda.so \
+    && ldconfig
+
+# 安装JupyterLab扩展（可能失败，不影响主要功能）
 RUN jupyter labextension install @plotly/plotly-jupyterlab-extension --no-build || true \
-    && jupyter lab build --dev-build=False --minimize=False || true \
-    # 验证Node.js版本
-    && node --version && npm --version \
-    # 配置SSH
-    && mkdir /var/run/sshd \
+    && jupyter lab build --dev-build=False --minimize=False || true
+
+# 配置SSH（系统配置）
+RUN mkdir /var/run/sshd \
     && echo 'root:root' | chpasswd \
     && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
     && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config \
     && echo "UseDNS no" >> /etc/ssh/sshd_config \
     && echo "GSSAPIAuthentication no" >> /etc/ssh/sshd_config \
-    && ssh-keygen -A \
-    # 创建工作目录
-    && mkdir -p /shared /workspace \
-    && chmod 755 /shared /workspace \
-    # 下载并安装code-server
-    && curl -fsSL https://code-server.dev/install.sh | sh
+    && ssh-keygen -A
 
-# 复制启动脚本和测试脚本
+# 创建工作目录
+RUN mkdir -p /shared /workspace && chmod 755 /shared /workspace
+
+# 安装code-server（可能变化的外部依赖）
+RUN curl -fsSL https://code-server.dev/install.sh | sh
+
+# 复制脚本文件（最经常变化的部分，放在最后）
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY docker/test_environments.sh /usr/local/bin/test_environments.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/test_environments.sh
 
 # 暴露端口
-# SSH: 22
-# VSCode Server: 8080  
-# Jupyter Lab: 8888
-# TensorBoard: 6006
 EXPOSE 22 8080 8888 6006
 
 # 设置启动脚本
