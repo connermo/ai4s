@@ -282,7 +282,7 @@ echo "   workspace   - 切换到工作目录"
 echo "   shared      - 切换到共享目录"
 echo ""
 echo "🐍 Conda环境快捷键:"
-echo "   py312       - 切换到Python 3.12环境"
+echo "   py311       - 切换到Python 3.11环境"
 echo "   condaenv    - 查看所有conda环境"
 echo ""
 echo "🎯 GPU信息:"
@@ -339,7 +339,7 @@ alias condaupdate='conda update'
 alias condaclean='conda clean --all'
 
 # 快速环境切换
-alias py312='conda activate py312'
+alias py311='conda activate py311'
 
 # Jupyter相关
 alias jlabstart='jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --no-browser'

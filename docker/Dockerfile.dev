@@ -52,31 +52,23 @@ RUN conda init bash \
     && conda config --set auto_activate_base false \
     && conda update -n base -c defaults conda
 
-# 创建Python 3.12开发环境
-RUN conda create -n py312 python=3.12 -y \
+# 创建Python 3.11开发环境（更好的包兼容性）
+RUN conda create -n py311 python=3.11 -y \
     && conda clean -afy
 
-# 安装常用Python包，忽略已安装的包避免卸载冲突
-RUN pip3 install --ignore-installed \
-    numpy \
-    pandas \
-    matplotlib \
-    seaborn \
-    scikit-learn \
-    tensorflow \
-    torch \
-    torchvision \
-    torchaudio \
-    jupyter \
-    jupyterlab \
-    tensorboard \
-    opencv-python \
-    pillow \
-    requests \
-    tqdm \
-    ipywidgets \
-    plotly \
-    dash
+# 安装基础Python包（指定兼容版本）
+RUN pip3 install --upgrade pip \
+    && pip3 install \
+    "numpy>=1.21.0,<2.0" \
+    "pandas>=1.3.0" \
+    "matplotlib>=3.5.0" \
+    "scikit-learn>=1.0.0" \
+    "jupyter>=1.0.0" \
+    "jupyterlab>=3.0.0" \
+    "requests>=2.25.0" \
+    "pillow>=8.0.0" \
+    "tqdm>=4.60.0" \
+    "ipywidgets>=7.6.0"
 
 # 安装JupyterLab的Plotly扩展
 RUN jupyter labextension install @plotly/plotly-jupyterlab-extension --no-build || true
