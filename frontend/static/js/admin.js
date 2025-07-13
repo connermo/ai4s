@@ -244,6 +244,7 @@ async function createUser() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...getAdminHeaders()
             },
             body: JSON.stringify({ username, password, email }),
         });
@@ -273,6 +274,7 @@ async function deleteUser(id, username) {
     try {
         const response = await fetch(`${API_BASE}/users/${id}`, {
             method: 'DELETE',
+            headers: getAdminHeaders()
         });
         
         if (response.ok) {
@@ -449,6 +451,7 @@ async function startContainer(id) {
         
         const response = await fetch(`${API_BASE}/containers/${id}/start`, {
             method: 'POST',
+            headers: getAdminHeaders()
         });
         
         if (response.ok) {
@@ -484,6 +487,7 @@ async function stopContainer(id) {
         
         const response = await fetch(`${API_BASE}/containers/${id}/stop`, {
             method: 'POST',
+            headers: getAdminHeaders()
         });
         
         if (response.ok) {
@@ -523,6 +527,7 @@ async function removeContainer(id, name) {
         
         const response = await fetch(`${API_BASE}/containers/${id}`, {
             method: 'DELETE',
+            headers: getAdminHeaders()
         });
         
         if (response.ok) {
@@ -690,6 +695,7 @@ async function createContainer() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...getAdminHeaders()
             },
             body: JSON.stringify(requestBody),
         });
@@ -877,6 +883,7 @@ async function updateUser() {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
+                ...getAdminHeaders()
             },
             body: JSON.stringify({ 
                 username, 
@@ -949,6 +956,7 @@ async function updatePassword() {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
+                ...getAdminHeaders()
             },
             body: JSON.stringify({ password: newPassword }),
         });
@@ -1004,6 +1012,7 @@ async function resetContainerPassword() {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
+                ...getAdminHeaders()
             },
             body: JSON.stringify({ password: newPassword }),
         });
