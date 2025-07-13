@@ -75,11 +75,14 @@ fi
 mkdir -p /home/$DEV_USER/.jupyter
 mkdir -p /home/$DEV_USER/.vscode-server
 mkdir -p /home/$DEV_USER/.config/code-server
+mkdir -p /home/$DEV_USER/.local/share/code-server/extensions
+mkdir -p /home/$DEV_USER/.local/share/code-server/User
 
 # 设置目录权限
 chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.jupyter 2>/dev/null
 chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.vscode-server 2>/dev/null
 chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config 2>/dev/null
+chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.local 2>/dev/null
 
 # 配置用户bash环境
 echo "配置用户bash环境..."
@@ -311,6 +314,12 @@ alias pyenv='python3 -m venv'
 alias pipinstall='pip3 install'
 alias piplist='pip3 list'
 alias pipshow='pip3 show'
+
+# VSCode扩展管理
+alias code-ext='code-server --list-extensions'
+alias code-install='code-server --install-extension'
+alias code-uninstall='code-server --uninstall-extension'
+alias code-disable='code-server --disable-extension'
 
 # Conda环境管理（基础功能）
 alias condaenv='conda info --envs'
@@ -583,9 +592,39 @@ bind-addr: 0.0.0.0:8080
 auth: password
 password: $DEV_PASSWORD
 cert: false
+extensions-dir: /home/$DEV_USER/.local/share/code-server/extensions
+user-data-dir: /home/$DEV_USER/.local/share/code-server
+disable-telemetry: true
+disable-update-check: true
 EOF
 
+    # 创建VSCode用户设置
+    cat > /home/$DEV_USER/.local/share/code-server/User/settings.json << EOF
+{
+    "python.defaultInterpreterPath": "/usr/bin/python3",
+    "python.terminal.activateEnvironment": true,
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "jupyter.askForKernelRestart": false,
+    "jupyter.sendSelectionToInteractiveWindow": true,
+    "terminal.integrated.shell.linux": "/bin/bash",
+    "git.enableSmartCommit": true,
+    "git.confirmSync": false,
+    "workbench.startupEditor": "welcomePage",
+    "extensions.autoUpdate": false,
+    "update.mode": "none",
+    "telemetry.telemetryLevel": "off"
+}
+EOF
+
+    # 复制预安装的扩展到用户目录
+    if [ -d "/tmp/extensions" ]; then
+        echo "复制预安装的VSCode扩展..."
+        cp -r /tmp/extensions/* /home/$DEV_USER/.local/share/code-server/extensions/ 2>/dev/null || true
+    fi
+
     chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server 2>/dev/null
+    chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.local/share/code-server 2>/dev/null
 fi
 
 # 配置SSH服务

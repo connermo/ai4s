@@ -153,6 +153,17 @@ RUN mkdir -p /shared /workspace && chmod 755 /shared /workspace
 # 安装code-server（可能变化的外部依赖）
 RUN curl -fsSL https://code-server.dev/install.sh | sh
 
+# 创建code-server扩展目录并预安装常用扩展
+RUN mkdir -p /tmp/extensions \
+    && code-server --install-extension ms-python.python --extensions-dir /tmp/extensions \
+    && code-server --install-extension ms-toolsai.jupyter --extensions-dir /tmp/extensions \
+    && code-server --install-extension ms-vscode.vscode-json --extensions-dir /tmp/extensions \
+    && code-server --install-extension redhat.vscode-yaml --extensions-dir /tmp/extensions \
+    && code-server --install-extension ms-python.pylint --extensions-dir /tmp/extensions \
+    && code-server --install-extension ms-python.black-formatter --extensions-dir /tmp/extensions \
+    && code-server --install-extension GitHub.copilot --extensions-dir /tmp/extensions || true \
+    && chmod -R 755 /tmp/extensions
+
 # 复制脚本文件（最经常变化的部分，放在最后）
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY docker/test_environments.sh /usr/local/bin/test_environments.sh
