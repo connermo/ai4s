@@ -306,7 +306,12 @@ async function loadContainers(forceRefresh = false) {
             'Expires': '0'
         } : {};
         
-        const response = await fetch(`${API_BASE}/containers`, { headers });
+        const response = await fetch(`${API_BASE}/containers`, { 
+            headers: {
+                ...headers,
+                ...getAdminHeaders()
+            }
+        });
         const containers = await response.json();
         
         const tbody = document.getElementById('containers-table-body');
@@ -380,7 +385,9 @@ async function createContainerRow(container) {
     // 获取用户信息
     let username = '未知';
     try {
-        const userResponse = await fetch(`${API_BASE}/users/${container.user_id}`);
+        const userResponse = await fetch(`${API_BASE}/users/${container.user_id}`, {
+            headers: getAdminHeaders()
+        });
         if (userResponse.ok) {
             const user = await userResponse.json();
             username = user.username;
@@ -397,7 +404,9 @@ async function createContainerRow(container) {
     // 获取端口信息
     let ports = '-';
     try {
-        const portResponse = await fetch(`${API_BASE}/users/${container.user_id}/container`);
+        const portResponse = await fetch(`${API_BASE}/users/${container.user_id}/container`, {
+            headers: getAdminHeaders()
+        });
         if (portResponse.ok) {
             const data = await portResponse.json();
             const p = data.ports;
@@ -558,7 +567,8 @@ async function loadUserOptions(retryCount = 0) {
             headers: {
                 'Cache-Control': 'no-cache, no-store, must-revalidate',
                 'Pragma': 'no-cache',
-                'Expires': '0'
+                'Expires': '0',
+                ...getAdminHeaders()
             }
         });
         
@@ -710,7 +720,9 @@ async function createContainer() {
 async function loadDashboard() {
     try {
         // 加载用户统计
-        const usersResponse = await fetch(`${API_BASE}/users`);
+        const usersResponse = await fetch(`${API_BASE}/users`, {
+            headers: getAdminHeaders()
+        });
         const users = await usersResponse.json();
         const activeUsers = (users && Array.isArray(users)) 
             ? users.filter(user => user.is_active).length 
@@ -718,7 +730,9 @@ async function loadDashboard() {
         document.getElementById('active-users').textContent = activeUsers;
         
         // 加载容器统计
-        const containersResponse = await fetch(`${API_BASE}/containers`);
+        const containersResponse = await fetch(`${API_BASE}/containers`, {
+            headers: getAdminHeaders()
+        });
         const containers = await containersResponse.json();
         const runningContainers = (containers && Array.isArray(containers)) 
             ? containers.filter(container => container.status === 'running').length 
@@ -825,7 +839,9 @@ function logout() {
 // 编辑用户
 async function editUser(id) {
     try {
-        const response = await fetch(`${API_BASE}/users/${id}`);
+        const response = await fetch(`${API_BASE}/users/${id}`, {
+            headers: getAdminHeaders()
+        });
         const user = await response.json();
         
         // 填充表单
@@ -888,7 +904,9 @@ async function updateUser() {
 // 修改密码
 async function changePassword(id) {
     try {
-        const response = await fetch(`${API_BASE}/users/${id}`);
+        const response = await fetch(`${API_BASE}/users/${id}`, {
+            headers: getAdminHeaders()
+        });
         const user = await response.json();
         
         // 填充表单
@@ -1059,7 +1077,9 @@ async function copyPassword() {
 async function copyUsageInstructions(containerId, username, containerName) {
     try {
         // 获取用户的端口信息
-        const userResponse = await fetch(`${API_BASE}/users`);
+        const userResponse = await fetch(`${API_BASE}/users`, {
+            headers: getAdminHeaders()
+        });
         const users = await userResponse.json();
         const user = users.find(u => u.username === username);
         
@@ -1069,7 +1089,9 @@ async function copyUsageInstructions(containerId, username, containerName) {
         }
         
         // 获取容器端口信息
-        const portResponse = await fetch(`${API_BASE}/users/${user.id}/container`);
+        const portResponse = await fetch(`${API_BASE}/users/${user.id}/container`, {
+            headers: getAdminHeaders()
+        });
         let ports = {};
         if (portResponse.ok) {
             const data = await portResponse.json();
