@@ -444,32 +444,37 @@ chmod 644 /home/$DEV_USER/.bashrc /home/$DEV_USER/.bash_aliases /home/$DEV_USER/
 echo "用户bash环境配置完成"
 
 # 初始化用户的conda环境
-echo "初始化用户conda环境..."
+echo "[$(date '+%H:%M:%S')] 开始初始化用户conda环境..."
 if [ -f "/opt/miniconda3/bin/conda" ]; then
     # 为用户初始化conda
+    echo "[$(date '+%H:%M:%S')] 为用户初始化conda..."
     su - $DEV_USER -c "/opt/miniconda3/bin/conda init bash" 2>/dev/null || echo "Conda初始化失败，但程序继续"
     
     # 创建用户级conda配置目录
+    echo "[$(date '+%H:%M:%S')] 创建conda配置目录..."
     mkdir -p /home/$DEV_USER/.conda
     chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.conda 2>/dev/null
     
     # 确保conda环境权限正确
+    echo "[$(date '+%H:%M:%S')] 设置conda环境权限..."
     chown -R $DEV_UID:$DEV_GID /opt/miniconda3/envs 2>/dev/null || echo "警告: conda envs权限设置失败"
     mkdir -p /opt/miniconda3/pkgs 2>/dev/null
     chown -R $DEV_UID:$DEV_GID /opt/miniconda3/pkgs 2>/dev/null || echo "警告: conda pkgs权限设置失败"
     
     # 确保CUDA库符号链接存在（用于TensorFlow GPU支持）
+    echo "[$(date '+%H:%M:%S')] 配置CUDA库链接..."
     ln -sf /usr/lib/x86_64-linux-gnu/libcuda.so.1 /usr/local/cuda/lib64/libcuda.so.1 2>/dev/null || true
     ln -sf /usr/lib/x86_64-linux-gnu/libcuda.so.1 /usr/local/cuda/lib64/libcuda.so 2>/dev/null || true
     ldconfig 2>/dev/null || true
     
     # 设置用户级conda配置
+    echo "[$(date '+%H:%M:%S')] 配置conda渠道..."
     su - $DEV_USER -c "conda config --set auto_activate_base false" 2>/dev/null || true
     su - $DEV_USER -c "conda config --add channels conda-forge" 2>/dev/null || true
     su - $DEV_USER -c "conda config --add channels pytorch" 2>/dev/null || true
     su - $DEV_USER -c "conda config --add channels nvidia" 2>/dev/null || true
     
-    echo "Conda环境初始化完成"
+    echo "[$(date '+%H:%M:%S')] Conda环境初始化完成"
 else
     echo "警告: Conda未找到，跳过conda初始化"
 fi
@@ -528,12 +533,19 @@ EOF
     chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server 2>/dev/null
 fi
 
+# 启动熵值守护进程以加速SSH密钥生成
+echo "[$(date '+%H:%M:%S')] 启动熵值守护进程..."
+service haveged start 2>/dev/null || echo "haveged启动失败，继续执行"
+
 # 配置SSH服务
-echo "配置SSH服务..."
+echo "[$(date '+%H:%M:%S')] 开始配置SSH服务..."
+
 # 确保SSH目录存在
+echo "[$(date '+%H:%M:%S')] 创建SSH运行目录..."
 mkdir -p /var/run/sshd
 
 # 配置SSH允许密码登录和用户登录，禁用DNS解析加速启动
+echo "[$(date '+%H:%M:%S')] 配置SSH设置..."
 sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
@@ -545,19 +557,34 @@ echo "UseDNS no" >> /etc/ssh/sshd_config
 echo "GSSAPIAuthentication no" >> /etc/ssh/sshd_config
 
 # 生成SSH主机密钥（如果不存在）
-echo "检查SSH主机密钥..."
+echo "[$(date '+%H:%M:%S')] 检查SSH主机密钥..."
 if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
-    echo "生成SSH主机密钥..."
+    echo "[$(date '+%H:%M:%S')] 生成SSH主机密钥（这可能需要一些时间）..."
     ssh-keygen -A
+    echo "[$(date '+%H:%M:%S')] SSH密钥生成完成"
+else
+    echo "[$(date '+%H:%M:%S')] SSH主机密钥已存在"
 fi
 
 # 启动SSH服务
-echo "启动SSH服务..."
+echo "[$(date '+%H:%M:%S')] 启动SSH服务..."
 if service ssh start; then
-    echo "SSH服务启动成功"
+    echo "[$(date '+%H:%M:%S')] SSH服务启动成功"
+    # 验证SSH服务状态
+    if pgrep sshd > /dev/null; then
+        echo "[$(date '+%H:%M:%S')] SSH daemon正在运行"
+    else
+        echo "[$(date '+%H:%M:%S')] 警告: SSH daemon未运行"
+    fi
 else
-    echo "警告: SSH服务启动失败，尝试手动启动..."
+    echo "[$(date '+%H:%M:%S')] 警告: SSH服务启动失败，尝试手动启动..."
     /usr/sbin/sshd -D &
+    sleep 2
+    if pgrep sshd > /dev/null; then
+        echo "[$(date '+%H:%M:%S')] SSH手动启动成功"
+    else
+        echo "[$(date '+%H:%M:%S')] 错误: SSH手动启动失败"
+    fi
 fi
 
 # 创建启动脚本

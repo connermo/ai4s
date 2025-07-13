@@ -29,6 +29,7 @@ RUN apt-get update && apt-get install -y \
     sudo \
     locales \
     tzdata \
+    haveged \
     && rm -rf /var/lib/apt/lists/*
 
 # 配置时区（稳定）
