@@ -105,15 +105,16 @@ ENV CUDA_HOME=/usr/local/cuda
 ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/targets/x86_64-linux/lib:${LD_LIBRARY_PATH}
 ENV PATH=/usr/local/cuda/bin:${PATH}
 
-# 在TensorFlow环境中安装GPU版本的TensorFlow和TensorBoard，并修复权限
-RUN /opt/miniconda3/bin/conda run -n tf pip install "numpy<2.0" \
-    && /opt/miniconda3/bin/conda run -n tf pip install tensorflow==2.15.0 tensorboard==2.15.0 \
+# 在TensorFlow环境中安装GPU版本的TensorFlow和TensorBoard（使用conda安装兼容版本）
+RUN /opt/miniconda3/bin/conda run -n tf conda install tensorflow-gpu=2.13 cudatoolkit=11.8 tensorboard=2.13 -c conda-forge -y \
     && chmod -R 777 /opt/miniconda3/envs/tf \
     && chmod -R 777 /opt/miniconda3/pkgs
 
 # 创建完整的CUDA库符号链接
 RUN ln -sf /usr/lib/x86_64-linux-gnu/libcudnn* /usr/local/cuda/lib64/ \
     && ln -sf /usr/local/cuda/targets/x86_64-linux/lib/* /usr/local/cuda/lib64/ \
+    && ln -sf /usr/lib/x86_64-linux-gnu/libcuda.so.1 /usr/local/cuda/lib64/libcuda.so.1 \
+    && ln -sf /usr/lib/x86_64-linux-gnu/libcuda.so.1 /usr/local/cuda/lib64/libcuda.so \
     && ldconfig
 
 # 安装额外的AI/ML包（NGC镜像可能未包含的）
