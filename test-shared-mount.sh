@@ -32,10 +32,14 @@ sleep 5
 
 echo ""
 echo "📊 检查管理后端容器内的shared目录:"
-docker exec gpu-platform-backend ls -la /app/shared/ 2>/dev/null | sed 's/^/  /' || echo "  无法访问容器或目录不存在"
+docker exec gpu-platform-backend ls -la /shared/ 2>/dev/null | sed 's/^/  /' || echo "  无法访问容器或目录不存在"
 
 echo ""
 echo "✅ 测试完成！"
 echo ""
-echo "如果管理后端容器内的/app/shared目录有内容，"
+echo "如果管理后端容器内的/shared目录有内容，"
 echo "那么新创建的用户容器中的/shared目录也应该有相同的内容。"
+echo ""
+echo "当前配置:"
+echo "- 宿主机 ./shared -> 管理后端容器 /shared"
+echo "- 管理后端创建用户容器时: /shared -> 用户容器 /shared"

@@ -34,8 +34,8 @@ services:
       - "${PORT:-8080}:${PORT:-8080}"
     volumes:
       - "./data/users:/app/users"
-      - "./shared:/app/shared"
-      - "./data/workspace:/app/workspace"
+      - "./shared:/shared"
+      - "./data/workspace:/workspace"
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PORT=${PORT:-8080}
@@ -43,8 +43,8 @@ services:
       - DEFAULT_PORT_PREFIX=${DEFAULT_PORT_PREFIX:-9000}
       - PORT_STEP=${PORT_STEP:-10}
       - USERS_DATA_PATH=${USERS_DATA_PATH:-/app/users}
-      - SHARED_DATA_PATH=${SHARED_DATA_PATH:-/app/shared}
-      - WORKSPACE_DATA_PATH=${WORKSPACE_DATA_PATH:-/app/workspace}
+      - SHARED_DATA_PATH=${SHARED_DATA_PATH:-/shared}
+      - WORKSPACE_DATA_PATH=${WORKSPACE_DATA_PATH:-/workspace}
       - CONTAINER_HOME_PATH=${CONTAINER_HOME_PATH:-/home}
       - CONTAINER_SHARED_PATH=${CONTAINER_SHARED_PATH:-/shared}
       - CONTAINER_WORKSPACE_PATH=${CONTAINER_WORKSPACE_PATH:-/workspace}
