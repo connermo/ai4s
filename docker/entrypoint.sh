@@ -649,25 +649,24 @@ EOF
                 fi
             done
         else
-            echo "⚠️  /tmp/extensions 目录为空（离线环境）"
-            echo "💡 提示：可以通过以下方式安装扩展："
-            echo "   1. 使用VSIX文件离线安装"
-            echo "   2. 运行: ./install-extensions.sh"
-            echo "   3. 手动上传扩展文件到容器"
+            echo "⚠️  /tmp/extensions 目录为空，构建时扩展安装可能失败"
+            echo "💡 提示：可以手动安装扩展:"
+            echo "   1. 检查网络连接后重新构建镜像"
+            echo "   2. 使用VSIX文件离线安装"
+            echo "   3. 手动运行: code-server --install-extension extension-id"
         fi
         
         echo "用户扩展目录最终内容:"
         ls -la /home/$DEV_USER/.local/share/code-server/extensions/ 2>/dev/null | sed 's/^/  /' || echo "  目录为空"
     else
-        echo "⚠️  预安装扩展目录 /tmp/extensions 不存在（离线环境）"
+        echo "⚠️  预安装扩展目录 /tmp/extensions 不存在"
         
         # 确保目标目录存在
         mkdir -p /home/$DEV_USER/.local/share/code-server/extensions
         
-        echo "💡 离线环境提示："
-        echo "   - VSCode扩展需要手动安装"
-        echo "   - 可以使用VSIX文件进行离线安装"
-        echo "   - 参考: ~/install-extensions.sh 和 ~/manage-extensions.sh"
+        echo "💡 提示: 镜像构建时可能未包含预装扩展"
+        echo "   - 重新构建镜像以获取预装扩展"
+        echo "   - 或使用VSIX文件手动安装"
     fi
 
     chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server 2>/dev/null
