@@ -551,26 +551,78 @@ async function loadDashboard() {
     }
 }
 
-// 显示提示信息
+// 显示优雅的Toast通知
 function showAlert(message, type = 'info') {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-    alertDiv.role = 'alert';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    // 类型映射
+    const typeMap = {
+        'success': { icon: 'bi-check-circle-fill', bg: 'success', title: '成功' },
+        'danger': { icon: 'bi-exclamation-triangle-fill', bg: 'danger', title: '错误' },
+        'warning': { icon: 'bi-exclamation-triangle-fill', bg: 'warning', title: '警告' },
+        'info': { icon: 'bi-info-circle-fill', bg: 'info', title: '提示' }
+    };
+    
+    const config = typeMap[type] || typeMap['info'];
+    const toastId = 'toast-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    
+    // 创建toast元素
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center text-bg-${config.bg} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="4000">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="bi ${config.icon} me-2"></i>
+                    <span>${message}</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
     `;
     
-    // 在main标签开头插入alert
-    const main = document.querySelector('main');
-    main.insertBefore(alertDiv, main.firstChild);
+    // 获取toast容器
+    const toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        console.error('Toast容器未找到');
+        return;
+    }
     
-    // 3秒后自动消失
+    // 插入toast
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    // 获取刚创建的toast元素
+    const toastElement = document.getElementById(toastId);
+    if (!toastElement) {
+        console.error('Toast元素创建失败');
+        return;
+    }
+    
+    // 初始化并显示toast
+    const toast = new bootstrap.Toast(toastElement, {
+        animation: true,
+        autohide: true,
+        delay: type === 'success' ? 3000 : 5000 // 成功消息3秒，其他5秒
+    });
+    
+    // 显示toast
+    toast.show();
+    
+    // 监听隐藏事件，自动清理DOM
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        setTimeout(() => {
+            if (toastElement.parentNode) {
+                toastElement.remove();
+            }
+        }, 100);
+    });
+    
+    // 添加动画效果
+    toastElement.style.opacity = '0';
+    toastElement.style.transform = 'translateX(100%)';
+    
+    // 延迟显示动画
     setTimeout(() => {
-        if (alertDiv.parentNode) {
-            alertDiv.remove();
-        }
-    }, 3000);
+        toastElement.style.transition = 'all 0.3s ease-out';
+        toastElement.style.opacity = '1';
+        toastElement.style.transform = 'translateX(0)';
+    }, 10);
 }
 
 // 退出登录
