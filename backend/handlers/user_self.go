@@ -15,7 +15,7 @@ type UserSelfHandler struct {
 	containerService *services.ContainerService
 }
 
-type ResetPasswordRequest struct {
+type UserResetPasswordRequest struct {
 	ContainerID string `json:"container_id"`
 	Password    string `json:"password"`
 }
@@ -47,7 +47,7 @@ func (h *UserSelfHandler) ResetContainerPassword(w http.ResponseWriter, r *http.
 		return
 	}
 
-	var req ResetPasswordRequest
+	var req UserResetPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "无效的请求格式", http.StatusBadRequest)
 		return
@@ -110,13 +110,15 @@ func (h *UserSelfHandler) GetSelfInfo(w http.ResponseWriter, r *http.Request) {
 	          COALESCE(container_id, '') as container_id
 	          FROM users WHERE id = ?`
 	
-	user := make(map[string]interface{})
+	var id int
+	var username, email string
+	var isActive, isAdmin bool
 	var createdAt, updatedAt string
 	var containerID string
 	
 	err = h.db.QueryRow(query, userID).Scan(
-		&user["id"], &user["username"], &user["email"],
-		&user["is_active"], &user["is_admin"], &createdAt, &updatedAt,
+		&id, &username, &email,
+		&isActive, &isAdmin, &createdAt, &updatedAt,
 		&containerID,
 	)
 
@@ -129,15 +131,21 @@ func (h *UserSelfHandler) GetSelfInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user["created_at"] = createdAt
-	user["updated_at"] = updatedAt
-	user["container_id"] = containerID
+	// 构造返回的用户数据
+	user := map[string]interface{}{
+		"id":           id,
+		"username":     username,
+		"email":        email,
+		"is_active":    isActive,
+		"is_admin":     isAdmin,
+		"created_at":   createdAt,
+		"updated_at":   updatedAt,
+		"container_id": containerID,
+	}
 
 	// 计算端口范围
-	if userIDValue, ok := user["id"].(int64); ok {
-		portStart := 9000 + (int(userIDValue)-1)*10
-		user["port_start"] = portStart
-	}
+	portStart := 9000 + (id-1)*10
+	user["port_start"] = portStart
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
