@@ -1046,7 +1046,6 @@ async function copyUsageInstructions(containerId, username, containerName) {
 - SSH 登录：ssh ${username}@${serverHost} -p ${ports.ssh || 'N/A'}
 - VSCode 服务器：http://${serverHost}:${ports.vscode || 'N/A'}
 - Jupyter Lab：http://${serverHost}:${ports.jupyter || 'N/A'}
-- TensorBoard：http://${serverHost}:${ports.tensorboard || 'N/A'}
 
 📁 目录说明：
 - 个人目录：~/ 或 /home/${username} (私有目录)  
@@ -1055,18 +1054,78 @@ async function copyUsageInstructions(containerId, username, containerName) {
 
 💡 使用提示：
 - 所有服务使用相同的登录密码
-- 支持GPU加速的PyTorch环境 + TensorFlow conda环境
+- 支持GPU加速的PyTorch 2.6.0环境
 - 预装常用AI/ML库和开发工具
-- 可通过SSH上传下载文件
+- 可通过SSH上传下载文件`;
 
-❓ 如有问题请联系管理员`;
-
-        // 复制到剪贴板
-        await navigator.clipboard.writeText(instructions);
-        showAlert('使用说明已复制到剪贴板，可直接发送给用户', 'success');
+        // 尝试复制到剪贴板
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(instructions);
+                showAlert('使用说明已复制到剪贴板！', 'success');
+            } else {
+                // 备用方案：显示弹窗让用户手动复制
+                fallbackCopyToClipboard(instructions);
+            }
+        } catch (clipboardError) {
+            console.warn('剪贴板API失败，使用备用方案:', clipboardError);
+            fallbackCopyToClipboard(instructions);
+        }
         
     } catch (error) {
         console.error('复制使用说明失败:', error);
-        showAlert('复制使用说明失败: ' + error.message, 'danger');
+        showAlert('获取使用说明失败: ' + error.message, 'danger');
+    }
+}
+
+// 备用复制方案：显示模态框让用户手动复制
+function fallbackCopyToClipboard(text) {
+    // 创建模态框
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.style.zIndex = '9999';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">容器使用说明</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">请手动复制以下内容：</p>
+                    <textarea class="form-control" rows="20" readonly style="font-family: monospace; font-size: 12px;">${text}</textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="selectAndCopy(this)">全选并复制</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    // 模态框关闭后移除元素
+    modal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(modal);
+    });
+}
+
+// 全选并复制文本
+function selectAndCopy(button) {
+    const textarea = button.closest('.modal-content').querySelector('textarea');
+    textarea.select();
+    textarea.setSelectionRange(0, 99999); // 移动端支持
+    
+    try {
+        document.execCommand('copy');
+        showAlert('内容已复制到剪贴板！', 'success');
+        // 关闭模态框
+        const modal = button.closest('.modal');
+        bootstrap.Modal.getInstance(modal).hide();
+    } catch (err) {
+        showAlert('复制失败，请手动选择并复制文本', 'warning');
     }
 }
