@@ -701,10 +701,17 @@ async function createContainer() {
         });
         
         if (response.ok) {
-            showAlert('容器创建成功！已设置所有服务的登录密码', 'success');
+            const responseData = await response.json();
+            showAlert('容器创建成功！', 'success');
             document.getElementById('createContainerForm').reset();
             
             bootstrap.Modal.getInstance(document.getElementById('createContainerModal')).hide();
+            
+            // 显示用户通知信息
+            setTimeout(() => {
+                showUserNotificationModal(userId, password, responseData);
+            }, 300);
+            
             // 创建成功后延迟刷新，避免立即刷新导致的闪烁
             setTimeout(() => {
                 if (!isContainerLoading) {
@@ -1202,5 +1209,125 @@ function selectAndCopy(button) {
         bootstrap.Modal.getInstance(modal).hide();
     } catch (err) {
         showAlert('复制失败，请手动选择并复制文本', 'warning');
+    }
+}
+
+// 显示用户通知信息Modal
+async function showUserNotificationModal(userId, password, containerData) {
+    try {
+        // 获取用户信息
+        const userResponse = await fetch(`${API_BASE}/users/${userId}`, {
+            headers: getAdminHeaders()
+        });
+        const user = await userResponse.json();
+        
+        // 获取容器端口信息
+        const portResponse = await fetch(`${API_BASE}/users/${userId}/container`, {
+            headers: getAdminHeaders()
+        });
+        let ports = {};
+        if (portResponse.ok) {
+            const data = await portResponse.json();
+            ports = data.ports || {};
+        }
+        
+        // 获取服务器主机名或IP
+        const serverHost = window.location.hostname;
+        
+        // 构造完整的用户通知信息
+        const userNotification = `🎉 恭喜！您的GPU开发环境已就绪！
+
+📋 账户信息：
+👤 用户名：${user.username}
+🔐 登录密码：${password}
+🖥️  服务器地址：${serverHost}
+
+🔗 服务访问地址：
+🔹 SSH 登录：ssh ${user.username}@${serverHost} -p ${ports.ssh || 'N/A'}
+🔹 VSCode 服务器：http://${serverHost}:${ports.vscode || 'N/A'}
+🔹 Jupyter Lab：http://${serverHost}:${ports.jupyter || 'N/A'}
+
+📁 目录说明：
+🔹 个人目录：~/ 或 /home/${user.username} (私有目录)
+🔹 共享目录：~/shared 或 /shared (只读共享)
+🔹 工作空间：~/workspace 或 /workspace (读写共享)
+
+💡 重要提示：
+🔹 所有服务使用相同的登录密码
+🔹 支持GPU加速的PyTorch 2.6.0环境
+🔹 预装常用AI/ML库和开发工具
+🔹 可通过SSH上传下载文件
+🔹 请妥善保管您的登录密码，系统不会再次显示
+
+如有问题，请联系系统管理员。祝您使用愉快！🚀`;
+
+        // 创建并显示模态框
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.style.zIndex = '9999';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-check-circle me-2"></i>
+                            用户通知信息（请发送给用户）
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>管理员提示：</strong>以下信息包含用户的登录密码，请通过安全渠道发送给用户 <strong>${user.username}</strong>
+                        </div>
+                        <textarea class="form-control" rows="20" readonly style="font-family: monospace; font-size: 13px; line-height: 1.4;">${userNotification}</textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="selectAndCopy(this)">
+                            <i class="bi bi-clipboard me-1"></i>复制全部内容
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="copyPasswordOnly('${password}')">
+                            <i class="bi bi-key me-1"></i>仅复制密码
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        const modalInstance = new bootstrap.Modal(modal);
+        modalInstance.show();
+        
+        // 模态框关闭后移除元素
+        modal.addEventListener('hidden.bs.modal', () => {
+            document.body.removeChild(modal);
+        });
+        
+    } catch (error) {
+        console.error('生成用户通知信息失败:', error);
+        showAlert('生成用户通知信息失败: ' + error.message, 'danger');
+    }
+}
+
+// 仅复制密码
+async function copyPasswordOnly(password) {
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(password);
+            showAlert('密码已复制到剪贴板！', 'success');
+        } else {
+            // 降级处理
+            const textArea = document.createElement('textarea');
+            textArea.value = password;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showAlert('密码已复制到剪贴板！', 'success');
+        }
+    } catch (error) {
+        console.error('复制密码失败:', error);
+        showAlert('复制失败，密码为：' + password, 'warning');
     }
 }
