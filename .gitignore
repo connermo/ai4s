@@ -31,3 +31,15 @@ go.work.sum
 # .idea/
 # .vscode/
 vsix-extensions/*.vsix
+
+# Build & Distribution Artifacts
+/offline-dist/
+*.tar.gz
+*.log*
+
+# Local Data (not for version control)
+/data/
+/users/
+/shared/
+/workspace/
+/logs/

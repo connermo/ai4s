@@ -7,15 +7,21 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+DIST_DIR="$PROJECT_ROOT/offline-dist"
 PACKAGE_NAME="ai4s-offline-$(date +%Y%m%d-%H%M%S)"
 BUILD_DIR="/tmp/$PACKAGE_NAME"
-TARBALL_PATH="$PROJECT_ROOT/${PACKAGE_NAME}.tar.gz"
+TARBALL_PATH="$DIST_DIR/${PACKAGE_NAME}.tar.gz"
 
 echo "=== AI4S 离线部署包构建脚本 ==="
 echo "项目根目录: $PROJECT_ROOT"
+echo "输出目录: $DIST_DIR"
 echo "构建目录: $BUILD_DIR"
 echo "目标文件: $TARBALL_PATH"
 echo ""
+
+# 创建输出目录
+echo "📁 创建输出目录..."
+mkdir -p "$DIST_DIR"
 
 # 检查Docker是否运行
 if ! docker info > /dev/null 2>&1; then
@@ -75,7 +81,7 @@ echo "导出平台后端镜像..."
 docker save connermo/ai4s-platform:latest | $COMPRESS_CMD > "$BUILD_DIR/images/platform-backend.tar.gz"
 
 echo "导出GPU开发环境镜像..."
-docker save connermo/ai4s-env:latest | $COMPRESS_CMD > "$BUILD_DIR/images/gpu-dev-env.tar.gz"
+docker save connermo/ai4s-env:latest | $COMPRESS_CMD > "$BUILD_DIR/images/ai4s-env.tar.gz"
 
 # 导出依赖的基础镜像
 echo "导出基础镜像..."
@@ -137,7 +143,7 @@ echo "导入Nginx镜像..."
 docker load < "$IMAGES_DIR/nginx.tar.gz"
 
 echo "导入GPU开发环境镜像..."
-docker load < "$IMAGES_DIR/gpu-dev-env.tar.gz"
+docker load < "$IMAGES_DIR/ai4s-env.tar.gz"
 
 echo "导入平台后端镜像..."
 docker load < "$IMAGES_DIR/platform-backend.tar.gz"
@@ -168,6 +174,9 @@ echo "⚙️ 创建环境配置..."
 if [ ! -f .env ]; then
     cp .env.example .env
     echo "请根据需要修改 .env 文件中的配置"
+    echo "" >> .env
+    echo "# 用户容器使用的镜像" >> .env
+    echo "USER_CONTAINER_IMAGE=connermo/ai4s-env:latest" >> .env
 fi
 
 # 检查NVIDIA驱动
