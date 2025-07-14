@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"gpu-dev-platform/models"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
@@ -112,14 +114,14 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	os.MkdirAll(workspaceDataPath, 0755)
 
 	// 从环境变量获取宿主机绝对路径
-	hostSharedPath := os.Getenv("HOST_SHARED_PATH")
+	hostSharedPath := os.Getenv("HOST_SHARED_RO_PATH")
 	if hostSharedPath == "" {
-		return nil, fmt.Errorf("HOST_SHARED_PATH environment variable not set")
+		return nil, fmt.Errorf("HOST_SHARED_RO_PATH environment variable not set")
 	}
 	
-	hostWorkspacePath := os.Getenv("HOST_WORKSPACE_PATH")
+	hostWorkspacePath := os.Getenv("HOST_SHARED_RW_PATH")
 	if hostWorkspacePath == "" {
-		return nil, fmt.Errorf("HOST_WORKSPACE_PATH environment variable not set")
+		return nil, fmt.Errorf("HOST_SHARED_RW_PATH environment variable not set")
 	}
 	
 	hostUsersPath := os.Getenv("HOST_USERS_PATH")
@@ -130,14 +132,24 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	hostUserDir := fmt.Sprintf("%s/%s", hostUsersPath, user.Username)
 
 	hostConfig := &container.HostConfig{
-		PortBindings: s.getPortBindings(user),
-		Binds: []string{
-			fmt.Sprintf("%s:%s/%s", hostUserDir, containerHomePath, user.Username),
-			fmt.Sprintf("%s:%s:ro", hostSharedPath, containerSharedPath),
-			fmt.Sprintf("%s:%s", hostWorkspacePath, containerWorkspacePath),
-			"/usr/bin/nvidia-smi:/usr/bin/nvidia-smi:ro", // 挂载宿主机的nvidia-smi
+		Mounts: []mount.Mount{
+			{
+				Type:   mount.TypeBind,
+				Source: hostUserDir,
+				Target: containerHomePath,
+			},
+			{
+				Type:     mount.TypeBind,
+				Source:   hostSharedPath,
+				Target:   containerSharedPath,
+				ReadOnly: true,
+			},
+			{
+				Type:   mount.TypeBind,
+				Source: hostWorkspacePath,
+				Target: containerWorkspacePath,
+			},
 		},
-		// 不限制资源，让容器使用宿主机全部资源
 		Resources: container.Resources{},
 		RestartPolicy: container.RestartPolicy{
 			Name: "unless-stopped",

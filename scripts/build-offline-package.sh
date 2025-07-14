@@ -59,8 +59,8 @@ rsync -av "$PROJECT_ROOT/" "$BUILD_DIR/source/" \
     --exclude='.DS_Store' \
     --exclude='.users' \
     --exclude='users' \
-    --exclude='shared' \
-    --exclude='workspace' \
+    --exclude='shared-ro' \
+    --exclude='shared-rw' \
     --exclude='*.pyc'
 
 # 构建Docker镜像
@@ -161,12 +161,12 @@ cd "$TARGET_DIR"
 # 创建必要的目录
 echo "📁 创建必要的目录..."
 mkdir -p data/mysql
-mkdir -p data/shared
-mkdir -p data/workspace
+mkdir -p shared-ro
+mkdir -p shared-rw
 mkdir -p logs
 
 # 设置权限
-chmod 755 data/shared data/workspace
+chmod 755 shared-ro shared-rw
 chmod 777 data/mysql logs
 
 # 创建.env文件
@@ -267,9 +267,9 @@ vim .env
 ├── configs/         # 配置文件
 ├── scripts/         # 启动脚本
 ├── data/           # 数据目录
-│   ├── mysql/      # MySQL数据
-│   ├── shared/     # 共享只读目录
-│   └── workspace/  # 共享工作区
+│   └── mysql/      # MySQL数据
+├── shared-ro/      # 只读共享目录
+├── shared-rw/      # 读写工作区
 └── logs/           # 日志目录
 ```
 
@@ -308,7 +308,7 @@ docker logs <container-name>
 docker-compose exec mysql mysqldump -u root -p gpu_platform > backup.sql
 
 # 备份用户数据
-tar -czf user-data-backup.tar.gz data/workspace data/shared
+tar -czf user-data-backup.tar.gz shared-rw shared-ro
 ```
 
 ## 故障排除
@@ -329,7 +329,7 @@ docker run --rm --gpus all nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 nvidia-smi
 ```bash
 # 修复目录权限
 sudo chown -R $USER:$USER /opt/ai4s
-chmod 755 data/shared data/workspace
+chmod 755 shared-ro shared-rw
 chmod 777 data/mysql logs
 ```
 

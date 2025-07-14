@@ -37,16 +37,16 @@ fi
 
 # 使用环境变量或默认路径
 USERS_DIR=${USERS_DATA_PATH:-./users}
-SHARED_DIR=${SHARED_DATA_PATH:-./shared}
-WORKSPACE_DIR=${WORKSPACE_DATA_PATH:-./workspace}
+SHARED_RO_DIR=${HOST_SHARED_RO_PATH:-./shared-ro}
+SHARED_RW_DIR=${HOST_SHARED_RW_PATH:-./shared-rw}
 
-mkdir -p "$USERS_DIR" "$SHARED_DIR" "$WORKSPACE_DIR" logs
-chmod 755 "$USERS_DIR" "$SHARED_DIR" "$WORKSPACE_DIR" logs
+mkdir -p "$USERS_DIR" "$SHARED_RO_DIR" "$SHARED_RW_DIR" logs
+chmod 755 "$USERS_DIR" "$SHARED_RO_DIR" "$SHARED_RW_DIR" logs
 
 echo "创建的目录:"
 echo "  用户数据: $USERS_DIR"
-echo "  共享数据: $SHARED_DIR"
-echo "  工作空间: $WORKSPACE_DIR"
+echo "  只读共享: $SHARED_RO_DIR"
+echo "  读写共享: $SHARED_RW_DIR"
 echo "  日志目录: ./logs"
 
 echo -e "${GREEN}✓ 目录创建完成${NC}"
