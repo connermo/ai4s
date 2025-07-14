@@ -4,552 +4,353 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GPU开发平台管理</title>
-    <link href="/static/css/tailwind.css" rel="stylesheet">
-    <link href="/static/css/icons.css" rel="stylesheet">
-    <style>
-        :root {
-            --color-primary: #3b82f6;
-            --color-secondary: #64748b;
-            --color-accent: #06b6d4;
-            --color-success: #10b981;
-            --color-warning: #f59e0b;
-            --color-error: #ef4444;
-        }
-        .text-primary { color: var(--color-primary); }
-        .bg-primary { background-color: var(--color-primary); }
-        .hover\\:bg-blue-700:hover { background-color: #1d4ed8; }
-        .border-primary { border-color: var(--color-primary); }
-        .focus\\:ring-primary:focus { --tw-ring-color: var(--color-primary); }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/admin.css?v=20250713-2" rel="stylesheet">
 </head>
-<body class="bg-gray-50 dark:bg-gray-900">
-    <!-- 顶部导航栏 -->
-    <header class="bg-gradient-to-r from-blue-600 to-purple-600 shadow-xl">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <!-- Logo区域 -->
-                <div class="flex items-center space-x-4">
-                    <div class="bg-white bg-opacity-20 p-2 rounded-lg">
-                        <span class="icon icon-lg icon-chip text-white"></span>
-                    </div>
-                    <div>
-                        <h1 class="text-xl font-bold text-white">GPU开发平台</h1>
-                        <p class="text-blue-100 text-xs">智能容器管理系统</p>
-                    </div>
-                </div>
-                
-                <!-- 右侧用户区域 -->
-                <div class="flex items-center space-x-4">
-                    <div class="hidden md:flex items-center space-x-3">
-                        <div class="bg-green-400 bg-opacity-30 px-3 py-1 rounded-full border border-green-300">
-                            <span class="text-green-100 text-sm font-medium">● 在线</span>
-                        </div>
-                        <span class="text-white font-medium">管理员</span>
-                    </div>
-                    <button onclick="logout()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 border border-white border-opacity-30">
-                        <span class="icon icon-logout"></span>
-                        <span>退出</span>
-                    </button>
-                </div>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-gpu-card"></i>
+                GPU开发平台
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="#" onclick="logout()">
+                    <i class="bi bi-box-arrow-right"></i>
+                    退出
+                </a>
             </div>
         </div>
-    </header>
+    </nav>
 
-    <!-- 主要内容区域 -->
-    <div class="flex min-h-screen">
-        <!-- 侧边栏 -->
-        <aside class="w-64 bg-white shadow-2xl border-r border-gray-100">
-            <div class="p-6">
-                <!-- 快速统计区域 -->
-                <div class="mb-8">
-                    <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">系统概览</h3>
-                    <div class="space-y-3">
-                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-blue-700 text-sm font-medium">活跃用户</p>
-                                    <p class="text-2xl font-bold text-blue-800" id="sidebar-active-users">0</p>
-                                </div>
-                                <div class="bg-blue-500 p-2 rounded-lg">
-                                    <span class="icon icon-lg icon-users text-white"></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 p-4 rounded-xl border border-emerald-200">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-emerald-700 text-sm font-medium">运行容器</p>
-                                    <p class="text-2xl font-bold text-emerald-800" id="sidebar-running-containers">0</p>
-                                </div>
-                                <div class="bg-emerald-500 p-2 rounded-lg">
-                                    <span class="icon icon-lg icon-server text-white"></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#users" onclick="showSection('users')">
+                                <i class="bi bi-people"></i>
+                                用户管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#containers" onclick="showSection('containers')">
+                                <i class="bi bi-box"></i>
+                                容器管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#dashboard" onclick="showSection('dashboard')">
+                                <i class="bi bi-graph-up"></i>
+                                系统监控
+                            </a>
+                        </li>
+                    </ul>
                 </div>
-                
-                <!-- 导航菜单 -->
-                <nav class="space-y-1">
-                    <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">功能菜单</h3>
-                    <a href="#" onclick="showSection('users')" class="nav-item nav-item-active group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105">
-                        <div class="bg-blue-100 p-2 rounded-lg mr-3 group-hover:bg-blue-200 transition-colors">
-                            <span class="icon icon-users text-blue-600"></span>
-                        </div>
-                        <span>用户管理</span>
-                    </a>
-                    <a href="#" onclick="showSection('containers')" class="nav-item group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105">
-                        <div class="bg-gray-100 p-2 rounded-lg mr-3 group-hover:bg-gray-200 transition-colors">
-                            <span class="icon icon-server text-gray-600"></span>
-                        </div>
-                        <span>容器管理</span>
-                    </a>
-                    <a href="#" onclick="showSection('dashboard')" class="nav-item group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105">
-                        <div class="bg-gray-100 p-2 rounded-lg mr-3 group-hover:bg-gray-200 transition-colors">
-                            <span class="icon icon-chart text-gray-600"></span>
-                        </div>
-                        <span>系统监控</span>
-                    </a>
-                </nav>
-            </div>
-        </aside>
+            </nav>
 
-        <!-- 主要内容区域 -->
-        <main class="flex-1 ml-64 bg-gray-50 overflow-y-auto">
-            <div class="p-8">
-            <!-- 用户管理页面 -->
-            <div id="users-section" class="section">
-                <!-- 页面头部 -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex items-center space-x-4">
-                            <div class="bg-gradient-to-br from-blue-100 to-blue-200 p-3 rounded-xl">
-                                <span class="icon icon-lg icon-users text-blue-600"></span>
-                            </div>
-                            <div>
-                                <h1 class="text-2xl font-bold text-gray-900">用户管理</h1>
-                                <p class="text-gray-500 text-sm">管理系统用户账户和权限设置</p>
-                            </div>
-                        </div>
-                        <div class="mt-4 sm:mt-0">
-                            <button onclick="openAddUserModal()" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105">
-                                <span class="icon icon-plus text-white"></span>
-                                <span>添加用户</span>
-                            </button>
-                        </div>
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <!-- 用户管理 -->
+                <div id="users-section" class="section">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">用户管理</h1>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                            <i class="bi bi-plus-circle"></i>
+                            添加用户
+                        </button>
                     </div>
-                </div>
-                
-                <!-- 用户表格 -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="px-6 py-4 bg-gray-50 border-b border-gray-100">
-                        <h3 class="text-lg font-semibold text-gray-900">用户列表</h3>
-                        <p class="text-sm text-gray-500">查看和管理所有系统用户</p>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
                                 <tr>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">用户信息</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">状态</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">权限</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">端口范围</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">创建时间</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">操作</th>
+                                    <th>ID</th>
+                                    <th>用户名</th>
+                                    <th>邮箱</th>
+                                    <th>状态</th>
+                                    <th>管理员</th>
+                                    <th>端口范围</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
                                 </tr>
                             </thead>
-                            <tbody id="users-table-body" class="bg-white divide-y divide-gray-200">
+                            <tbody id="users-table-body">
                                 <!-- 用户数据将通过JS填充 -->
                             </tbody>
                         </table>
                     </div>
                 </div>
-            </div>
 
-            <!-- 容器管理页面 -->
-            <div id="containers-section" class="section hidden">
-                <!-- 页面头部 -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex items-center space-x-4">
-                            <div class="bg-gradient-to-br from-emerald-100 to-emerald-200 p-3 rounded-xl">
-                                <span class="icon icon-lg icon-server text-emerald-600"></span>
-                            </div>
-                            <div>
-                                <h1 class="text-2xl font-bold text-gray-900">容器管理</h1>
-                                <p class="text-gray-500 text-sm">管理GPU开发容器的创建、启停和配置</p>
-                            </div>
-                        </div>
-                        <div class="mt-4 sm:mt-0 flex space-x-3">
-                            <button onclick="loadContainers(true)" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 border border-gray-200">
-                                <span class="icon icon-refresh text-gray-600"></span>
-                                <span>刷新</span>
+                <!-- 容器管理 -->
+                <div id="containers-section" class="section" style="display: none;">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">容器管理</h1>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-secondary" onclick="loadContainers(true)" title="刷新容器状态">
+                                <i class="bi bi-arrow-clockwise"></i>
+                                刷新
                             </button>
-                            <button onclick="openCreateContainerModal()" class="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105">
-                                <span class="icon icon-plus text-white"></span>
-                                <span>创建容器</span>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createContainerModal">
+                                <i class="bi bi-plus-circle"></i>
+                                创建容器
                             </button>
                         </div>
                     </div>
-                </div>
-                
-                <!-- 容器表格 -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="px-6 py-4 bg-gray-50 border-b border-gray-100">
-                        <h3 class="text-lg font-semibold text-gray-900">容器列表</h3>
-                        <p class="text-sm text-gray-500">查看和管理所有GPU开发容器</p>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
                                 <tr>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">用户</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">容器信息</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">状态</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">GPU资源</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">服务端口</th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">操作</th>
+                                    <th>用户</th>
+                                    <th>容器名称</th>
+                                    <th>状态</th>
+                                    <th>GPU设备</th>
+                                    <th>服务端口</th>
+                                    <th>操作</th>
                                 </tr>
                             </thead>
-                            <tbody id="containers-table-body" class="bg-white divide-y divide-gray-200">
+                            <tbody id="containers-table-body">
                                 <!-- 容器数据将通过JS填充 -->
                             </tbody>
                         </table>
                     </div>
                 </div>
-            </div>
 
-            <!-- 系统监控页面 -->
-            <div id="dashboard-section" class="section hidden">
-                <!-- 页面头部 -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-                    <div class="flex items-center space-x-4">
-                        <div class="bg-gradient-to-br from-purple-100 to-purple-200 p-3 rounded-xl">
-                            <span class="icon icon-lg icon-chart text-purple-600"></span>
-                        </div>
-                        <div>
-                            <h1 class="text-2xl font-bold text-gray-900">系统监控</h1>
-                            <p class="text-gray-500 text-sm">实时监控系统资源使用情况和性能指标</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 统计卡片 -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <div class="flex items-center space-x-2 mb-2">
-                                    <div class="bg-blue-100 p-2 rounded-lg">
-                                        <span class="icon icon-users text-blue-600"></span>
-                                    </div>
-                                    <p class="text-gray-600 text-sm font-medium">活跃用户</p>
-                                </div>
-                                <p class="text-3xl font-bold text-gray-900" id="active-users">0</p>
-                                <p class="text-xs text-gray-500 mt-1">当前在线用户数</p>
-                            </div>
-                        </div>
+                <!-- 系统监控 -->
+                <div id="dashboard-section" class="section" style="display: none;">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">系统监控</h1>
                     </div>
                     
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <div class="flex items-center space-x-2 mb-2">
-                                    <div class="bg-emerald-100 p-2 rounded-lg">
-                                        <span class="icon icon-server text-emerald-600"></span>
-                                    </div>
-                                    <p class="text-gray-600 text-sm font-medium">运行容器</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">系统状态</h5>
                                 </div>
-                                <p class="text-3xl font-bold text-gray-900" id="running-containers">0</p>
-                                <p class="text-xs text-gray-500 mt-1">正在运行的容器</p>
+                                <div class="card-body">
+                                    <p>活跃用户: <span id="active-users">0</span></p>
+                                    <p>运行中容器: <span id="running-containers">0</span></p>
+                                    <p>GPU使用率: <span id="gpu-usage">0%</span></p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <div class="flex items-center space-x-2 mb-2">
-                                    <div class="bg-purple-100 p-2 rounded-lg">
-                                        <span class="icon icon-chip text-purple-600"></span>
-                                    </div>
-                                    <p class="text-gray-600 text-sm font-medium">GPU使用率</p>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">资源使用</h5>
                                 </div>
-                                <p class="text-3xl font-bold text-gray-900" id="gpu-usage">0%</p>
-                                <p class="text-xs text-gray-500 mt-1">GPU计算资源占用</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <div class="flex items-center space-x-2 mb-2">
-                                    <div class="bg-orange-100 p-2 rounded-lg">
-                                        <span class="icon icon-chart text-orange-600"></span>
-                                    </div>
-                                    <p class="text-gray-600 text-sm font-medium">系统负载</p>
+                                <div class="card-body">
+                                    <p>CPU使用率: <span id="cpu-usage">0%</span></p>
+                                    <p>内存使用率: <span id="memory-usage">0%</span></p>
+                                    <p>磁盘使用率: <span id="disk-usage">0%</span></p>
                                 </div>
-                                <p class="text-3xl font-bold text-gray-900" id="system-load">低</p>
-                                <p class="text-xs text-gray-500 mt-1">系统整体负载状态</p>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- 详细资源监控 -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                        <div class="flex items-center space-x-3 mb-6">
-                            <div class="bg-blue-100 p-2 rounded-lg">
-                                <span class="icon icon-chart text-blue-600"></span>
-                            </div>
-                            <h3 class="text-lg font-semibold text-gray-900">系统资源</h3>
-                        </div>
-                        <div class="space-y-6">
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <span class="text-sm font-medium text-gray-700">CPU使用率</span>
-                                    <span class="text-sm font-bold text-blue-600" id="cpu-usage">0%</span>
-                                </div>
-                                <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                                    <div class="bg-gradient-to-r from-blue-400 to-blue-500 h-3 rounded-full transition-all duration-500 ease-out" style="width: 0%" id="cpu-bar"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <span class="text-sm font-medium text-gray-700">内存使用率</span>
-                                    <span class="text-sm font-bold text-emerald-600" id="memory-usage">0%</span>
-                                </div>
-                                <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                                    <div class="bg-gradient-to-r from-emerald-400 to-emerald-500 h-3 rounded-full transition-all duration-500 ease-out" style="width: 0%" id="memory-bar"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <span class="text-sm font-medium text-gray-700">磁盘使用率</span>
-                                    <span class="text-sm font-bold text-amber-600" id="disk-usage">0%</span>
-                                </div>
-                                <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                                    <div class="bg-gradient-to-r from-amber-400 to-amber-500 h-3 rounded-full transition-all duration-500 ease-out" style="width: 0%" id="disk-bar"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                        <div class="flex items-center space-x-3 mb-6">
-                            <div class="bg-purple-100 p-2 rounded-lg">
-                                <span class="icon icon-server text-purple-600"></span>
-                            </div>
-                            <h3 class="text-lg font-semibold text-gray-900">系统信息</h3>
-                        </div>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                <span class="text-gray-600 font-medium">运行时间</span>
-                                <span class="text-gray-900 font-semibold" id="uptime">--</span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                <span class="text-gray-600 font-medium">总内存</span>
-                                <span class="text-gray-900 font-semibold" id="total-memory">--</span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                <span class="text-gray-600 font-medium">GPU设备数</span>
-                                <span class="text-gray-900 font-semibold" id="gpu-count">--</span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                <span class="text-gray-600 font-medium">容器镜像</span>
-                                <span class="text-gray-900 font-semibold" id="docker-images">--</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            </div>
-        </main>
+            </main>
+        </div>
     </div>
 
     <!-- 添加用户模态框 -->
-    <div id="addUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all border border-gray-100">
-            <div class="flex items-center justify-between p-6 border-b border-gray-100">
-                <div class="flex items-center space-x-3">
-                    <div class="bg-blue-100 p-2 rounded-lg">
-                        <span class="icon icon-users text-blue-600"></span>
-                    </div>
-                    <h3 class="text-lg font-semibold text-gray-900">添加用户</h3>
+    <div class="modal fade" id="addUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加用户</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <button onclick="closeAddUserModal()" class="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg">
-                    <span class="icon icon-close"></span>
-                </button>
+                <div class="modal-body">
+                    <form id="addUserForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">用户名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">密码 <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">邮箱 <span class="text-muted">(可选)</span></label>
+                            <input type="email" class="form-control" id="email" placeholder="例如: user@example.com">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="createUser()">创建</button>
+                </div>
             </div>
-            
-            <form id="addUserForm" class="p-6">
-                <div class="space-y-4">
-                    <div>
-                        <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            用户名 <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" id="username" required 
-                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-all">
-                    </div>
-                    
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            密码 <span class="text-red-500">*</span>
-                        </label>
-                        <input type="password" id="password" required 
-                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-all">
-                    </div>
-                    
-                    <div>
-                        <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            邮箱 <span class="text-gray-500">(可选)</span>
-                        </label>
-                        <input type="email" id="email" placeholder="例如: user@example.com" 
-                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-all">
-                    </div>
-                </div>
-                
-                <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <button type="button" onclick="closeAddUserModal()" 
-                            class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                        取消
-                    </button>
-                    <button type="submit" onclick="createUser()" 
-                            class="px-6 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">
-                        创建用户
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 
     <!-- 创建容器模态框 -->
-    <div id="createContainerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
-            <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">创建容器</h3>
-                <button onclick="closeCreateContainerModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                    <span class="icon icon-lg icon-close"></span>
-                </button>
-            </div>
-            
-            <form id="createContainerForm" class="p-6">
-                <div class="space-y-6">
-                    <div>
-                        <label for="container-user-id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            选择用户 <span class="text-red-500">*</span>
-                        </label>
-                        <select id="container-user-id" required 
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-all">
-                            <!-- 用户选项将通过JS填充 -->
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label for="gpu-devices" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            GPU设备ID
-                        </label>
-                        <input type="text" id="gpu-devices" placeholder="0,1,2 或留空使用所有GPU" 
-                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-all">
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">可选，指定GPU设备ID，用逗号分隔</p>
-                    </div>
-                    
-                    <div>
-                        <label for="service-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            服务登录密码 <span class="text-red-500">*</span>
-                        </label>
-                        <div class="flex space-x-2">
-                            <input type="text" id="service-password" placeholder="输入密码或点击生成" required minlength="8" 
-                                   class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-all">
-                            <button type="button" onclick="generateSecurePassword()" 
-                                    class="px-3 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-300 rounded-lg transition-colors" 
-                                    title="生成强密码">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                            <button type="button" onclick="copyPassword()" 
-                                    class="px-3 py-2 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-lg transition-colors" 
-                                    title="复制密码">
-                                <i class="fas fa-copy"></i>
-                            </button>
+    <div class="modal fade" id="createContainerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">创建容器</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createContainerForm">
+                        <div class="mb-3">
+                            <label for="container-user-id" class="form-label">用户</label>
+                            <select class="form-control" id="container-user-id" required>
+                                <!-- 用户选项将通过JS填充 -->
+                            </select>
                         </div>
-                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                            自动生成的强密码包含大小写字母、数字和特殊字符，至少8位。用于SSH、VSCode、Jupyter等所有服务登录
-                        </p>
-                    </div>
+                        <div class="mb-3">
+                            <label for="gpu-devices" class="form-label">GPU设备</label>
+                            <input type="text" class="form-control" id="gpu-devices" placeholder="0,1,2">
+                            <div class="form-text">可选，指定GPU设备ID，用逗号分隔</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="service-password" class="form-label">服务登录密码 <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="service-password" placeholder="可手动输入或点击生成密码" required minlength="8">
+                                <button class="btn btn-outline-secondary" type="button" id="generate-password" onclick="generateSecurePassword()" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="custom-tooltip" title="生成强密码，底色深蓝，字体白色">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" id="copy-password" onclick="copyPassword()" title="复制密码">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                自动生成的强密码包含大小写字母、数字和特殊字符，8位字符。用于SSH、VSCode、Jupyter等所有服务登录
+                            </div>
+                        </div>
+                    </form>
                 </div>
-                
-                <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <button type="button" onclick="closeCreateContainerModal()" 
-                            class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                        取消
-                    </button>
-                    <button type="submit" onclick="createContainer()" 
-                            class="px-6 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">
-                        创建容器
-                    </button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="createContainer()">创建</button>
                 </div>
-            </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑用户模态框 -->
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑用户</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editUserForm">
+                        <input type="hidden" id="edit-user-id">
+                        <div class="mb-3">
+                            <label for="edit-username" class="form-label">用户名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="edit-username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-email" class="form-label">邮箱 <span class="text-muted">(可选)</span></label>
+                            <input type="email" class="form-control" id="edit-email" placeholder="例如: user@example.com">
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="edit-is-active">
+                                <label class="form-check-label" for="edit-is-active">
+                                    启用用户
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="edit-is-admin">
+                                <label class="form-check-label" for="edit-is-admin">
+                                    管理员权限
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="updateUser()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重置容器密码模态框 -->
+    <div class="modal fade" id="resetContainerPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">重置容器服务密码</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="resetContainerPasswordForm">
+                        <input type="hidden" id="reset-container-id">
+                        <div class="mb-3">
+                            <label for="reset-container-name" class="form-label">容器名称</label>
+                            <input type="text" class="form-control" id="reset-container-name" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reset-new-password" class="form-label">新密码 <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="reset-new-password" required minlength="6">
+                            <div class="form-text">用于SSH、VSCode、Jupyter等所有服务的新密码，至少6位字符</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reset-confirm-password" class="form-label">确认密码 <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="reset-confirm-password" required minlength="6">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-warning" onclick="resetContainerPassword()">重置密码</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改密码模态框 -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">修改密码</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="changePasswordForm">
+                        <input type="hidden" id="password-user-id">
+                        <div class="mb-3">
+                            <label for="password-username" class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="password-username" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="new-password" class="form-label">新密码 <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="new-password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirm-password" class="form-label">确认密码 <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="confirm-password" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="updatePassword()">修改密码</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Toast通知容器 -->
-    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 11000;">
         <!-- Toast消息将动态插入这里 -->
     </div>
-    
-    <!-- 通用确认对话框 -->
-    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md transform transition-all">
-            <div class="p-6 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900 mb-4">
-                    <span class="icon icon-lg icon-warning text-red-600 dark:text-red-400"></span>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2" id="confirmTitle">确认操作</h3>
-                <p class="text-gray-500 dark:text-gray-400" id="confirmMessage">确定要执行此操作吗？</p>
-                
-                <div class="flex justify-center space-x-3 mt-6">
-                    <button onclick="closeConfirmModal()" 
-                            class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                        取消
-                    </button>
-                    <button id="confirmButton" 
-                            class="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors font-medium">
-                        确认
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 添加自定义CSS样式 -->
-    <style>
-        .nav-item {
-            @apply text-gray-700 hover:text-gray-900 hover:bg-gray-50;
-        }
-        .nav-item-active {
-            @apply text-blue-700 bg-blue-50 border-l-4 border-blue-500;
-        }
-        .nav-item-active .bg-gray-100 {
-            @apply bg-blue-100;
-        }
-        .nav-item-active .text-gray-600 {
-            @apply text-blue-600;
-        }
-        .section {
-            @apply block;
-        }
-        .section.hidden {
-            @apply hidden;
-        }
-        
-        /* 修复图标显示 */
-        .icon[class*="icon-"] {
-            background-image: var(--icon-url);
-        }
-    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/admin.js"></script>
 </body>
 </html>
