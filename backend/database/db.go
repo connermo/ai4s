@@ -116,7 +116,7 @@ func ensureTablesExist() error {
 		user_id INT NOT NULL,
 		name VARCHAR(100) NOT NULL,
 		status VARCHAR(20) DEFAULT 'stopped',
-		image_name VARCHAR(200) DEFAULT 'gpu-dev-env:latest',
+		image_name VARCHAR(200) DEFAULT 'connermo/ai4s-env:latest',
 		cpu_limit VARCHAR(20) DEFAULT '2',
 		memory_limit VARCHAR(20) DEFAULT '4g',
 		gpu_devices VARCHAR(100),

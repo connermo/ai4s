@@ -19,7 +19,7 @@ fi
 
 # 启动平台后端
 echo "启动平台管理后端..."
-docker compose up -d platform-backend
+docker compose up -d ai4s-platform
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ 平台后端启动成功${NC}"
@@ -50,7 +50,7 @@ echo "  用户名: admin"
 echo "  密码: admin123"
 echo ""
 echo -e "${BLUE}查看日志:${NC}"
-echo "  docker compose logs -f platform-backend"
+echo "  docker compose logs -f ai4s-platform"
 echo ""
 echo -e "${BLUE}停止服务:${NC}"
 echo "  ./scripts/stop.sh"

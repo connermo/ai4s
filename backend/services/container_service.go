@@ -17,6 +17,14 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
+var userContainerImage = "connermo/ai4s-env:latest"
+
+func init() {
+	if img := os.Getenv("USER_CONTAINER_IMAGE"); img != "" {
+		userContainerImage = img
+	}
+}
+
 type ContainerService struct {
 	db           *sql.DB
 	dockerClient *client.Client
@@ -51,7 +59,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	
 	// 创建容器配置
 	config := &container.Config{
-		Image: "gpu-dev-env:latest",
+		Image: userContainerImage,
 		// 不设置User，让容器以root启动确保SSH服务可以运行
 		Env: []string{
 			fmt.Sprintf("DEV_USER=%s", user.Username),
@@ -182,7 +190,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		UserID:      user.ID,
 		Name:        containerName,
 		Status:      "created",
-		ImageName:   "gpu-dev-env:latest",
+		ImageName:   userContainerImage,
 		CPULimit:    "unlimited",
 		MemoryLimit: "unlimited",
 		GPUDevices:  gpuDevices,

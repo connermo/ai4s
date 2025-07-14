@@ -64,7 +64,7 @@ fi
 
 # 构建平台后端
 echo "构建平台管理后端..."
-docker compose build platform-backend
+docker compose build ai4s-platform
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ 平台后端构建成功${NC}"
@@ -79,4 +79,4 @@ echo "使用以下命令启动平台:"
 echo "  ./scripts/start.sh"
 echo ""
 echo "或者手动启动:"
-echo "  docker compose up -d platform-backend"
+echo "  docker compose up -d ai4s-platform"

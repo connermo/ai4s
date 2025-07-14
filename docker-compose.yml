@@ -25,9 +25,12 @@ services:
       - platform-network
 
   # 管理平台后端
-  platform-backend:
+  ai4s-platform:
     image: connermo/ai4s-platform:latest
-    container_name: gpu-platform-backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: ai4s-platform-backend
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
     volumes:
@@ -46,6 +49,7 @@ services:
       - CONTAINER_HOME_PATH=${CONTAINER_HOME_PATH:-/home}
       - CONTAINER_SHARED_PATH=${CONTAINER_SHARED_PATH:-/shared}
       - CONTAINER_WORKSPACE_PATH=${CONTAINER_WORKSPACE_PATH:-/workspace}
+      - USER_CONTAINER_IMAGE=${USER_CONTAINER_IMAGE:-connermo/ai4s-env:latest}
       # 宿主机路径配置（用于创建用户容器的挂载）
       - HOST_USERS_PATH=${HOST_USERS_PATH:-${PWD}/data/users}
       - HOST_SHARED_PATH=${HOST_SHARED_PATH:-${PWD}/shared}
