@@ -35,8 +35,8 @@ services:
       - "${PORT:-8080}:${PORT:-8080}"
     volumes:
       - "./data/users:/app/users"
-      - "./shared-ro:/shared-ro:ro"
-      - "./shared-rw:/app/shared-rw"
+      - "./data/shared-ro:/shared-ro:ro"
+      - "./data/shared-rw:/shared-rw"
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PORT=${PORT:-8080}
@@ -45,15 +45,15 @@ services:
       - PORT_STEP=${PORT_STEP:-10}
       - USERS_DATA_PATH=${USERS_DATA_PATH:-/app/users}
       - SHARED_DATA_PATH=${SHARED_DATA_PATH:-/shared-ro}
-      - WORKSPACE_DATA_PATH=${WORKSPACE_DATA_PATH:-/app/shared-rw}
+      - WORKSPACE_DATA_PATH=${WORKSPACE_DATA_PATH:-/shared-rw}
       - CONTAINER_HOME_PATH=${CONTAINER_HOME_PATH:-/home}
       - CONTAINER_SHARED_PATH=${CONTAINER_SHARED_PATH:-/shared-ro}
       - CONTAINER_WORKSPACE_PATH=${CONTAINER_WORKSPACE_PATH:-/shared-rw}
       - USER_CONTAINER_IMAGE=${USER_CONTAINER_IMAGE:-connermo/ai4s-env:latest}
       # 宿主机路径配置（用于创建用户容器的挂载）
       - HOST_USERS_PATH=${HOST_USERS_PATH:-${PWD}/data/users}
-      - HOST_SHARED_RO_PATH=${HOST_SHARED_RO_PATH:-${PWD}/shared-ro}
-      - HOST_SHARED_RW_PATH=${HOST_SHARED_RW_PATH:-${PWD}/shared-rw}
+      - HOST_SHARED_RO_PATH=${HOST_SHARED_RO_PATH:-${PWD}/data/shared-ro}
+      - HOST_SHARED_RW_PATH=${HOST_SHARED_RW_PATH:-${PWD}/data/shared-rw}
     depends_on:
       mysql:
         condition: service_healthy
@@ -64,8 +64,8 @@ services:
   # 开发环境镜像构建服务
   dev-env-builder:
     build:
-      context: ./docker
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: docker/Dockerfile.dev
     image: connermo/ai4s-env:latest
     container_name: gpu-dev-env-builder
     profiles:

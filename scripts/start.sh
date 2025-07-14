@@ -11,10 +11,25 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# 创建必要的宿主机目录
+echo -e "${BLUE}检查并创建共享目录...${NC}"
+mkdir -p ./data/shared-ro
+mkdir -p ./data/shared-rw
+mkdir -p ./data/users
+
+# 设置权限
+chmod 755 ./data
+chmod 755 ./data/shared-ro
+chmod 777 ./data/shared-rw
+chmod 777 ./data/users
+
+echo -e "${GREEN}✓ 目录结构准备就绪${NC}"
+echo ""
+
 # 检查是否已构建镜像
-if ! docker images | grep -q "gpu-dev-env"; then
-    echo -e "${YELLOW}警告: 开发环境镜像未找到，正在构建...${NC}"
-    ./scripts/build.sh
+if ! docker images | grep -q "connermo/ai4s-env"; then
+    echo -e "${YELLOW}警告: 开发环境镜像(connermo/ai4s-env)未找到，请先执行 ./scripts/build.sh ${NC}"
+    exit 1
 fi
 
 # 启动平台后端

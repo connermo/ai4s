@@ -88,7 +88,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	
 	workspaceDataPath := os.Getenv("WORKSPACE_DATA_PATH")
 	if workspaceDataPath == "" {
-		workspaceDataPath = "/app/workspace"
+		workspaceDataPath = "/shared-rw"
 	}
 	
 	containerHomePath := os.Getenv("CONTAINER_HOME_PATH")

@@ -14,8 +14,8 @@ echo "GID: $DEV_GID"
 echo ""
 echo "=== 目录挂载检查 ==="
 echo "个人主目录: /home/$DEV_USER $([ -d "/home/$DEV_USER" ] && echo "✓" || echo "✗")"
-echo "共享目录: /shared $([ -d "/shared" ] && echo "✓" || echo "✗")"
-echo "工作空间: /workspace $([ -d "/workspace" ] && echo "✓" || echo "✗")"
+echo "共享只读: /shared-ro $([ -d "/shared-ro" ] && echo "✓" || echo "✗")"
+echo "共享读写: /shared-rw $([ -d "/shared-rw" ] && echo "✓" || echo "✗")"
 echo ""
 
 # 检查是否以root身份运行
@@ -35,28 +35,15 @@ fi
 
 # 创建用户
 if ! id -u $DEV_USER > /dev/null 2>&1; then
-    # 先创建用户主目录
     mkdir -p /home/$DEV_USER
-    
     if useradd -m -u $DEV_UID -g $DEV_GID -s /bin/bash -d /home/$DEV_USER $DEV_USER 2>/dev/null; then
         echo "创建用户: $DEV_USER ($DEV_UID:$DEV_GID)"
-        
-        # 设置密码
-        if echo "$DEV_USER:$DEV_PASSWORD" | chpasswd; then
-            echo "密码设置成功"
-        else
-            echo "警告: 密码设置失败"
-        fi
-        
-        # 添加到sudo组
-        if usermod -aG sudo $DEV_USER 2>/dev/null; then
-            echo "添加到sudo组成功"
-        fi
-        
-        # 设置sudo免密
-        if echo "$DEV_USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; then
-            echo "sudo免密设置成功"
-        fi
+        echo "$DEV_USER:$DEV_PASSWORD" | chpasswd
+        echo "密码设置成功"
+        usermod -aG sudo $DEV_USER
+        echo "添加到sudo组成功"
+        echo "$DEV_USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+        echo "sudo免密设置成功"
     else
         echo "警告: 用户创建失败，可能已存在"
     fi
@@ -64,12 +51,8 @@ else
     echo "用户 $DEV_USER 已存在"
 fi
 
-# 确保用户主目录权限正确
-if chown -R $DEV_UID:$DEV_GID /home/$DEV_USER 2>/dev/null; then
-    echo "用户主目录权限设置成功"
-else
-    echo "警告: 用户主目录权限设置失败"
-fi
+chown -R $DEV_UID:$DEV_GID /home/$DEV_USER
+echo "用户主目录权限设置成功"
 
 # 创建必要的目录
 mkdir -p /home/$DEV_USER/.jupyter
@@ -529,252 +512,37 @@ else
 fi
 
 # 确保挂载目录存在并设置权限
-if [ -d "/workspace" ]; then
-    chown -R $DEV_UID:$DEV_GID /workspace 2>/dev/null || echo "警告: workspace权限设置失败，但目录可用"
-    chmod 755 /workspace 2>/dev/null
-    echo "workspace目录权限设置完成"
-else
-    echo "警告: workspace目录不存在"
-fi
+chown -R $DEV_UID:$DEV_GID /shared-rw 2>/dev/null || echo "警告: shared-rw权限设置失败"
+echo "shared-rw目录权限设置完成"
 
-if [ -d "/shared" ]; then
-    chmod 755 /shared 2>/dev/null
-    echo "shared目录权限设置完成"
-else
-    echo "警告: shared目录不存在"
-fi
+# 创建用户目录下的符号链接
+echo "创建用户目录下的符号链接..."
+ln -sfnT /shared-ro /home/$DEV_USER/shared-ro
+ln -sfnT /shared-rw /home/$DEV_USER/shared-rw
+chown -h $DEV_UID:$DEV_GID /home/$DEV_USER/shared-ro /home/$DEV_USER/shared-rw
 
-# 在用户主目录创建便捷访问的符号链接
-echo "[$(date '+%H:%M:%S')] 创建目录快捷方式..."
-if [ -d "/workspace" ]; then
-    ln -sf /workspace /home/$DEV_USER/workspace
-    echo "创建workspace快捷方式: ~/workspace -> /workspace"
-fi
-
-if [ -d "/shared" ]; then
-    ln -sf /shared /home/$DEV_USER/shared
-    echo "创建shared快捷方式: ~/shared -> /shared"
-fi
-
-# 设置符号链接的所有者
-chown -h $DEV_UID:$DEV_GID /home/$DEV_USER/workspace /home/$DEV_USER/shared 2>/dev/null
-
-# 生成Jupyter配置
-if id -u $DEV_USER > /dev/null 2>&1; then
-    su - $DEV_USER -c "python3 -m jupyter lab --generate-config" 2>/dev/null || echo "警告: Jupyter配置生成失败"
-fi
-
-# 配置Jupyter Lab
-if mkdir -p /home/$DEV_USER/.jupyter; then
-    # 生成密码哈希
-    JUPYTER_PASSWORD_HASH=$(python3 -c "from jupyter_server.auth import passwd; print(passwd('$DEV_PASSWORD'))")
-    
-    cat > /home/$DEV_USER/.jupyter/jupyter_lab_config.py << EOF
-c.ServerApp.ip = '0.0.0.0'
-c.ServerApp.port = 8888
-c.ServerApp.allow_root = True
-c.ServerApp.open_browser = False
-c.ServerApp.token = ''
-c.ServerApp.password = '$JUPYTER_PASSWORD_HASH'
-c.ServerApp.allow_origin = '*'
-c.ServerApp.allow_remote_access = True
-c.ServerApp.root_dir = '/home/$DEV_USER'
-c.ServerApp.disable_check_xsrf = True
-EOF
-
-    chown $DEV_UID:$DEV_GID /home/$DEV_USER/.jupyter/jupyter_lab_config.py 2>/dev/null
-fi
-
-# 配置code-server
-if mkdir -p /home/$DEV_USER/.config/code-server; then
-    cat > /home/$DEV_USER/.config/code-server/config.yaml << EOF
-bind-addr: 0.0.0.0:8080
-auth: password
-password: $DEV_PASSWORD
-cert: false
-extensions-dir: /home/$DEV_USER/.local/share/code-server/extensions
-user-data-dir: /home/$DEV_USER/.local/share/code-server
-disable-telemetry: true
-disable-update-check: true
-# 插件安装优化
-enable-proposed-api: []
-log: info
-# 网络优化
-proxy-domain: []
-EOF
-
-    # 创建VSCode用户设置
-    cat > /home/$DEV_USER/.local/share/code-server/User/settings.json << EOF
-{
-    "python.defaultInterpreterPath": "/usr/bin/python3",
-    "python.terminal.activateEnvironment": true,
-    "python.linting.enabled": true,
-    "python.linting.pylintEnabled": true,
-    "jupyter.askForKernelRestart": false,
-    "jupyter.sendSelectionToInteractiveWindow": true,
-    "terminal.integrated.shell.linux": "/bin/bash",
-    "git.enableSmartCommit": true,
-    "git.confirmSync": false,
-    "workbench.startupEditor": "welcomePage",
-    "extensions.autoUpdate": false,
-    "update.mode": "none",
-    "telemetry.telemetryLevel": "off"
-}
-EOF
-
-    # 复制预安装的扩展到用户目录
-    echo "🔍 检查预安装扩展..."
-    if [ -d "/tmp/extensions" ]; then
-        echo "预安装扩展目录存在，内容:"
-        ls -la /tmp/extensions/ | sed 's/^/  /'
-        
-        # 确保目标目录存在
-        mkdir -p /home/$DEV_USER/.local/share/code-server/extensions
-        
-        # 检查是否有实际的扩展目录（不只是extensions.json）
-        ext_count=$(find /tmp/extensions -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
-        if [ "$ext_count" -gt 0 ]; then
-            echo "发现 $ext_count 个预安装扩展，开始复制..."
-            
-            # 复制所有扩展目录
-            for ext_dir in /tmp/extensions/*/; do
-                if [ -d "$ext_dir" ]; then
-                    ext_name=$(basename "$ext_dir")
-                    echo "复制扩展: $ext_name"
-                    if cp -r "$ext_dir" /home/$DEV_USER/.local/share/code-server/extensions/; then
-                        echo "  ✅ $ext_name 复制成功"
-                    else
-                        echo "  ❌ $ext_name 复制失败"
-                    fi
-                fi
-            done
-        else
-            echo "⚠️  /tmp/extensions 目录为空，构建时扩展安装可能失败"
-            echo "💡 提示：可以手动安装扩展:"
-            echo "   1. 检查网络连接后重新构建镜像"
-            echo "   2. 使用VSIX文件离线安装"
-            echo "   3. 手动运行: code-server --install-extension extension-id"
-        fi
-        
-        echo "用户扩展目录最终内容:"
-        ls -la /home/$DEV_USER/.local/share/code-server/extensions/ 2>/dev/null | sed 's/^/  /' || echo "  目录为空"
-    else
-        echo "⚠️  预安装扩展目录 /tmp/extensions 不存在"
-        
-        # 确保目标目录存在
-        mkdir -p /home/$DEV_USER/.local/share/code-server/extensions
-        
-        echo "💡 提示: 镜像构建时可能未包含预装扩展"
-        echo "   - 重新构建镜像以获取预装扩展"
-        echo "   - 或使用VSIX文件手动安装"
-    fi
-
-    chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server 2>/dev/null
-    chown -R $DEV_UID:$DEV_GID /home/$DEV_USER/.local/share/code-server 2>/dev/null
-    
-    # 验证扩展安装状态
-    echo "🔍 验证VSCode扩展安装状态..."
-    if command -v code-server &> /dev/null; then
-        echo "已安装的扩展列表:"
-        timeout 10 su - $DEV_USER -c "code-server --list-extensions" 2>/dev/null | sed 's/^/  /' || {
-            echo "⚠️  无法列出扩展，可能需要等待code-server首次启动"
-            echo "扩展目录内容:"
-            ls -la /home/$DEV_USER/.local/share/code-server/extensions/ 2>/dev/null | sed 's/^/  /' || echo "  目录为空或不存在"
-        }
-    else
-        echo "⚠️  code-server命令不可用"
-    fi
-fi
-
-# 配置SSH服务
-echo "[$(date '+%H:%M:%S')] 开始配置SSH服务..."
-
-# 确保SSH目录存在
-echo "[$(date '+%H:%M:%S')] 创建SSH运行目录..."
-mkdir -p /var/run/sshd
-
-# 验证SSH密钥存在（应该在构建时已生成）
-echo "[$(date '+%H:%M:%S')] 验证SSH主机密钥..."
-if [ -f /etc/ssh/ssh_host_rsa_key ]; then
-    echo "[$(date '+%H:%M:%S')] SSH主机密钥已存在"
-else
-    echo "[$(date '+%H:%M:%S')] 警告: SSH主机密钥缺失，快速生成..."
-    service haveged start 2>/dev/null
-    ssh-keygen -A
-    service haveged stop 2>/dev/null
-    echo "[$(date '+%H:%M:%S')] SSH密钥生成完成"
-fi
+echo ""
+echo "=== 启动服务 ==="
 
 # 启动SSH服务
-echo "[$(date '+%H:%M:%S')] 启动SSH服务..."
-if service ssh start; then
-    echo "[$(date '+%H:%M:%S')] SSH服务启动成功"
-    # 验证SSH服务状态
-    if pgrep sshd > /dev/null; then
-        echo "[$(date '+%H:%M:%S')] SSH daemon正在运行"
-    else
-        echo "[$(date '+%H:%M:%S')] 警告: SSH daemon未运行"
-    fi
+echo "启动SSH服务..."
+/usr/sbin/sshd -D &
+
+# 切换到用户身份启动服务
+echo "切换到用户 $DEV_USER 启动服务..."
+if id -u $DEV_USER > /dev/null 2>&1; then
+    # 设置VSCode Server密码
+    export PASSWORD="$DEV_PASSWORD"
+    
+    # 启动Jupyter Lab
+    echo "启动Jupyter Lab..."
+    su - $DEV_USER -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password='$(python3 -c "from jupyter_server.auth import passwd; print(passwd('$DEV_PASSWORD'))")' > /tmp/jupyter.log 2>&1 &"
+
+    # 启动VSCode Server
+    echo "启动VSCode Server..."
+    su - $DEV_USER -c "PASSWORD='$DEV_PASSWORD' nohup code-server --bind-addr 0.0.0.0:8080 --auth password > /tmp/code-server.log 2>&1 &"
 else
-    echo "[$(date '+%H:%M:%S')] 警告: SSH服务启动失败，尝试手动启动..."
-    /usr/sbin/sshd -D &
-    sleep 2
-    if pgrep sshd > /dev/null; then
-        echo "[$(date '+%H:%M:%S')] SSH手动启动成功"
-    else
-        echo "[$(date '+%H:%M:%S')] 错误: SSH手动启动失败"
-    fi
-fi
-
-# 复制调试脚本
-cp /usr/local/bin/debug-vscode-extensions.sh /home/$DEV_USER/debug-vscode-extensions.sh 2>/dev/null || {
-    # 如果调试脚本不存在，创建一个简化版本
-    cat > /home/$DEV_USER/debug-vscode-extensions.sh << 'DEBUGEOF'
-#!/bin/bash
-echo "=== VSCode扩展状态检查 ==="
-echo "扩展目录: ~/.local/share/code-server/extensions"
-ls -la ~/.local/share/code-server/extensions/ 2>/dev/null || echo "目录不存在"
-echo ""
-echo "已安装扩展:"
-code-server --list-extensions 2>/dev/null || echo "无法列出扩展"
-echo ""
-echo "VSCode配置:"
-cat ~/.config/code-server/config.yaml 2>/dev/null || echo "配置文件不存在"
-DEBUGEOF
-    chmod +x /home/$DEV_USER/debug-vscode-extensions.sh
-    chown $DEV_UID:$DEV_GID /home/$DEV_USER/debug-vscode-extensions.sh
-}
-
-# 创建启动脚本
-cat > /home/$DEV_USER/start_services.sh << EOF
-#!/bin/bash
-
-echo "=== 启动开发环境服务 ==="
-
-# 启动Jupyter Lab
-echo "启动Jupyter Lab..."
-nohup jupyter lab --config=/home/\$DEV_USER/.jupyter/jupyter_lab_config.py > /tmp/jupyter.log 2>&1 &
-echo "Jupyter Lab PID: \$!"
-
-# 启动code-server (VSCode Server)
-echo "启动VSCode Server..."
-nohup code-server > /tmp/code-server.log 2>&1 &
-echo "VSCode Server PID: \$!"
-
-echo "=== 服务启动完成 ==="
-echo "SSH: 端口 22 (用户名: $DEV_USER)"
-echo "VSCode Server: 端口 8080"
-echo "Jupyter Lab: 端口 8888"
-echo ""
-echo "日志文件位置:"
-echo "  Jupyter Lab: /tmp/jupyter.log"
-echo "  VSCode Server: /tmp/code-server.log"
-EOF
-
-# 设置启动脚本权限
-if [ -f /home/$DEV_USER/start_services.sh ]; then
-    chmod +x /home/$DEV_USER/start_services.sh
-    chown $DEV_UID:$DEV_GID /home/$DEV_USER/start_services.sh 2>/dev/null
+    echo "警告: 用户 $DEV_USER 不存在，无法启动用户服务。"
 fi
 
 # 创建欢迎信息
@@ -851,19 +619,9 @@ EOF
     chown $DEV_UID:$DEV_GID /home/$DEV_USER/README.md 2>/dev/null
 fi
 
-# 切换到用户身份启动服务
-echo "切换到用户 $DEV_USER 启动服务..."
-if id -u $DEV_USER > /dev/null 2>&1 && [ -f /home/$DEV_USER/start_services.sh ]; then
-    su - $DEV_USER -c "/home/$DEV_USER/start_services.sh" 2>/dev/null || echo "警告: 服务启动失败"
-else
-    echo "警告: 用户不存在或启动脚本缺失，直接启动服务..."
-    # 直接启动基础服务
-    nohup jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --no-browser --PasswordIdentityProvider.hashed_password="$(python3 -c "from jupyter_server.auth import passwd; print(passwd('$DEV_PASSWORD'))")" > /tmp/jupyter.log 2>&1 &
-    nohup code-server --bind-addr=0.0.0.0:8080 --auth=password --password="$DEV_PASSWORD" > /tmp/code-server.log 2>&1 &
-fi
+echo "=== 容器启动完成 ==="
+echo "服务(SSH, VSCode, Jupyter)已启动。"
+echo "请联系管理员获取主机、端口和登录凭证信息。"
 
 # 保持容器运行
-echo "=== 容器启动完成 ==="
-echo "SSH登录: ssh -p PORT $DEV_USER@HOST"
-echo "请联系管理员获取登录密码和端口信息"
 tail -f /dev/null
