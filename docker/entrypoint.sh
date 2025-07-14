@@ -39,11 +39,11 @@ if ! id -u $DEV_USER > /dev/null 2>&1; then
     if useradd -m -u $DEV_UID -g $DEV_GID -s /bin/bash -d /home/$DEV_USER $DEV_USER 2>/dev/null; then
         echo "创建用户: $DEV_USER ($DEV_UID:$DEV_GID)"
         echo "$DEV_USER:$DEV_PASSWORD" | chpasswd
-        echo "密码设置成功"
+            echo "密码设置成功"
         usermod -aG sudo $DEV_USER
-        echo "添加到sudo组成功"
+            echo "添加到sudo组成功"
         echo "$DEV_USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-        echo "sudo免密设置成功"
+            echo "sudo免密设置成功"
     else
         echo "警告: 用户创建失败，可能已存在"
     fi
@@ -52,7 +52,7 @@ else
 fi
 
 chown -R $DEV_UID:$DEV_GID /home/$DEV_USER
-echo "用户主目录权限设置成功"
+    echo "用户主目录权限设置成功"
 
 # 创建必要的目录
 mkdir -p /home/$DEV_USER/.jupyter
@@ -283,8 +283,8 @@ alias mkdir='mkdir -p'
 
 # 快速导航
 alias home='cd ~'
-alias shared='cd ~/shared'
-alias workspace='cd ~/workspace'
+alias shared-ro='cd ~/shared-ro'
+alias shared-rw='cd ~/shared-rw'
 alias logs='cd /tmp && ls -la *.log'
 
 # 密码和安全工具
@@ -526,20 +526,20 @@ echo "=== 启动服务 ==="
 
 # 启动SSH服务
 echo "启动SSH服务..."
-/usr/sbin/sshd -D &
+    /usr/sbin/sshd -D &
 
 # 切换到用户身份启动服务
 echo "切换到用户 $DEV_USER 启动服务..."
 if id -u $DEV_USER > /dev/null 2>&1; then
     # 设置VSCode Server密码
     export PASSWORD="$DEV_PASSWORD"
-    
-    # 启动Jupyter Lab
-    echo "启动Jupyter Lab..."
+
+# 启动Jupyter Lab
+echo "启动Jupyter Lab..."
     su - $DEV_USER -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password='$(python3 -c "from jupyter_server.auth import passwd; print(passwd('$DEV_PASSWORD'))")' > /tmp/jupyter.log 2>&1 &"
 
     # 启动VSCode Server
-    echo "启动VSCode Server..."
+echo "启动VSCode Server..."
     su - $DEV_USER -c "PASSWORD='$DEV_PASSWORD' nohup code-server --bind-addr 0.0.0.0:8080 --auth password > /tmp/code-server.log 2>&1 &"
 else
     echo "警告: 用户 $DEV_USER 不存在，无法启动用户服务。"

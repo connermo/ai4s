@@ -373,6 +373,25 @@ Git版本: $(cd "$PROJECT_ROOT" && git rev-parse --short HEAD 2>/dev/null || ech
 - 完整项目源码
 EOF
 
+echo_step "Step 3: 准备基础目录结构"
+mkdir -p "$DIST_DIR/data"
+mkdir -p "$DIST_DIR/scripts"
+
+# 创建共享目录
+echo_info "创建共享数据和工作区目录"
+mkdir -p "$DIST_DIR/data/shared-ro"
+mkdir -p "$DIST_DIR/data/shared-rw"
+mkdir -p "$DIST_DIR/data/users"
+
+# 设置基础权限
+chmod 755 "$DIST_DIR/data/shared-ro"
+chmod 777 "$DIST_DIR/data/shared-rw"
+chmod 777 "$DIST_DIR/data/users"
+
+# 复制脚本
+cp scripts/start.sh scripts/stop.sh scripts/cleanup.sh "$DIST_DIR/scripts/"
+chmod +x "$DIST_DIR"/scripts/*.sh
+
 # 创建最终的tar包
 echo "📦 创建最终部署包..."
 cd "$(dirname "$BUILD_DIR")"

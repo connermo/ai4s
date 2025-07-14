@@ -35,18 +35,28 @@ if [ -f .env ]; then
     source .env
 fi
 
-# 使用环境变量或默认路径
-USERS_DIR=${USERS_DATA_PATH:-./users}
-SHARED_RO_DIR=${HOST_SHARED_RO_PATH:-./shared-ro}
-SHARED_RW_DIR=${HOST_SHARED_RW_PATH:-./shared-rw}
+# 宿主机目录配置
+HOST_USERS_PATH=${HOST_USERS_PATH:-./data/users}
+HOST_SHARED_RO_PATH=${HOST_SHARED_RO_PATH:-./data/shared-ro}
+HOST_SHARED_RW_PATH=${HOST_SHARED_RW_PATH:-./data/shared-rw}
 
-mkdir -p "$USERS_DIR" "$SHARED_RO_DIR" "$SHARED_RW_DIR" logs
-chmod 755 "$USERS_DIR" "$SHARED_RO_DIR" "$SHARED_RW_DIR" logs
+# 确保这些目录存在
+mkdir -p "$HOST_USERS_PATH"
+mkdir -p "$HOST_SHARED_RO_PATH"
+mkdir -p "$HOST_SHARED_RW_PATH"
+mkdir -p logs
+
+# 设置权限
+chmod 755 "$HOST_SHARED_RO_PATH"
+chmod 777 "$HOST_SHARED_RW_PATH"
+chmod 777 "$HOST_USERS_PATH"
+chmod 777 logs
+
 
 echo "创建的目录:"
-echo "  用户数据: $USERS_DIR"
-echo "  只读共享: $SHARED_RO_DIR"
-echo "  读写共享: $SHARED_RW_DIR"
+echo "  用户数据: $HOST_USERS_PATH"
+echo "  只读共享: $HOST_SHARED_RO_PATH"
+echo "  读写共享: $HOST_SHARED_RW_PATH"
 echo "  日志目录: ./logs"
 
 echo -e "${GREEN}✓ 目录创建完成${NC}"
