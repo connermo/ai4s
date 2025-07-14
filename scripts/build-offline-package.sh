@@ -23,6 +23,17 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
+# 检查pigz是否安装，并设置压缩工具
+if command -v pigz &>/dev/null; then
+    echo "🚀 使用 pigz 进行并行压缩"
+    COMPRESS_CMD="pigz"
+    TAR_COMPRESS_OPT="--use-compress-program=pigz"
+else
+    echo "⚠️  警告: pigz 未安装，将使用 gzip 进行压缩。如需加速，请安装pigz (e.g., sudo apt-get install pigz)"
+    COMPRESS_CMD="gzip"
+    TAR_COMPRESS_OPT="-z"
+fi
+
 # 创建构建目录
 echo "📁 创建构建目录..."
 rm -rf "$BUILD_DIR"
@@ -40,6 +51,10 @@ rsync -av "$PROJECT_ROOT/" "$BUILD_DIR/source/" \
     --exclude='*.tar.gz' \
     --exclude='__pycache__' \
     --exclude='.DS_Store' \
+    --exclude='.users' \
+    --exclude='users' \
+    --exclude='shared' \
+    --exclude='workspace' \
     --exclude='*.pyc'
 
 # 构建Docker镜像
@@ -52,22 +67,22 @@ docker build -f docker/Dockerfile.dev -t gpu-dev-env:latest .
 
 # 保存Docker镜像
 echo "💾 导出Docker镜像..."
-docker save gpu-dev-env:latest | gzip > "$BUILD_DIR/images/gpu-dev-env.tar.gz"
+docker save gpu-dev-env:latest | $COMPRESS_CMD > "$BUILD_DIR/images/gpu-dev-env.tar.gz"
 
 # 导出依赖的基础镜像
 echo "导出基础镜像..."
 docker pull nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
-docker save nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 | gzip > "$BUILD_DIR/images/nvidia-cuda-base.tar.gz"
+docker save nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 | $COMPRESS_CMD > "$BUILD_DIR/images/nvidia-cuda-base.tar.gz"
 
 # 导出MySQL镜像
 echo "导出MySQL镜像..."
 docker pull mysql:8.0
-docker save mysql:8.0 | gzip > "$BUILD_DIR/images/mysql.tar.gz"
+docker save mysql:8.0 | $COMPRESS_CMD > "$BUILD_DIR/images/mysql.tar.gz"
 
 # 导出Nginx镜像
 echo "导出Nginx镜像..."
 docker pull nginx:alpine
-docker save nginx:alpine | gzip > "$BUILD_DIR/images/nginx.tar.gz"
+docker save nginx:alpine | $COMPRESS_CMD > "$BUILD_DIR/images/nginx.tar.gz"
 
 # 创建部署脚本
 echo "📝 创建部署脚本..."
@@ -340,7 +355,7 @@ EOF
 # 创建最终的tar包
 echo "📦 创建最终部署包..."
 cd "$(dirname "$BUILD_DIR")"
-tar -czf "$TARBALL_PATH" "$PACKAGE_NAME"
+tar -c $TAR_COMPRESS_OPT -f "$TARBALL_PATH" "$PACKAGE_NAME"
 
 # 清理临时目录
 rm -rf "$BUILD_DIR"
