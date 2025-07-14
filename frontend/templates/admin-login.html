@@ -4,121 +4,133 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理员登录 - GPU开发平台</title>
-    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/static/css/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/tailwind.css" rel="stylesheet">
+    <link href="/static/css/icons.css" rel="stylesheet">
     <style>
-        body {
-            background: linear-gradient(135deg, #343a40 0%, #495057 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        :root {
+            --color-primary: #3b82f6;
+            --color-secondary: #64748b;
+            --color-accent: #06b6d4;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-error: #ef4444;
         }
-        .login-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            padding: 2rem;
-            width: 100%;
-            max-width: 400px;
-        }
-        .login-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .login-header i {
-            display: block;
-        }
-        .btn-admin {
-            background: linear-gradient(135deg, #343a40 0%, #495057 100%);
-            border: none;
-            padding: 12px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            color: white;
-        }
-        .btn-admin:hover {
-            background: linear-gradient(135deg, #2c3034 0%, #3d4448 100%);
-            transform: translateY(-1px);
-            color: white;
-        }
-        .user-link {
-            text-align: center;
-            margin-top: 1rem;
-        }
-        .user-link a {
-            color: #343a40;
-            text-decoration: none;
-            font-size: 0.9rem;
-        }
-        .user-link a:hover {
-            text-decoration: underline;
-        }
+        .text-primary { color: var(--color-primary); }
+        .bg-primary { background-color: var(--color-primary); }
+        .hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+        .border-primary { border-color: var(--color-primary); }
+        .focus\:ring-primary:focus { --tw-ring-color: var(--color-primary); }
     </style>
 </head>
-<body>
-    <div class="login-card">
-        <div class="login-header">
-            <i style="font-size: 3rem; color: #343a40; margin-bottom: 1rem;">⚙️</i>
-            <h3>管理员控制台</h3>
-            <p class="text-muted">GPU开发平台管理</p>
+<body class="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <!-- 登入卡片 -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
+            <!-- 头部 -->
+            <div class="text-center mb-8">
+                <div class="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4">
+                    <span class="icon icon-xl icon-cog text-white"></span>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">管理员控制台</h2>
+                <p class="text-gray-600 dark:text-gray-400 mt-2">GPU开发平台管理</p>
+            </div>
+            
+            <!-- 登入表单 -->
+            <form id="adminLoginForm" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        管理员用户名
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="icon icon-user text-gray-400"></span>
+                        </div>
+                        <input type="text" id="username" required 
+                               class="w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
+                               placeholder="输入管理员用户名">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        管理员密码
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="icon icon-lock text-gray-400"></span>
+                        </div>
+                        <input type="password" id="password" required 
+                               class="w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
+                               placeholder="输入密码">
+                    </div>
+                </div>
+                
+                <button type="submit" 
+                        class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center space-x-2">
+                    <span class="icon icon-login"></span>
+                    <span>登入管理后台</span>
+                </button>
+            </form>
         </div>
         
-        <form id="adminLoginForm">
-            <div class="mb-3">
-                <label for="username" class="form-label">管理员用户名</label>
-                <div class="input-group">
-                    <span class="input-group-text">👤</span>
-                    <input type="text" class="form-control" id="username" required>
-                </div>
-            </div>
-            
-            <div class="mb-3">
-                <label for="password" class="form-label">管理员密码</label>
-                <div class="input-group">
-                    <span class="input-group-text">🔒</span>
-                    <input type="password" class="form-control" id="password" required>
-                </div>
-            </div>
-            
-            <button type="submit" class="btn btn-admin w-100">
-                ➡️ 登录管理后台
-            </button>
-        </form>
-        
+        <!-- 底部信息 -->
+        <p class="text-center text-blue-100 text-sm mt-6">
+            GPU开发平台 - 专业的AI开发环境
+        </p>
     </div>
 
     <!-- Toast通知容器 -->
-    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 11000;">
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">
         <!-- Toast消息将动态插入这里 -->
     </div>
 
-    <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script>
         // 显示Toast消息
         function showAlert(message, type = 'info') {
-            const toastContainer = document.querySelector('.toast-container');
+            const toastContainer = document.getElementById('toast-container');
             const toastId = 'toast-' + Date.now();
             
+            const colorClasses = {
+                'success': 'bg-green-500 border-green-600',
+                'danger': 'bg-red-500 border-red-600',
+                'warning': 'bg-yellow-500 border-yellow-600',
+                'info': 'bg-blue-500 border-blue-600'
+            };
+            
+            const iconClasses = {
+                'success': 'icon icon-check',
+                'danger': 'icon icon-warning',
+                'warning': 'icon icon-warning',
+                'info': 'icon icon-info'
+            };
+            
             const toast = document.createElement('div');
-            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.className = `${colorClasses[type] || colorClasses.info} text-white px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out max-w-sm`;
             toast.id = toastId;
-            toast.setAttribute('role', 'alert');
             toast.innerHTML = `
-                <div class="d-flex">
-                    <div class="toast-body">${message}</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                <div class="flex items-center">
+                    <span class="${iconClasses[type] || iconClasses.info} mr-3"></span>
+                    <span class="flex-1">${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-3 text-white hover:text-gray-200">
+                        <span class="icon icon-close"></span>
+                    </button>
                 </div>
             `;
             
             toastContainer.appendChild(toast);
-            const bsToast = new bootstrap.Toast(toast);
-            bsToast.show();
             
             // 自动移除
-            toast.addEventListener('hidden.bs.toast', () => {
-                toastContainer.removeChild(toast);
-            });
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        if (toast.parentNode) {
+                            toastContainer.removeChild(toast);
+                        }
+                    }, 300);
+                }
+            }, 4000);
         }
 
         // 处理管理员登录表单提交
