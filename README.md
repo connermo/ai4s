@@ -5,7 +5,7 @@
 ## 功能特性
 
 1. **用户管理**: Golang Web界面，SQLite数据库存储
-2. **GPU开发容器**: 集成VSCode Server、Jupyter Lab、TensorBoard、SSH服务
+2. **GPU开发容器**: 集成VSCode Server、Jupyter Lab、SSH服务
 3. **目录隔离**: 用户私有目录 + 共享只读/读写目录
 4. **端口管理**: 每用户独立端口分配，避免冲突
 5. **GPU支持**: 基于NVIDIA CUDA，支持深度学习框架
@@ -84,8 +84,7 @@ mkdir -p users shared workspace
 - SSH: `ssh username@host -p {base_port+0}` (如9000, 9010, 9020...)
 - VSCode: `http://host:{base_port+1}` (如9001, 9011, 9021...)
 - Jupyter: `http://host:{base_port+2}` (如9002, 9012, 9022...)
-- TensorBoard: `http://host:{base_port+3}` (如9003, 9013, 9023...)
-- 备用应用端口: `http://host:{base_port+4}` 到 `{base_port+9}` (如9004-9009, 9014-9019...)
+- 备用应用端口: `http://host:{base_port+3}` 到 `{base_port+9}` (如9004-9009, 9014-9019...)
 
 ### 管理脚本
 
@@ -124,7 +123,6 @@ ai4s/
   - SSH: 900X
   - VSCode: 901X  
   - Jupyter: 902X
-  - TensorBoard: 903X
 
 ## API文档
 

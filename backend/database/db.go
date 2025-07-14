@@ -147,7 +147,7 @@ func ensureTablesExist() error {
 	// 确保默认管理员用户存在
 	fmt.Printf("DEBUG: Creating default admin user\n")
 	_, err = DB.Exec(`INSERT IGNORE INTO users (username, password, email, is_admin, base_port) 
-		VALUES ('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@example.com', TRUE, 9001)`)
+		VALUES ('admin', '$2a$10$7kCbgG3FCL5wfatLw7RnL.qefBo7t1OwiGxfWma3vGHZSkYy67k12', 'admin@example.com', TRUE, 9001)`)
 	if err != nil {
 		return fmt.Errorf("failed to create default admin user: %v", err)
 	}

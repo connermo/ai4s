@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -132,6 +131,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	hostUserDir := fmt.Sprintf("%s/%s", hostUsersPath, user.Username)
 
 	hostConfig := &container.HostConfig{
+		PortBindings: s.getPortBindings(user),
 		Mounts: []mount.Mount{
 			{
 				Type:   mount.TypeBind,
@@ -382,20 +382,19 @@ func (s *ContainerService) ListContainers() ([]interface{}, error) {
 
 func (s *ContainerService) getExposedPorts(user *models.User) nat.PortSet {
 	exposed := make(nat.PortSet)
-	
+
 	// 容器内需要暴露的端口
 	containerPorts := []string{
-		"22/tcp",    // SSH
-		"8080/tcp",  // VSCode Server
-		"8888/tcp",  // Jupyter Lab
-		"6006/tcp",  // TensorBoard
+		"22/tcp",   // SSH
+		"8080/tcp", // VSCode Server
+		"8888/tcp", // Jupyter Lab
 	}
-	
-	// 添加备用应用端口 8004-8009
-	for i := 4; i <= 9; i++ {
+
+	// 添加备用应用端口 8003-8009
+	for i := 3; i <= 9; i++ {
 		containerPorts = append(containerPorts, fmt.Sprintf("80%02d/tcp", i))
 	}
-	
+
 	for _, port := range containerPorts {
 		portKey := nat.Port(port)
 		exposed[portKey] = struct{}{}
@@ -571,17 +570,11 @@ func (s *ContainerService) getPortBindings(user *models.User) nat.PortMap {
 	bindings[jupyterPort] = []nat.PortBinding{
 		{HostPort: strconv.Itoa(ports["jupyter"])},
 	}
-	
-	// TensorBoard (端口6006 -> base_port+3)
-	tensorboardPort := nat.Port("6006/tcp")
-	bindings[tensorboardPort] = []nat.PortBinding{
-		{HostPort: strconv.Itoa(ports["tensorboard"])},
-	}
-	
-	// 备用应用端口映射 (容器内端口8004-8009 -> base_port+4到base_port+9)
-	for i := 4; i <= 9; i++ {
+
+	// 备用应用端口映射 (容器内端口8003-8009 -> base_port+3到base_port+9)
+	for i := 3; i <= 9; i++ {
 		containerPort := nat.Port(fmt.Sprintf("80%02d/tcp", i))
-		appKey := fmt.Sprintf("app%d", i-3)
+		appKey := fmt.Sprintf("app%d", i)
 		bindings[containerPort] = []nat.PortBinding{
 			{HostPort: strconv.Itoa(ports[appKey])},
 		}

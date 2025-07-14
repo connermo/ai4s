@@ -40,15 +40,15 @@ func (u *User) CheckPassword(password string) bool {
 // GetPorts 获取用户的服务端口
 func (u *User) GetPorts() map[string]int {
 	return map[string]int{
-		"ssh":         u.BasePort + 0,   // 末尾0: SSH
-		"vscode":      u.BasePort + 1,   // 末尾1: VSCode
-		"jupyter":     u.BasePort + 2,   // 末尾2: Jupyter
-		"tensorboard": u.BasePort + 3,   // 末尾3: TensorBoard
-		"app1":        u.BasePort + 4,   // 末尾4: 备用应用1
-		"app2":        u.BasePort + 5,   // 末尾5: 备用应用2
-		"app3":        u.BasePort + 6,   // 末尾6: 备用应用3
-		"app4":        u.BasePort + 7,   // 末尾7: 备用应用4
-		"app5":        u.BasePort + 8,   // 末尾8: 备用应用5
-		"app6":        u.BasePort + 9,   // 末尾9: 备用应用6
+		"ssh":     u.BasePort + 0, // 末尾0: SSH
+		"vscode":  u.BasePort + 1, // 末尾1: VSCode
+		"jupyter": u.BasePort + 2, // 末尾2: Jupyter
+		"app1":    u.BasePort + 3, // 末尾3: 备用应用1
+		"app2":    u.BasePort + 4, // 末尾4: 备用应用2
+		"app3":    u.BasePort + 5, // 末尾5: 备用应用3
+		"app4":    u.BasePort + 6, // 末尾6: 备用应用4
+		"app5":    u.BasePort + 7, // 末尾7: 备用应用5
+		"app6":    u.BasePort + 8, // 末尾8: 备用应用6
+		"app7":    u.BasePort + 9, // 末尾9: 备用应用7
 	}
 }
