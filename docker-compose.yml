@@ -26,9 +26,7 @@ services:
 
   # 管理平台后端
   platform-backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    image: connermo/ai4s-platform:latest
     container_name: gpu-platform-backend
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
@@ -64,7 +62,7 @@ services:
     build:
       context: ./docker
       dockerfile: Dockerfile.dev
-    image: gpu-dev-env:latest
+    image: connermo/ai4s-env:latest
     container_name: gpu-dev-env-builder
     profiles:
       - build-only

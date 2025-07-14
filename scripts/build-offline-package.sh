@@ -61,13 +61,21 @@ rsync -av "$PROJECT_ROOT/" "$BUILD_DIR/source/" \
 echo "🐳 构建Docker镜像..."
 cd "$PROJECT_ROOT"
 
+# 构建并标记后端镜像
+echo "构建平台后端镜像..."
+docker build -t connermo/ai4s-platform:latest -f backend/Dockerfile .
+
 # 构建开发环境镜像
 echo "构建GPU开发环境镜像..."
-docker build -f docker/Dockerfile.dev -t gpu-dev-env:latest .
+docker build -f docker/Dockerfile.dev -t connermo/ai4s-env:latest .
 
 # 保存Docker镜像
 echo "💾 导出Docker镜像..."
-docker save gpu-dev-env:latest | $COMPRESS_CMD > "$BUILD_DIR/images/gpu-dev-env.tar.gz"
+echo "导出平台后端镜像..."
+docker save connermo/ai4s-platform:latest | $COMPRESS_CMD > "$BUILD_DIR/images/platform-backend.tar.gz"
+
+echo "导出GPU开发环境镜像..."
+docker save connermo/ai4s-env:latest | $COMPRESS_CMD > "$BUILD_DIR/images/gpu-dev-env.tar.gz"
 
 # 导出依赖的基础镜像
 echo "导出基础镜像..."
@@ -131,6 +139,9 @@ docker load < "$IMAGES_DIR/nginx.tar.gz"
 echo "导入GPU开发环境镜像..."
 docker load < "$IMAGES_DIR/gpu-dev-env.tar.gz"
 
+echo "导入平台后端镜像..."
+docker load < "$IMAGES_DIR/platform-backend.tar.gz"
+
 # 复制项目文件到目标位置
 TARGET_DIR="/opt/ai4s"
 echo "📁 复制项目文件到 $TARGET_DIR..."
@@ -189,7 +200,7 @@ echo "常用命令:"
 echo "  启动服务: $TARGET_DIR/scripts/start.sh"
 echo "  停止服务: $TARGET_DIR/scripts/stop.sh"
 echo "  查看日志: docker-compose logs -f"
-echo "  重新构建: docker-compose up --build -d"
+echo "  (镜像已预构建，如需重新构建请运行: docker-compose up --build -d)"
 EOF
 
 chmod +x "$BUILD_DIR/deploy.sh"
@@ -346,7 +357,8 @@ AI4S GPU开发平台 离线部署包
 构建主机: $(hostname)
 Git版本: $(cd "$PROJECT_ROOT" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 包含组件:
-- GPU开发环境镜像 (基于NVIDIA CUDA 12.4)
+- 平台后端镜像 (connermo/ai4s-platform:latest)
+- GPU开发环境镜像 (connermo/ai4s-env:latest)
 - MySQL 8.0
 - Nginx Alpine
 - 完整项目源码
@@ -369,5 +381,5 @@ echo ""
 echo "部署方法:"
 echo "1. 将 $TARBALL_PATH 传输到目标服务器"
 echo "2. 解压: tar -xzf $(basename "$TARBALL_PATH")"
-echo "3. 运行: cd $(basename "$TARBALL_PATH") && ./deploy.sh"
+echo "3. 运行: cd $(basename "$PACKAGE_NAME") && ./deploy.sh"
 echo ""
