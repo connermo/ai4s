@@ -3,7 +3,8 @@
 
 @font-face {
   font-family: "bootstrap-icons";
-  src: data:font/woff2;base64,/* Font data would be here in production */
+  src: url("../fonts/bootstrap-icons.woff2") format("woff2"),
+       url("../fonts/bootstrap-icons.woff") format("woff");
 }
 
 .bi::before,
@@ -21,33 +22,37 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Icon mappings - simplified for common icons */
-.bi-gpu-card::before { content: "🎮"; }
-.bi-people::before { content: "👥"; }
-.bi-box::before { content: "📦"; }
-.bi-graph-up::before { content: "📈"; }
-.bi-plus-circle::before { content: "➕"; }
-.bi-arrow-clockwise::before { content: "🔄"; }
-.bi-clipboard::before { content: "📋"; }
-.bi-person::before { content: "👤"; }
-.bi-lock::before { content: "🔒"; }
-.bi-box-arrow-in-right::before { content: "➡️"; }
-.bi-box-arrow-right::before { content: "↗️"; }
-.bi-person-circle::before { content: "👤"; }
-.bi-person-badge::before { content: "🏷️"; }
-.bi-key::before { content: "🔑"; }
-.bi-globe::before { content: "🌐"; }
-.bi-terminal::before { content: "💻"; }
-.bi-code-slash::before { content: "💻"; }
-.bi-journal-code::before { content: "📓"; }
-.bi-exclamation-triangle::before { content: "⚠️"; }
-.bi-x-circle::before { content: "❌"; }
-.bi-check-circle::before { content: "✅"; }
-.bi-info-circle::before { content: "ℹ️"; }
-.bi-gear::before { content: "⚙️"; }
-.bi-trash::before { content: "🗑️"; }
-.bi-pencil::before { content: "✏️"; }
-.bi-eye::before { content: "👁️"; }
-.bi-play::before { content: "▶️"; }
-.bi-stop::before { content: "⏹️"; }
-.bi-pause::before { content: "⏸️"; }
+/* Essential Bootstrap Icons for the application */
+.bi-gpu-card::before { content: "\f4e7"; }
+.bi-people::before { content: "\f4da"; }
+.bi-box::before { content: "\f2b1"; }
+.bi-graph-up::before { content: "\f384"; }
+.bi-plus-circle::before { content: "\f4fe"; }
+.bi-arrow-clockwise::before { content: "\f1ab"; }
+.bi-clipboard::before { content: "\f2ea"; }
+.bi-person::before { content: "\f4da"; }
+.bi-lock::before { content: "\f469"; }
+.bi-box-arrow-in-right::before { content: "\f2c6"; }
+.bi-box-arrow-right::before { content: "\f2c7"; }
+.bi-person-circle::before { content: "\f4db"; }
+.bi-person-badge::before { content: "\f4d9"; }
+.bi-key::before { content: "\f42e"; }
+.bi-globe::before { content: "\f37c"; }
+.bi-terminal::before { content: "\f5d1"; }
+.bi-code-slash::before { content: "\f2f9"; }
+.bi-journal-code::before { content: "\f417"; }
+.bi-exclamation-triangle::before { content: "\f33a"; }
+.bi-x-circle::before { content: "\f62a"; }
+.bi-check-circle::before { content: "\f2e7"; }
+.bi-info-circle::before { content: "\f3f0"; }
+.bi-gear::before { content: "\f375"; }
+.bi-trash::before { content: "\f5de"; }
+.bi-pencil::before { content: "\f4ca"; }
+.bi-eye::before { content: "\f341"; }
+.bi-play::before { content: "\f4f4"; }
+.bi-stop::before { content: "\f5d0"; }
+.bi-pause::before { content: "\f4c3"; }
+.bi-x::before { content: "\f62a"; }
+.bi-check::before { content: "\f26e"; }
+.bi-download::before { content: "\f324"; }
+.bi-upload::before { content: "\f62b"; }
