@@ -6,7 +6,7 @@
     <title>GPU开发平台管理</title>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/css/bootstrap-icons.css" rel="stylesheet">
-    <link href="/static/css/admin.css?v=20250113-8" rel="stylesheet">
+    <link href="/static/css/admin.css?v=20250113-13" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -65,7 +65,7 @@
                 <!-- 用户管理 -->
                 <div id="users-section" class="section">
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                        <h1 class="h2">用户管理</h1>
+                        <h1 class="h1">用户管理</h1>
                         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
@@ -100,8 +100,8 @@
                 <!-- 容器管理 -->
                 <div id="containers-section" class="section" style="display: none;">
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                        <h1 class="h2">容器管理</h1>
-                        <div class="btn-group">
+                        <h1 class="h1">容器管理</h1>
+                        <div class="d-flex gap-2">
                             <button type="button" class="btn btn-outline-secondary" onclick="loadContainers(true)" title="刷新容器状态">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <polyline points="23 4 23 10 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -143,14 +143,14 @@
                 <!-- 系统监控 -->
                 <div id="dashboard-section" class="section" style="display: none;">
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                        <h1 class="h2">系统监控</h1>
+                        <h1 class="h1">系统监控</h1>
                     </div>
                     
                     <div class="row">
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="card-title">系统状态</h5>
+                                    <h3 class="card-title">系统状态</h3>
                                 </div>
                                 <div class="card-body">
                                     <p>活跃用户: <span id="active-users">0</span></p>
@@ -162,7 +162,7 @@
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="card-title">资源使用</h5>
+                                    <h3 class="card-title">资源使用</h3>
                                 </div>
                                 <div class="card-body">
                                     <p>CPU使用率: <span id="cpu-usage">0%</span></p>

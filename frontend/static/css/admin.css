@@ -139,9 +139,9 @@ button[onclick*="generateSecurePassword"]:hover svg {
 
 /* 统一的Action按钮样式 */
 .btn-action {
-    padding: 0.375rem 0.5rem;
+    padding: 0;
     margin: 0 0.125rem;
-    border-radius: 0.375rem;
+    border-radius: 0.375rem; /* 恢复原来的圆角 */
     border: 1px solid;
     background: transparent;
     cursor: pointer;
@@ -151,12 +151,14 @@ button[onclick*="generateSecurePassword"]:hover svg {
     justify-content: center;
     font-size: 0.875rem;
     line-height: 1;
-    min-width: 32px;
-    height: 32px;
+    width: 32px; /* 固定宽度 */
+    height: 32px; /* 固定高度，形成正方形 */
 }
 
 .btn-action svg {
     transition: transform 0.2s ease-in-out;
+    display: block; /* 确保SVG是块级元素 */
+    margin: auto; /* 自动居中 */
 }
 
 .btn-action:hover svg {
@@ -244,6 +246,22 @@ button[onclick*="generateSecurePassword"]:hover svg {
 /* Action按钮组的间距优化 */
 td .btn-action + .btn-action {
     margin-left: 0.25rem;
+}
+
+/* 表格中的按钮垂直对齐优化 */
+.table td .btn-action {
+    vertical-align: middle;
+    margin: 0 0.25rem; /* 增加按钮之间的间距 */
+}
+
+/* 操作列按钮紧靠左侧 */
+.table td:last-child .btn-action:first-child {
+    margin-left: 0; /* 第一个按钮左边距为0 */
+}
+
+/* 表格行高优化 */
+.table tbody tr {
+    height: 45px; /* 设置固定行高，更紧凑 */
 }
 
 /* 容器使用说明模态框样式 */
@@ -434,15 +452,17 @@ td .btn-action + .btn-action {
 /* 响应式优化 */
 @media (max-width: 767.98px) {
     .btn-action {
-        min-width: 28px;
-        height: 28px;
-        padding: 0.25rem;
+        width: 28px; /* 移动端固定宽度 */
+        height: 28px; /* 移动端固定高度，形成正方形 */
+        padding: 0;
         margin: 0 0.1rem;
     }
     
     .btn-action svg {
         width: 12px;
         height: 12px;
+        display: block; /* 确保SVG是块级元素 */
+        margin: auto; /* 自动居中 */
     }
     
     .modal-instructions {
@@ -525,6 +545,18 @@ main {
     background-color: #f8f9fa;
     border-top: none;
     text-align: left !important;
+    padding: 0.5rem 0.75rem; /* 减少表头内边距 */
+}
+
+.table td {
+    padding: 0.5rem 0.75rem; /* 减少表格单元格内边距，使行更紧凑 */
+    vertical-align: middle !important; /* 确保内容垂直居中 */
+}
+
+/* 操作按钮单元格特殊对齐 */
+.table td:last-child {
+    text-align: left !important; /* 操作列左对齐显示 */
+    padding-left: 0.75rem !important; /* 确保左边距合理 */
 }
 
 /* 表格响应式优化，充分利用空间 */
