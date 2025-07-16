@@ -16,6 +16,13 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 # 运行阶段
 FROM alpine:latest
 
+# 使用稳定的镜像源并更新包索引
+RUN echo "http://mirrors.aliyun.com/alpine/v3.19/main" > /etc/apk/repositories && \
+    echo "http://mirrors.aliyun.com/alpine/v3.19/community" >> /etc/apk/repositories && \
+    echo "http://dl-cdn.alpinelinux.org/alpine/v3.19/main" >> /etc/apk/repositories && \
+    echo "http://dl-cdn.alpinelinux.org/alpine/v3.19/community" >> /etc/apk/repositories && \
+    apk update
+
 # 安装必要的包
 RUN apk --no-cache add ca-certificates
 

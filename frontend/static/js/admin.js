@@ -213,15 +213,27 @@ function createUserRow(user) {
         <td>${ports}</td>
         <td>${new Date(user.created_at).toLocaleDateString()}</td>
         <td>
-            <button class="btn btn-sm btn-outline-primary" onclick="editUser(${user.id})">
-                <i class="bi bi-pencil"></i>
+            <button class="btn btn-action btn-action-primary" onclick="editUser(${user.id})" title="编辑用户">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="m18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
             </button>
-            <button class="btn btn-sm btn-outline-warning" onclick="changePassword(${user.id})">
-                <i class="bi bi-key"></i>
+            <button class="btn btn-action btn-action-warning" onclick="changePassword(${user.id})" title="修改密码">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="16" r="1" fill="currentColor"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2"/>
+                </svg>
             </button>
             ${user.username !== 'admin' ? 
-                `<button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${user.id}, '${user.username}')">
-                    <i class="bi bi-trash"></i>
+                `<button class="btn btn-action btn-action-danger" onclick="deleteUser(${user.id}, '${user.username}')" title="删除用户">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <polyline points="3,6 5,6 21,6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <line x1="10" y1="11" x2="10" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <line x1="14" y1="11" x2="14" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                  </button>` : 
                 '<span class="text-muted small">系统管理员</span>'
             }
@@ -446,17 +458,38 @@ async function createContainerRow(container) {
         <td class="text-truncate" title="${portsTitle}">${ports}</td>
         <td>
             ${container.status === 'running' 
-                ? `<button class="btn btn-sm btn-outline-warning" onclick="stopContainer('${container.id}')"><i class="bi bi-stop"></i></button>`
-                : `<button class="btn btn-sm btn-outline-success" onclick="startContainer('${container.id}')"><i class="bi bi-play"></i></button>`
+                ? `<button class="btn btn-action btn-action-warning" onclick="stopContainer('${container.id}')" title="停止容器">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="6" y="4" width="4" height="16" fill="currentColor"/>
+                        <rect x="14" y="4" width="4" height="16" fill="currentColor"/>
+                    </svg>
+                   </button>`
+                : `<button class="btn btn-action btn-action-success" onclick="startContainer('${container.id}')" title="启动容器">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="5,3 19,12 5,21" fill="currentColor"/>
+                    </svg>
+                   </button>`
             }
-            <button class="btn btn-sm btn-outline-secondary" onclick="copyUsageInstructions('${container.id}', '${username}', '${container.name}')" title="复制使用说明">
-                <i class="bi bi-clipboard-data"></i>
+            <button class="btn btn-action btn-action-info" onclick="copyUsageInstructions('${container.id}', '${username}', '${container.name}')" title="复制使用说明">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                    <path d="m5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/>
+                </svg>
             </button>
-            <button class="btn btn-sm btn-outline-info" onclick="resetContainerPasswordDialog('${container.id}', '${container.name}')" title="重置服务密码">
-                <i class="bi bi-key"></i>
+            <button class="btn btn-action btn-action-secondary" onclick="resetContainerPasswordDialog('${container.id}', '${container.name}')" title="重置服务密码">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="16" r="1" fill="currentColor"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2"/>
+                </svg>
             </button>
-            <button class="btn btn-sm btn-outline-danger" onclick="removeContainer('${container.id}', '${container.name}')">
-                <i class="bi bi-trash"></i>
+            <button class="btn btn-action btn-action-danger" onclick="removeContainer('${container.id}', '${container.name}')" title="删除容器">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <polyline points="3,6 5,6 21,6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="10" y1="11" x2="10" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="14" y1="11" x2="14" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
             </button>
         </td>
     `;
@@ -1187,18 +1220,35 @@ function fallbackCopyToClipboard(text) {
     modal.className = 'modal fade';
     modal.style.zIndex = '9999';
     modal.innerHTML = `
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-instructions">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">容器使用说明</h5>
+                    <h5 class="modal-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+                            <path d="M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zM4 10h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zM4 16h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z" fill="currentColor"/>
+                        </svg>
+                        GPU开发环境使用说明
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted mb-3">请手动复制以下内容：</p>
-                    <textarea class="form-control" rows="20" readonly style="font-family: monospace; font-size: 12px;">${text}</textarea>
+                    <p class="text-muted mb-3">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 6px;">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                            <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        请手动复制以下内容：
+                    </p>
+                    <textarea class="form-control instructions-textarea" rows="30" readonly style="font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.4;">${text}</textarea>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" onclick="selectAndCopy(this)">全选并复制</button>
+                    <button type="button" class="btn btn-primary" onclick="selectAndCopy(this)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 6px;">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                            <path d="m5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        全选并复制
+                    </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
                 </div>
             </div>
@@ -1286,28 +1336,44 @@ async function showUserNotificationModal(userId, password, containerData) {
         modal.className = 'modal fade';
         modal.style.zIndex = '9999';
         modal.innerHTML = `
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-user-notification">
                 <div class="modal-content">
                     <div class="modal-header bg-success text-white">
                         <h5 class="modal-title">
-                            <i class="bi bi-check-circle me-2"></i>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                             用户通知信息（请发送给用户）
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" stroke="currentColor" stroke-width="2"/>
+                                <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2"/>
+                            </svg>
                             <strong>重要提醒：</strong>此页面仅展示一次！请立即复制用户信息并通过安全渠道发送给用户 <strong>${user.username}</strong>
                         </div>
-                        <textarea class="form-control" rows="20" readonly style="font-family: monospace; font-size: 13px; line-height: 1.4;">${userNotification}</textarea>
+                        <textarea class="form-control notification-textarea" rows="28" readonly style="font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.4;">${userNotification}</textarea>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" onclick="selectAndCopy(this)">
-                            <i class="bi bi-clipboard me-1"></i>复制全部内容
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 6px;">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                                <path d="m5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            复制全部内容
                         </button>
                         <button type="button" class="btn btn-success" onclick="copyPasswordOnly('${password}')">
-                            <i class="bi bi-key me-1"></i>仅复制密码
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 6px;">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                                <circle cx="12" cy="16" r="1" fill="currentColor"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            仅复制密码
                         </button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
                     </div>

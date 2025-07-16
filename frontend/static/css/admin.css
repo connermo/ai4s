@@ -2,14 +2,79 @@ body {
     font-size: 0.875rem;
 }
 
+/* 确保navbar固定在顶部并强制布局 */
+.navbar.navbar-expand-lg {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 1030 !important;
+}
+
+/* 强制navbar容器布局 */
+.navbar .container-fluid {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+}
+
+/* 优化导航栏样式 */
+.navbar .navbar-brand {
+    font-size: 1.2rem !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    display: flex !important;
+    align-items: center !important;
+    color: #ffffff !important;
+}
+
+.navbar .navbar-brand:hover {
+    color: #ffffff !important;
+}
+
+/* 强制退出按钮样式和位置 */
+.navbar .logout-btn {
+    padding: 0.5rem 0.75rem !important;
+    border-radius: 0.375rem !important;
+    transition: background-color 0.2s ease-in-out !important;
+    text-decoration: none !important;
+    font-size: 0.95rem !important;
+    color: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    margin-left: auto !important;
+}
+
+.navbar .logout-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+}
+
+/* 为body添加顶部padding，避免内容被navbar遮挡 */
+body {
+    padding-top: 56px;
+}
+
 .sidebar {
     position: fixed;
     top: 56px;
     bottom: 0;
     left: 0;
-    z-index: 100;
-    padding: 48px 0 0;
+    width: 200px; /* 固定宽度，更紧凑 */
+    z-index: 1020;
+    padding: 20px 0 0;
     box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.1);
+}
+
+/* 在中等屏幕上调整sidebar宽度 */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .sidebar {
+        width: 220px; /* 中等屏幕稍微宽一点 */
+    }
 }
 
 .sidebar .nav-link {
@@ -26,13 +91,430 @@ body {
     background-color: rgba(0, 123, 255, 0.1);
 }
 
-.sidebar .nav-link i {
+/* SVG图标样式优化 */
+.sidebar .nav-link .sidebar-icon {
+    margin-right: 0.5rem;
+    opacity: 0.8;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.sidebar .nav-link:hover .sidebar-icon {
+    opacity: 1;
+}
+
+.sidebar .nav-link.active .sidebar-icon {
+    opacity: 1;
+}
+
+/* Navbar SVG图标样式 */
+.navbar svg {
+    transition: transform 0.2s ease-in-out;
+}
+
+.navbar .logout-btn:hover svg {
+    transform: translateX(2px);
+}
+
+/* 按钮SVG图标样式 */
+.btn svg {
+    margin-right: 0.25rem;
+    transition: transform 0.2s ease-in-out;
+}
+
+.btn:hover svg {
+    transform: scale(1.1);
+}
+
+/* 特殊按钮动画 */
+.btn-outline-secondary:hover svg {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* 刷新按钮特殊动画 */
+button[onclick*="loadContainers"]:hover svg,
+button[onclick*="generateSecurePassword"]:hover svg {
+    transform: scale(1.1) rotate(180deg);
+    transition: transform 0.3s ease-in-out;
+}
+
+/* 统一的Action按钮样式 */
+.btn-action {
+    padding: 0.375rem 0.5rem;
+    margin: 0 0.125rem;
+    border-radius: 0.375rem;
+    border: 1px solid;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    line-height: 1;
+    min-width: 32px;
+    height: 32px;
+}
+
+.btn-action svg {
+    transition: transform 0.2s ease-in-out;
+}
+
+.btn-action:hover svg {
+    transform: scale(1.15);
+}
+
+/* Primary 编辑按钮 - 蓝色 */
+.btn-action-primary {
+    color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-action-primary:hover {
+    background-color: #0d6efd;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.25);
+}
+
+/* Warning 警告按钮 - 橙色 */
+.btn-action-warning {
+    color: #fd7e14;
+    border-color: #fd7e14;
+}
+
+.btn-action-warning:hover {
+    background-color: #fd7e14;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(253, 126, 20, 0.25);
+}
+
+/* Success 成功按钮 - 绿色 */
+.btn-action-success {
+    color: #198754;
+    border-color: #198754;
+}
+
+.btn-action-success:hover {
+    background-color: #198754;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(25, 135, 84, 0.25);
+}
+
+/* Info 信息按钮 - 青色 */
+.btn-action-info {
+    color: #0dcaf0;
+    border-color: #0dcaf0;
+}
+
+.btn-action-info:hover {
+    background-color: #0dcaf0;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(13, 202, 240, 0.25);
+}
+
+/* Secondary 次要按钮 - 灰色 */
+.btn-action-secondary {
+    color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-action-secondary:hover {
+    background-color: #6c757d;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(108, 117, 125, 0.25);
+}
+
+/* Danger 危险按钮 - 红色 */
+.btn-action-danger {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-action-danger:hover {
+    background-color: #dc3545;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.25);
+}
+
+/* Action按钮组的间距优化 */
+td .btn-action + .btn-action {
+    margin-left: 0.25rem;
+}
+
+/* 容器使用说明模态框样式 */
+.modal-instructions {
+    max-width: 90vw;
+    width: 900px;
+    margin: 2rem auto;
+}
+
+.modal-instructions .modal-content {
+    height: 680px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal-instructions .modal-header {
+    flex-shrink: 0;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
+    border-radius: 0.5rem 0.5rem 0 0;
+    border-bottom: none;
+}
+
+.modal-instructions .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.modal-instructions .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+    opacity: 0.8;
+}
+
+.modal-instructions .btn-close:hover {
+    opacity: 1;
+}
+
+.modal-instructions .modal-body {
+    flex: 1;
+    padding: 1.5rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-instructions .instructions-textarea {
+    flex: 1;
+    resize: none;
+    border: 2px solid #e9ecef;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    overflow-y: auto;
+    min-height: 500px;
+}
+
+.modal-instructions .instructions-textarea:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    outline: none;
+}
+
+.modal-instructions .modal-footer {
+    flex-shrink: 0;
+    padding: 1rem 1.5rem;
+    background-color: #f8f9fa;
+    border-radius: 0 0 0.5rem 0.5rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.modal-instructions .btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+}
+
+.modal-instructions .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+}
+
+.modal-instructions .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* 用户通知模态框样式 */
+.modal-user-notification {
+    max-width: 90vw;
+    width: 900px;
+    margin: 2rem auto;
+}
+
+.modal-user-notification .modal-content {
+    height: 680px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal-user-notification .modal-header {
+    flex-shrink: 0;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+    border-bottom: none;
+}
+
+.modal-user-notification .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.modal-user-notification .modal-body {
+    flex: 1;
+    padding: 1.5rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-user-notification .alert {
+    flex-shrink: 0;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.modal-user-notification .notification-textarea {
+    flex: 1;
+    resize: none;
+    border: 2px solid #e9ecef;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    overflow-y: auto;
+    min-height: 450px;
+}
+
+.modal-user-notification .notification-textarea:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+    outline: none;
+}
+
+.modal-user-notification .modal-footer {
+    flex-shrink: 0;
+    padding: 1rem 1.5rem;
+    background-color: #f8f9fa;
+    border-radius: 0 0 0.5rem 0.5rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.modal-user-notification .btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
     margin-right: 0.5rem;
 }
 
+.modal-user-notification .btn:hover {
+    transform: translateY(-1px);
+}
+
+.modal-user-notification .btn-primary:hover {
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+}
+
+.modal-user-notification .btn-success:hover {
+    box-shadow: 0 4px 8px rgba(25, 135, 84, 0.3);
+}
+
+/* 响应式优化 */
+@media (max-width: 767.98px) {
+    .btn-action {
+        min-width: 28px;
+        height: 28px;
+        padding: 0.25rem;
+        margin: 0 0.1rem;
+    }
+    
+    .btn-action svg {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .modal-instructions {
+        max-width: 95vw;
+        width: auto;
+        margin: 1rem;
+    }
+    
+    .modal-instructions .modal-content {
+        height: 85vh;
+    }
+    
+    .modal-instructions .instructions-textarea {
+        font-size: 12px !important;
+        min-height: 400px;
+    }
+    
+    .modal-user-notification {
+        max-width: 95vw;
+        width: auto;
+        margin: 1rem;
+    }
+    
+    .modal-user-notification .modal-content {
+        height: 85vh;
+    }
+    
+    .modal-user-notification .notification-textarea {
+        font-size: 12px !important;
+        min-height: 350px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .modal-instructions .modal-content {
+        height: 90vh;
+    }
+    
+    .modal-instructions .modal-body {
+        padding: 1rem;
+    }
+    
+    .modal-instructions .modal-footer {
+        padding: 1rem;
+    }
+    
+    .modal-user-notification .modal-content {
+        height: 90vh;
+    }
+    
+    .modal-user-notification .modal-body {
+        padding: 1rem;
+    }
+    
+    .modal-user-notification .modal-footer {
+        padding: 1rem;
+    }
+}
+
 main {
-    margin-top: 56px;
-    padding-top: 20px;
+    margin-left: 200px; /* 对应sidebar固定宽度 */
+    padding: 20px 20px;
+    width: calc(100% - 200px); /* 确保占满剩余空间 */
+    min-height: calc(100vh - 56px); /* 填满整个视口高度 */
+}
+
+/* 在中等屏幕上调整main的margin和宽度 */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    main {
+        margin-left: 220px; /* 对应sidebar宽度 */
+        width: calc(100% - 220px);
+    }
 }
 
 .section {
@@ -42,6 +524,36 @@ main {
 .table th {
     background-color: #f8f9fa;
     border-top: none;
+    text-align: left !important;
+}
+
+/* 表格响应式优化，充分利用空间 */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    margin: 0;
+}
+
+.table {
+    width: 100%;
+    margin-bottom: 0;
+    min-width: 800px; /* 确保表格有足够的最小宽度 */
+}
+
+/* 确保页面内容充分利用空间 */
+.section {
+    width: 100%;
+    max-width: none; /* 移除最大宽度限制 */
+}
+
+/* 优化内容区域布局 */
+.d-flex.justify-content-between {
+    width: 100%;
+}
+
+/* 确保页面标题区域充分利用宽度 */
+.border-bottom {
+    width: 100%;
 }
 
 .status-badge {
@@ -187,14 +699,20 @@ main {
 
 @media (max-width: 767.98px) {
     .sidebar {
-        top: 56px;
         position: relative;
-        padding: 0;
+        top: 0;
+        width: 100%;
+        padding: 15px 0;
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
     }
     
     main {
-        margin-top: 0;
+        margin-left: 0;
+        padding: 15px 10px;
+        width: 100%;
+        min-height: calc(100vh - 56px);
     }
+}
     
     /* 移动端toast样式调整 */
     .toast-container {
