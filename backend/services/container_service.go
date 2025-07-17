@@ -96,12 +96,12 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		containerHomePath = "/home"
 	}
 	
-	containerSharedPath := os.Getenv("CONTAINER_SHARED_PATH")
+	containerSharedPath := os.Getenv("CONTAINER_SHARED_RO_PATH")
 	if containerSharedPath == "" {
 		containerSharedPath = "/shared"
 	}
 	
-	containerWorkspacePath := os.Getenv("CONTAINER_WORKSPACE_PATH")
+	containerWorkspacePath := os.Getenv("CONTAINER_SHARED_RW_PATH")
 	if containerWorkspacePath == "" {
 		containerWorkspacePath = "/workspace"
 	}
