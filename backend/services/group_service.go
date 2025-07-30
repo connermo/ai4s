@@ -50,8 +50,8 @@ func (s *GroupService) GetNextAvailableGID() (int, error) {
 }
 
 // AllocateGID 分配 GID
-func (s *GroupService) AllocateGID(gid int, purpose string) error {
-	_, err := s.db.Exec("INSERT INTO gid_allocation (gid, purpose) VALUES (?, ?)", gid, purpose)
+func (s *GroupService) AllocateGID(gid int) error {
+	_, err := s.db.Exec("INSERT INTO gid_allocation (gid) VALUES (?)", gid)
 	return err
 }
 
@@ -87,7 +87,7 @@ func (s *GroupService) CreateGroup(req *models.GroupCreateRequest, createdBy int
 	defer tx.Rollback()
 
 	// 分配 GID
-	if err := s.AllocateGID(gid, "group"); err != nil {
+	if err := s.AllocateGID(gid); err != nil {
 		return nil, fmt.Errorf("failed to allocate GID: %v", err)
 	}
 
