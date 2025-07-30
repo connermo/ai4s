@@ -144,7 +144,13 @@ func ensureTablesExist() error {
 		return fmt.Errorf("failed to create container_stats table: %v", err)
 	}
 
-	// 确保组管理相关表存在
+	// 确保组管理相关表存在 - 先清理旧的表和约束
+	fmt.Printf("DEBUG: Cleaning up old group tables\n")
+	DB.Exec("DROP TABLE IF EXISTS user_groups")
+	DB.Exec("DROP TABLE IF EXISTS gid_allocation") 
+	DB.Exec("DROP TABLE IF EXISTS `groups`")
+	DB.Exec("DROP TABLE IF EXISTS grps")
+
 	fmt.Printf("DEBUG: Creating grps table\n")
 	_, err = DB.Exec("CREATE TABLE IF NOT EXISTS grps (" +
 		"id INT AUTO_INCREMENT PRIMARY KEY," +
@@ -157,7 +163,7 @@ func ensureTablesExist() error {
 		"FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE CASCADE" +
 		")")
 	if err != nil {
-		return fmt.Errorf("failed to create groups table: %v", err)
+		return fmt.Errorf("failed to create grps table: %v", err)
 	}
 
 	fmt.Printf("DEBUG: Creating user_groups table\n")
