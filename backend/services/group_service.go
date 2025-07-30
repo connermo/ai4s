@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
-	"syscall"
 
 	"gpu-dev-platform/database"
 	"gpu-dev-platform/models"
@@ -18,7 +16,7 @@ type GroupService struct {
 
 func NewGroupService() *GroupService {
 	return &GroupService{
-		db: database.GetDB(),
+		db: database.DB,
 	}
 }
 
