@@ -150,11 +150,11 @@ func ensureTablesExist() error {
 		"id INT AUTO_INCREMENT PRIMARY KEY," +
 		"name VARCHAR(100) UNIQUE NOT NULL," +
 		"description TEXT," +
-		"creator_id INT NOT NULL," +
+		"created_by INT NOT NULL," +
 		"gid INT UNIQUE NOT NULL," +
 		"created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
 		"updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
-		"FOREIGN KEY (creator_id) REFERENCES users (id) ON DELETE CASCADE" +
+		"FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE CASCADE" +
 		")")
 	if err != nil {
 		return fmt.Errorf("failed to create groups table: %v", err)
@@ -249,7 +249,7 @@ func createIndexesDirectly() error {
 		"CREATE INDEX idx_container_stats_container_id ON container_stats(container_id)",
 		"CREATE INDEX idx_container_stats_timestamp ON container_stats(timestamp)",
 		"CREATE INDEX idx_groups_name ON `groups`(name)",
-		"CREATE INDEX idx_groups_creator_id ON `groups`(creator_id)",
+		"CREATE INDEX idx_groups_created_by ON `groups`(created_by)",
 		"CREATE INDEX idx_groups_gid ON `groups`(gid)",
 		"CREATE INDEX idx_user_groups_user_id ON user_groups(user_id)",
 		"CREATE INDEX idx_user_groups_group_id ON user_groups(group_id)",
