@@ -65,7 +65,7 @@ func (s *GroupService) DeallocateGID(gid int) error {
 func (s *GroupService) CreateGroup(req *models.GroupCreateRequest, createdBy int) (*models.Group, error) {
 	// 检查组名是否已存在
 	var count int
-	err := s.db.QueryRow("SELECT COUNT(*) FROM groups WHERE name = ?", req.Name).Scan(&count)
+	err := s.db.QueryRow("SELECT COUNT(*) FROM grps WHERE name = ?", req.Name).Scan(&count)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (s *GroupService) CreateGroup(req *models.GroupCreateRequest, createdBy int
 
 	// 创建组
 	result, err := tx.Exec(`
-		INSERT INTO groups (name, description, gid, created_by) 
+		INSERT INTO grps (name, description, gid, created_by) 
 		VALUES (?, ?, ?, ?)`,
 		req.Name, req.Description, gid, createdBy)
 	if err != nil {
@@ -176,7 +176,7 @@ func (s *GroupService) GetGroups(userID int, isAdmin bool) ([]models.GroupWithPe
 				   u.username as created_by_username,
 				   COALESCE(member_count.count, 0) as member_count,
 				   COALESCE(ug.role, '') as user_role
-			FROM groups g
+			FROM grps g
 			LEFT JOIN users u ON g.created_by = u.id
 			LEFT JOIN (
 				SELECT group_id, COUNT(*) as count 
@@ -193,7 +193,7 @@ func (s *GroupService) GetGroups(userID int, isAdmin bool) ([]models.GroupWithPe
 				   u.username as created_by_username,
 				   COALESCE(member_count.count, 0) as member_count,
 				   ug.role as user_role
-			FROM groups g
+			FROM grps g
 			INNER JOIN user_groups ug ON g.id = ug.group_id
 			LEFT JOIN users u ON g.created_by = u.id
 			LEFT JOIN (
@@ -247,7 +247,7 @@ func (s *GroupService) GetGroupByID(groupID int) (*models.Group, error) {
 		SELECT g.id, g.name, g.description, g.gid, g.created_by, g.created_at, g.updated_at,
 			   u.username as created_by_username,
 			   COALESCE(member_count.count, 0) as member_count
-		FROM groups g
+		FROM grps g
 		LEFT JOIN users u ON g.created_by = u.id
 		LEFT JOIN (
 			SELECT group_id, COUNT(*) as count 
@@ -281,7 +281,7 @@ func (s *GroupService) UpdateGroup(groupID int, req *models.GroupUpdateRequest, 
 
 	// 检查新名称是否与其他组冲突
 	var count int
-	err = s.db.QueryRow("SELECT COUNT(*) FROM groups WHERE name = ? AND id != ?", req.Name, groupID).Scan(&count)
+	err = s.db.QueryRow("SELECT COUNT(*) FROM grps WHERE name = ? AND id != ?", req.Name, groupID).Scan(&count)
 	if err != nil {
 		return err
 	}
@@ -290,7 +290,7 @@ func (s *GroupService) UpdateGroup(groupID int, req *models.GroupUpdateRequest, 
 	}
 
 	_, err = s.db.Exec(`
-		UPDATE groups 
+		UPDATE grps 
 		SET name = ?, description = ?
 		WHERE id = ?`,
 		req.Name, req.Description, groupID)
@@ -329,7 +329,7 @@ func (s *GroupService) DeleteGroup(groupID int, userID int, isAdmin bool) error 
 	}
 
 	// 删除组
-	_, err = tx.Exec("DELETE FROM groups WHERE id = ?", groupID)
+	_, err = tx.Exec("DELETE FROM grps WHERE id = ?", groupID)
 	if err != nil {
 		return err
 	}
@@ -367,7 +367,7 @@ func (s *GroupService) CanManageGroup(groupID, userID int, isAdmin bool) (bool, 
 
 	// 检查是否是组创建者
 	var createdBy int
-	err := s.db.QueryRow("SELECT created_by FROM groups WHERE id = ?", groupID).Scan(&createdBy)
+	err := s.db.QueryRow("SELECT created_by FROM grps WHERE id = ?", groupID).Scan(&createdBy)
 	if err != nil {
 		return false, err
 	}
@@ -391,7 +391,7 @@ func (s *GroupService) GetUserGroups(userID int) ([]models.UserGroup, error) {
 		SELECT ug.id, ug.user_id, ug.group_id, ug.role, ug.joined_at,
 			   g.name as group_name
 		FROM user_groups ug
-		JOIN groups g ON ug.group_id = g.id
+		JOIN grps g ON ug.group_id = g.id
 		WHERE ug.user_id = ?
 		ORDER BY ug.joined_at DESC`
 
@@ -513,7 +513,7 @@ func (s *GroupService) RemoveGroupMember(groupID, memberUserID, userID int, isAd
 
 	// 检查是否试图移除组创建者
 	var createdBy int
-	err = s.db.QueryRow("SELECT created_by FROM groups WHERE id = ?", groupID).Scan(&createdBy)
+	err = s.db.QueryRow("SELECT created_by FROM grps WHERE id = ?", groupID).Scan(&createdBy)
 	if err != nil {
 		return err
 	}
@@ -551,7 +551,7 @@ func (s *GroupService) UpdateMemberRole(groupID, memberUserID, userID int, req *
 
 	// 检查是否试图修改组创建者角色
 	var createdBy int
-	err = s.db.QueryRow("SELECT created_by FROM groups WHERE id = ?", groupID).Scan(&createdBy)
+	err = s.db.QueryRow("SELECT created_by FROM grps WHERE id = ?", groupID).Scan(&createdBy)
 	if err != nil {
 		return err
 	}
@@ -594,7 +594,7 @@ func (s *GroupService) IsGroupMember(groupID, userID int) (bool, error) {
 func (s *GroupService) GetGroupsForContainer(userID int) ([]models.Group, error) {
 	query := `
 		SELECT g.id, g.name, g.gid
-		FROM groups g
+		FROM grps g
 		INNER JOIN user_groups ug ON g.id = ug.group_id
 		WHERE ug.user_id = ?
 		ORDER BY g.name`

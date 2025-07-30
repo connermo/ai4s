@@ -145,8 +145,8 @@ func ensureTablesExist() error {
 	}
 
 	// 确保组管理相关表存在
-	fmt.Printf("DEBUG: Creating groups table\n")
-	_, err = DB.Exec("CREATE TABLE IF NOT EXISTS `groups` (" +
+	fmt.Printf("DEBUG: Creating grps table\n")
+	_, err = DB.Exec("CREATE TABLE IF NOT EXISTS grps (" +
 		"id INT AUTO_INCREMENT PRIMARY KEY," +
 		"name VARCHAR(100) UNIQUE NOT NULL," +
 		"description TEXT," +
@@ -169,7 +169,7 @@ func ensureTablesExist() error {
 		"joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
 		"UNIQUE KEY unique_user_group (user_id, group_id)," +
 		"FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE," +
-		"FOREIGN KEY (group_id) REFERENCES `groups` (id) ON DELETE CASCADE" +
+		"FOREIGN KEY (group_id) REFERENCES grps (id) ON DELETE CASCADE" +
 		")")
 	if err != nil {
 		return fmt.Errorf("failed to create user_groups table: %v", err)
@@ -181,7 +181,7 @@ func ensureTablesExist() error {
 		"gid INT UNIQUE NOT NULL," +
 		"allocated_to_group_id INT," +
 		"allocated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-		"FOREIGN KEY (allocated_to_group_id) REFERENCES `groups` (id) ON DELETE SET NULL" +
+		"FOREIGN KEY (allocated_to_group_id) REFERENCES grps (id) ON DELETE SET NULL" +
 		")")
 	if err != nil {
 		return fmt.Errorf("failed to create gid_allocation table: %v", err)
@@ -223,7 +223,7 @@ func ensureTablesExist() error {
 }
 
 func verifyTablesExist() error {
-	tables := []string{"users", "containers", "container_stats", "groups", "user_groups", "gid_allocation", "system_config", "db_init_status"}
+	tables := []string{"users", "containers", "container_stats", "grps", "user_groups", "gid_allocation", "system_config", "db_init_status"}
 	
 	for _, table := range tables {
 		var exists int
@@ -248,9 +248,9 @@ func createIndexesDirectly() error {
 		"CREATE INDEX idx_containers_status ON containers(status)",
 		"CREATE INDEX idx_container_stats_container_id ON container_stats(container_id)",
 		"CREATE INDEX idx_container_stats_timestamp ON container_stats(timestamp)",
-		"CREATE INDEX idx_groups_name ON `groups`(name)",
-		"CREATE INDEX idx_groups_created_by ON `groups`(created_by)",
-		"CREATE INDEX idx_groups_gid ON `groups`(gid)",
+		"CREATE INDEX idx_grps_name ON grps(name)",
+		"CREATE INDEX idx_grps_created_by ON grps(created_by)",
+		"CREATE INDEX idx_grps_gid ON grps(gid)",
 		"CREATE INDEX idx_user_groups_user_id ON user_groups(user_id)",
 		"CREATE INDEX idx_user_groups_group_id ON user_groups(group_id)",
 		"CREATE INDEX idx_gid_allocation_gid ON gid_allocation(gid)",
