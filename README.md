@@ -157,8 +157,7 @@ ai4s/
 - `~/shared-ro` 或 `/shared-ro`: 全局共享只读目录
 - `~/shared-rw` 或 `/shared-rw`: 全局共享读写目录  
 - `~/groups` 或 `/groups`: 组共享目录根目录
-- `~/group-<组名>`: 特定组的快捷链接 (如 ~/group-ml)
-- `/groups/<组名>`: 组共享目录 (仅组成员可访问)
+- `~/groups/<组名>`: 组共享目录 (仅组成员可访问，如 ~/groups/research)
 
 ### 使用示例
 
@@ -171,8 +170,9 @@ ai4s/
    ```bash
    # 进入组共享目录
    cd ~/groups/research
-   # 或使用快捷链接
-   cd ~/group-research
+   # 或使用快捷命令
+   groups
+   ls  # 查看所有可访问的组目录
    ```
 
 3. **权限说明**：

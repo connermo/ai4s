@@ -352,6 +352,7 @@ alias mkdir='mkdir -p'
 alias home='cd ~'
 alias shared-ro='cd ~/shared-ro'
 alias shared-rw='cd ~/shared-rw'
+alias groups='cd ~/groups'
 alias logs='cd /tmp && ls -la *.log'
 
 # 密码和安全工具
@@ -589,23 +590,21 @@ ln -sfnT /shared-rw /home/$DEV_USER/shared-rw
 chown -h $DEV_UID:$DEV_GID /home/$DEV_USER/shared-ro /home/$DEV_USER/shared-rw
 
 # 为用户组创建符号链接
-if [ -n "$USER_GROUPS" ]; then
+if [ -n "$USER_GROUPS" ] && [ -d "/groups" ]; then
     echo "创建组目录符号链接..."
+    # 只创建一个通用的groups目录链接，用户可通过 ~/groups/<组名> 访问各组目录
+    ln -sfnT "/groups" "/home/$DEV_USER/groups"
+    chown -h $DEV_UID:$DEV_GID "/home/$DEV_USER/groups"
+    echo "  创建组目录符号链接: ~/groups (可访问所有组目录)"
+    
+    # 列出用户可访问的组目录
     IFS=',' read -ra GROUP_NAMES <<< "$USER_GROUPS"
+    echo "  用户可访问的组目录:"
     for GROUP_NAME in "${GROUP_NAMES[@]}"; do
         if [ -d "/groups/$GROUP_NAME" ]; then
-            echo "  创建组 $GROUP_NAME 的符号链接"
-            ln -sfnT "/groups/$GROUP_NAME" "/home/$DEV_USER/group-$GROUP_NAME"
-            chown -h $DEV_UID:$DEV_GID "/home/$DEV_USER/group-$GROUP_NAME"
+            echo "    ~/groups/$GROUP_NAME"
         fi
     done
-    
-    # 创建一个通用的groups目录链接
-    if [ -d "/groups" ]; then
-        ln -sfnT "/groups" "/home/$DEV_USER/groups"
-        chown -h $DEV_UID:$DEV_GID "/home/$DEV_USER/groups"
-        echo "  创建通用组目录符号链接: ~/groups"
-    fi
 fi
 
 echo ""
@@ -649,8 +648,7 @@ if mkdir -p /home/$DEV_USER; then
 - \`~/shared-ro\` 或 \`/shared-ro\`: 全局共享只读目录 (所有用户共享，只读)
 - \`~/shared-rw\` 或 \`/shared-rw\`: 全局共享工作区 (所有用户共享，可读写)
 - \`~/groups\` 或 \`/groups\`: 用户组共享目录根目录 (所有组的统一入口)
-- \`~/group-<组名>\`: 特定组的快捷链接 (如 ~/group-ml, ~/group-dev)
-- \`/groups/<组名>\`: 组共享目录 (仅组成员可访问)
+- \`~/groups/<组名>\`: 组共享目录 (仅组成员可访问，如 ~/groups/research)
 
 ## 启动服务
 
