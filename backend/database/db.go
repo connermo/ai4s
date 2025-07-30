@@ -144,6 +144,73 @@ func ensureTablesExist() error {
 		return fmt.Errorf("failed to create container_stats table: %v", err)
 	}
 
+	// 确保组管理相关表存在
+	fmt.Printf("DEBUG: Creating groups table\n")
+	_, err = DB.Exec(`CREATE TABLE IF NOT EXISTS groups (
+		id INT AUTO_INCREMENT PRIMARY KEY,
+		name VARCHAR(100) UNIQUE NOT NULL,
+		description TEXT,
+		creator_id INT NOT NULL,
+		gid INT UNIQUE NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+		FOREIGN KEY (creator_id) REFERENCES users (id) ON DELETE CASCADE
+	)`)
+	if err != nil {
+		return fmt.Errorf("failed to create groups table: %v", err)
+	}
+
+	fmt.Printf("DEBUG: Creating user_groups table\n")
+	_, err = DB.Exec(`CREATE TABLE IF NOT EXISTS user_groups (
+		id INT AUTO_INCREMENT PRIMARY KEY,
+		user_id INT NOT NULL,
+		group_id INT NOT NULL,
+		role ENUM('member', 'admin') DEFAULT 'member',
+		joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE KEY unique_user_group (user_id, group_id),
+		FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+		FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE
+	)`)
+	if err != nil {
+		return fmt.Errorf("failed to create user_groups table: %v", err)
+	}
+
+	fmt.Printf("DEBUG: Creating gid_allocation table\n")
+	_, err = DB.Exec(`CREATE TABLE IF NOT EXISTS gid_allocation (
+		id INT AUTO_INCREMENT PRIMARY KEY,
+		gid INT UNIQUE NOT NULL,
+		allocated_to_group_id INT,
+		allocated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (allocated_to_group_id) REFERENCES groups (id) ON DELETE SET NULL
+	)`)
+	if err != nil {
+		return fmt.Errorf("failed to create gid_allocation table: %v", err)
+	}
+
+	fmt.Printf("DEBUG: Creating system_config table\n")
+	_, err = DB.Exec(`CREATE TABLE IF NOT EXISTS system_config (
+		id INT AUTO_INCREMENT PRIMARY KEY,
+		key_name VARCHAR(100) UNIQUE NOT NULL,
+		value_str TEXT,
+		value_int INT,
+		value_bool BOOLEAN,
+		description TEXT,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+	)`)
+	if err != nil {
+		return fmt.Errorf("failed to create system_config table: %v", err)
+	}
+
+	// 初始化默认系统配置
+	fmt.Printf("DEBUG: Initializing default system config\n")
+	_, err = DB.Exec(`INSERT IGNORE INTO system_config (key_name, value_int, description) VALUES 
+		('min_group_gid', 2000, 'Minimum GID for groups'),
+		('max_group_gid', 65535, 'Maximum GID for groups')`)
+	if err != nil {
+		return fmt.Errorf("failed to initialize system config: %v", err)
+	}
+
 	// 确保默认管理员用户存在
 	fmt.Printf("DEBUG: Creating default admin user\n")
 	_, err = DB.Exec(`INSERT IGNORE INTO users (username, password, email, is_admin, base_port) 
@@ -156,7 +223,7 @@ func ensureTablesExist() error {
 }
 
 func verifyTablesExist() error {
-	tables := []string{"users", "containers", "container_stats", "db_init_status"}
+	tables := []string{"users", "containers", "container_stats", "groups", "user_groups", "gid_allocation", "system_config", "db_init_status"}
 	
 	for _, table := range tables {
 		var exists int
@@ -181,6 +248,13 @@ func createIndexesDirectly() error {
 		"CREATE INDEX idx_containers_status ON containers(status)",
 		"CREATE INDEX idx_container_stats_container_id ON container_stats(container_id)",
 		"CREATE INDEX idx_container_stats_timestamp ON container_stats(timestamp)",
+		"CREATE INDEX idx_groups_name ON groups(name)",
+		"CREATE INDEX idx_groups_creator_id ON groups(creator_id)",
+		"CREATE INDEX idx_groups_gid ON groups(gid)",
+		"CREATE INDEX idx_user_groups_user_id ON user_groups(user_id)",
+		"CREATE INDEX idx_user_groups_group_id ON user_groups(group_id)",
+		"CREATE INDEX idx_gid_allocation_gid ON gid_allocation(gid)",
+		"CREATE INDEX idx_system_config_key_name ON system_config(key_name)",
 	}
 	
 	for _, indexSQL := range indexes {
