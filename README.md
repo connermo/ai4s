@@ -4,11 +4,12 @@
 
 ## 功能特性
 
-1. **用户管理**: Golang Web界面，SQLite数据库存储
+1. **用户管理**: Golang Web界面，MySQL数据库存储
 2. **GPU开发容器**: 集成VSCode Server、Jupyter Lab、SSH服务
-3. **目录隔离**: 用户私有目录 + 共享只读/读写目录
-4. **端口管理**: 每用户独立端口分配，避免冲突
-5. **GPU支持**: 基于NVIDIA CUDA，支持深度学习框架
+3. **目录隔离**: 用户私有目录 + 共享只读/读写目录 + 组共享目录
+4. **组管理**: 多级用户组织，支持组共享目录和权限管理
+5. **端口管理**: 每用户独立端口分配，避免冲突
+6. **GPU支持**: 基于NVIDIA CUDA，支持深度学习框架
 
 ## 快速开始
 
@@ -34,23 +35,27 @@ cp .env.example .env
 
 # 根据需要修改 .env 文件中的配置：
 # 1. 端口配置：
-#    DEFAULT_PORT_PREFIX=9000  # 用户端口起始前缀
+#    DEFAULT_PORT_PREFIX=10000 # 用户端口起始前缀
 #    PORT_STEP=10             # 每个用户的端口步长 (占用10个端口)
 # 2. 数据存储路径：
-#    USERS_DATA_PATH=/your/data/path/users
-#    SHARED_DATA_PATH=/your/data/path/shared  
-#    WORKSPACE_DATA_PATH=/your/data/path/workspace
+#    USERS_DATA_PATH=/app/users
+#    SHARED_DATA_PATH=/shared-ro
+#    WORKSPACE_DATA_PATH=/shared-rw
+#    GROUPS_DATA_PATH=/app/groups
+# 3. 宿主机路径：
+#    HOST_USERS_PATH=${PWD}/data/users
+#    HOST_SHARED_RO_PATH=${PWD}/data/shared-ro
+#    HOST_SHARED_RW_PATH=${PWD}/data/shared-rw
+#    HOST_GROUPS_PATH=${PWD}/data/groups
 ```
 
 3. **创建数据目录**
 ```bash
 # 根据 .env 文件中配置的路径创建目录
-mkdir -p users shared workspace
+mkdir -p data/users data/shared-ro data/shared-rw data/groups
 
-# 或者如果使用自定义路径：
-# mkdir -p /your/data/path/users
-# mkdir -p /your/data/path/shared
-# mkdir -p /your/data/path/workspace
+# 设置适当的权限
+chmod 755 data/users data/shared-ro data/shared-rw data/groups
 ```
 
 4. **构建镜像**
@@ -79,12 +84,18 @@ mkdir -p users shared workspace
 2. 配置GPU设备（可选）
 3. 创建并启动容器
 
+**组管理操作:**
+1. 登录管理界面，点击"组管理"
+2. 创建组：设置组名、描述和GID
+3. 管理成员：添加/移除用户，分配角色（成员/管理员）
+4. 用户容器将自动挂载所属组的共享目录
+
 **用户服务访问:**
-根据配置的 DEFAULT_PORT_PREFIX (默认9000) 和 PORT_STEP (默认10)：
-- SSH: `ssh username@host -p {base_port+0}` (如9000, 9010, 9020...)
-- VSCode: `http://host:{base_port+1}` (如9001, 9011, 9021...)
-- Jupyter: `http://host:{base_port+2}` (如9002, 9012, 9022...)
-- 备用应用端口: `http://host:{base_port+3}` 到 `{base_port+9}` (如9004-9009, 9014-9019...)
+根据配置的 DEFAULT_PORT_PREFIX (默认10000) 和 PORT_STEP (默认10)：
+- SSH: `ssh username@host -p {base_port+0}` (如10000, 10010, 10020...)
+- VSCode: `http://host:{base_port+1}` (如10001, 10011, 10021...)
+- Jupyter: `http://host:{base_port+2}` (如10002, 10012, 10022...)
+- 备用应用端口: `http://host:{base_port+3}` 到 `{base_port+9}` (如10003-10009, 10013-10019...)
 
 ### 管理脚本
 
@@ -99,30 +110,75 @@ mkdir -p users shared workspace
 ai4s/
 ├── backend/                 # Golang后端API服务
 │   ├── main.go             # 主程序入口
-│   ├── models/             # 数据库模型
-│   ├── handlers/           # HTTP处理器
-│   ├── services/           # 业务逻辑
-│   └── database/           # 数据库配置
+│   ├── models/             # 数据库模型 (User, Container, Group)
+│   ├── handlers/           # HTTP处理器 (含组管理API)
+│   ├── services/           # 业务逻辑 (含组权限管理)
+│   └── database/           # 数据库配置和迁移
 ├── frontend/               # Web前端界面
-│   ├── templates/          # HTML模板
-│   └── static/             # 静态资源
+│   ├── templates/          # HTML模板 (含组管理界面)
+│   └── static/             # 静态资源 (CSS/JS)
 ├── docker/                 # 容器配置
 │   ├── Dockerfile.dev      # 开发容器镜像
-│   └── entrypoint.sh       # 容器启动脚本
+│   └── entrypoint.sh       # 容器启动脚本 (含组权限设置)
 ├── scripts/                # 部署和管理脚本
-├── shared/                 # 共享目录(只读)
-├── workspace/              # 共享工作目录(读写)
-├── users/                  # 用户隔离目录
+├── data/                   # 数据存储目录
+│   ├── users/              # 用户隔离目录
+│   ├── shared-ro/          # 共享目录(只读)
+│   ├── shared-rw/          # 共享工作目录(读写)
+│   └── groups/             # 组共享目录
 └── docker-compose.yml      # 容器编排配置
 ```
 
 ## 服务端口分配
 
 - **管理后台**: 8080
-- **用户容器端口**: 9000-9999 (每用户分配10个端口)
-  - SSH: 900X
-  - VSCode: 901X  
-  - Jupyter: 902X
+- **用户容器端口**: 10000-19999 (每用户分配10个端口)
+  - SSH: 10000, 10010, 10020...
+  - VSCode: 10001, 10011, 10021...
+  - Jupyter: 10002, 10012, 10022...
+  - 备用端口: 10003-10009, 10013-10019...
+
+## 组管理系统
+
+平台支持多级用户组织，提供组共享目录和权限管理功能。
+
+### 组管理特性
+
+1. **安全的GID分配**: 自动分配2000-65535范围的GID，避免系统冲突
+2. **组共享目录**: 每个组拥有独立的共享目录，仅组成员可访问
+3. **角色管理**: 支持组管理员和普通成员两种角色
+4. **目录权限**: 基于Linux组权限的文件访问控制
+5. **自动挂载**: 用户容器自动挂载所属组的共享目录
+
+### 目录结构
+
+用户容器内的目录布局：
+- `~/` 或 `/home/username`: 个人主目录 (私有，读写)
+- `~/shared-ro` 或 `/shared-ro`: 全局共享只读目录
+- `~/shared-rw` 或 `/shared-rw`: 全局共享读写目录  
+- `~/groups` 或 `/groups`: 组共享目录根目录
+- `~/group-<组名>`: 特定组的快捷链接 (如 ~/group-ml)
+- `/groups/<组名>`: 组共享目录 (仅组成员可访问)
+
+### 使用示例
+
+1. **创建研发组**：
+   - 组名: `research`
+   - 描述: `研发团队共享空间`
+   - 添加成员: alice (管理员)、bob (成员)
+
+2. **访问组目录**：
+   ```bash
+   # 进入组共享目录
+   cd ~/groups/research
+   # 或使用快捷链接
+   cd ~/group-research
+   ```
+
+3. **权限说明**：
+   - 组管理员: 可管理组成员和设置
+   - 组成员: 可读写组共享目录
+   - 非成员: 无法访问组共享目录
 
 ## API文档
 
@@ -143,6 +199,18 @@ ai4s/
 - `POST /api/containers/{id}/stop` - 停止容器
 - `DELETE /api/containers/{id}` - 删除容器
 
+### 组管理
+
+- `GET /api/groups` - 获取组列表
+- `POST /api/groups` - 创建组
+- `GET /api/groups/{id}` - 获取组详情
+- `PUT /api/groups/{id}` - 更新组信息
+- `DELETE /api/groups/{id}` - 删除组
+- `GET /api/groups/{id}/members` - 获取组成员列表
+- `POST /api/groups/{id}/members` - 添加组成员
+- `PUT /api/groups/{id}/members/{userId}` - 更新成员角色
+- `DELETE /api/groups/{id}/members/{userId}` - 移除组成员
+
 ## 故障排除
 
 ### 常见问题
@@ -162,17 +230,32 @@ ai4s/
    - 检查端口映射配置
    - 验证网络连接
 
+4. **组共享目录无法访问**
+   - 确认用户已加入对应组
+   - 检查组目录权限设置
+   - 验证容器内/groups目录是否存在
+   - 检查GID分配是否有冲突
+
 ### 日志查看
 
 ```bash
 # 查看平台后端日志
-docker compose logs -f platform-backend
+docker compose logs -f ai4s-platform
 
 # 查看用户容器日志
 docker logs dev-username
 
 # 查看服务日志
 docker exec dev-username tail -f /tmp/jupyter.log
+docker exec dev-username tail -f /tmp/code-server.log
+
+# 检查组目录挂载
+docker exec dev-username ls -la /groups
+docker exec dev-username ls -la /home/username/groups
+
+# 检查用户组信息
+docker exec dev-username id username
+docker exec dev-username groups username
 ```
 
 ## 安全注意事项
