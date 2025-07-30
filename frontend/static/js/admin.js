@@ -4,6 +4,14 @@ const API_BASE = '/api';
 // 当前显示的section
 let currentSection = 'users';
 
+// HTML转义函数，防止XSS攻击
+function escapeHtml(text) {
+    if (text == null) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // 检查管理员认证
 function checkAdminAuth() {
     const admin = sessionStorage.getItem('admin');
