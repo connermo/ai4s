@@ -179,12 +179,22 @@ func ensureTablesExist() error {
 	_, err = DB.Exec("CREATE TABLE IF NOT EXISTS gid_allocation (" +
 		"id INT AUTO_INCREMENT PRIMARY KEY," +
 		"gid INT UNIQUE NOT NULL," +
+		"purpose VARCHAR(50) DEFAULT 'group'," +
 		"allocated_to_group_id INT," +
 		"allocated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
 		"FOREIGN KEY (allocated_to_group_id) REFERENCES grps (id) ON DELETE SET NULL" +
 		")")
 	if err != nil {
 		return fmt.Errorf("failed to create gid_allocation table: %v", err)
+	}
+
+	// 检查并添加缺失的 purpose 列（用于已存在的表）
+	_, err = DB.Exec("ALTER TABLE gid_allocation ADD COLUMN IF NOT EXISTS purpose VARCHAR(50) DEFAULT 'group'")
+	if err != nil {
+		// 如果列已存在，忽略错误
+		if !strings.Contains(err.Error(), "Duplicate column name") {
+			fmt.Printf("Warning: failed to add purpose column: %v\n", err)
+		}
 	}
 
 	fmt.Printf("DEBUG: Creating system_config table\n")
