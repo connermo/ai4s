@@ -803,6 +803,25 @@ main {
     overflow-y: auto;
 }
 
+/* 组成员管理标题样式 */
+#group-members-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+/* 添加成员区域对齐优化 */
+#groupMembersModal .add-member-row {
+    align-items: end;
+}
+
+#groupMembersModal .add-member-btn {
+    margin-bottom: 0;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 #groupMembersModal .table-responsive {
     max-height: 400px;
     overflow-y: auto;
