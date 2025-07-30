@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -22,10 +23,27 @@ func NewGroupHandler() *GroupHandler {
 	}
 }
 
+// 辅助函数：从HTTP头获取用户信息
+func (h *GroupHandler) getUserInfo(r *http.Request) (int, bool, error) {
+	userIDStr := r.Header.Get("X-User-ID")
+	isAdminStr := r.Header.Get("X-Is-Admin")
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		return 0, false, fmt.Errorf("invalid user ID")
+	}
+
+	isAdmin := isAdminStr == "true"
+	return userID, isAdmin, nil
+}
+
 // ListGroups 获取组列表
 func (h *GroupHandler) ListGroups(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(int)
-	isAdmin := r.Context().Value("is_admin").(bool)
+	userID, isAdmin, err := h.getUserInfo(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	groups, err := h.groupService.GetGroups(userID, isAdmin)
 	if err != nil {
@@ -42,7 +60,11 @@ func (h *GroupHandler) ListGroups(w http.ResponseWriter, r *http.Request) {
 
 // CreateGroup 创建组
 func (h *GroupHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(int)
+	userID, _, err := h.getUserInfo(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	var req models.GroupCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -84,8 +106,11 @@ func (h *GroupHandler) GetGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value("user_id").(int)
-	isAdmin := r.Context().Value("is_admin").(bool)
+	userID, isAdmin, err := h.getUserInfo(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	// 检查访问权限
 	if !isAdmin {
@@ -122,8 +147,11 @@ func (h *GroupHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value("user_id").(int)
-	isAdmin := r.Context().Value("is_admin").(bool)
+	userID, isAdmin, err := h.getUserInfo(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	var req models.GroupUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -167,8 +195,11 @@ func (h *GroupHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value("user_id").(int)
-	isAdmin := r.Context().Value("is_admin").(bool)
+	userID, isAdmin, err := h.getUserInfo(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	err = h.groupService.DeleteGroup(groupID, userID, isAdmin)
 	if err != nil {
@@ -196,8 +227,11 @@ func (h *GroupHandler) GetGroupMembers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value("user_id").(int)
-	isAdmin := r.Context().Value("is_admin").(bool)
+	userID, isAdmin, err := h.getUserInfo(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	members, err := h.groupService.GetGroupMembers(groupID, userID, isAdmin)
 	if err != nil {
@@ -225,8 +259,11 @@ func (h *GroupHandler) AddGroupMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value("user_id").(int)
-	isAdmin := r.Context().Value("is_admin").(bool)
+	userID, isAdmin, err := h.getUserInfo(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	var req models.AddMemberRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -277,8 +314,11 @@ func (h *GroupHandler) RemoveGroupMember(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userID := r.Context().Value("user_id").(int)
-	isAdmin := r.Context().Value("is_admin").(bool)
+	userID, isAdmin, err := h.getUserInfo(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	err = h.groupService.RemoveGroupMember(groupID, memberUserID, userID, isAdmin)
 	if err != nil {
@@ -312,8 +352,11 @@ func (h *GroupHandler) UpdateMemberRole(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	userID := r.Context().Value("user_id").(int)
-	isAdmin := r.Context().Value("is_admin").(bool)
+	userID, isAdmin, err := h.getUserInfo(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	var req models.UpdateMemberRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -353,8 +396,11 @@ func (h *GroupHandler) GetUserGroups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value("user_id").(int)
-	isAdmin := r.Context().Value("is_admin").(bool)
+	userID, isAdmin, err := h.getUserInfo(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	// 检查访问权限（只能查看自己的组或管理员查看所有）
 	if !isAdmin && userID != targetUserID {
@@ -384,8 +430,11 @@ func (h *GroupHandler) GetAvailableUsers(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userID := r.Context().Value("user_id").(int)
-	isAdmin := r.Context().Value("is_admin").(bool)
+	userID, isAdmin, err := h.getUserInfo(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	// 检查管理权限
 	canManage, err := h.groupService.CanManageGroup(groupID, userID, isAdmin)
