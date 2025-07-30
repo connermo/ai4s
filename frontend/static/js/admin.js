@@ -104,6 +104,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (currentSection === 'containers' && !isContainerLoading) {
             // 容器页面使用强制刷新确保与Docker状态同步，但避免重复加载
             loadContainers(true);
+        } else if (currentSection === 'groups') {
+            loadGroups();
         } else if (currentSection === 'dashboard') {
             loadDashboard();
         }
@@ -164,6 +166,8 @@ function showSection(sectionName) {
     } else if (sectionName === 'containers') {
         // 切换到容器页面时强制刷新确保状态同步
         loadContainers(true);
+    } else if (sectionName === 'groups') {
+        loadGroups();
     } else if (sectionName === 'dashboard') {
         loadDashboard();
     }
@@ -1500,5 +1504,401 @@ async function copyPasswordOnly(password) {
     } catch (error) {
         console.error('复制密码失败:', error);
         showAlert('复制失败，密码为：' + password, 'warning');
+    }
+}
+
+// ===================== 组管理功能 =====================
+
+// 加载组列表
+async function loadGroups() {
+    try {
+        const response = await fetch(`${API_BASE}/groups`, {
+            headers: getAdminHeaders()
+        });
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || '加载组列表失败');
+        }
+        
+        const tbody = document.getElementById('groups-table-body');
+        tbody.innerHTML = '';
+        
+        if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+            data.data.forEach(group => {
+                const row = createGroupRow(group);
+                tbody.appendChild(row);
+            });
+        } else {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="8" class="text-center text-muted">暂无组</td>';
+            tbody.appendChild(row);
+        }
+    } catch (error) {
+        handleApiError(error, '加载组列表失败');
+    }
+}
+
+// 创建组表格行
+function createGroupRow(group) {
+    const row = document.createElement('tr');
+    
+    row.innerHTML = `
+        <td>${group.id}</td>
+        <td>
+            <strong>${escapeHtml(group.name)}</strong>
+            ${group.user_role === 'admin' ? '<span class="badge bg-warning text-dark ms-1">管理员</span>' : ''}
+            ${group.user_role === 'member' ? '<span class="badge bg-info ms-1">成员</span>' : ''}
+        </td>
+        <td>${escapeHtml(group.description || '')}</td>
+        <td>${escapeHtml(group.created_by_username || '')}</td>
+        <td>
+            <span class="badge bg-secondary">${group.member_count || 0} 人</span>
+        </td>
+        <td><code>${group.gid}</code></td>
+        <td>${formatDateTime(group.created_at)}</td>
+        <td>
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-primary" onclick="showGroupMembers(${group.id}, '${escapeHtml(group.name)}')" title="管理成员">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                ${group.can_manage ? `
+                    <button class="btn btn-outline-secondary" onclick="editGroup(${group.id})" title="编辑组">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="m18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="deleteGroup(${group.id}, '${escapeHtml(group.name)}')" title="删除组">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <polyline points="3,6 5,6 21,6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                ` : ''}
+            </div>
+        </td>
+    `;
+    
+    return row;
+}
+
+// 创建组
+async function createGroup() {
+    const name = document.getElementById('group-name').value.trim();
+    const description = document.getElementById('group-description').value.trim();
+    
+    if (!name) {
+        showAlert('请输入组名', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/groups`, {
+            method: 'POST',
+            headers: getAdminHeaders(),
+            body: JSON.stringify({
+                name: name,
+                description: description
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message || '组创建成功', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('addGroupModal')).hide();
+            document.getElementById('addGroupForm').reset();
+            loadGroups();
+        } else {
+            throw new Error(data.message || '创建组失败');
+        }
+    } catch (error) {
+        handleApiError(error, '创建组失败');
+    }
+}
+
+// 编辑组
+async function editGroup(groupId) {
+    try {
+        const response = await fetch(`${API_BASE}/groups/${groupId}`, {
+            headers: getAdminHeaders()
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            const group = data.data;
+            document.getElementById('edit-group-id').value = group.id;
+            document.getElementById('edit-group-name').value = group.name;
+            document.getElementById('edit-group-description').value = group.description || '';
+            
+            new bootstrap.Modal(document.getElementById('editGroupModal')).show();
+        } else {
+            throw new Error(data.message || '获取组信息失败');
+        }
+    } catch (error) {
+        handleApiError(error, '获取组信息失败');
+    }
+}
+
+// 更新组
+async function updateGroup() {
+    const groupId = document.getElementById('edit-group-id').value;
+    const name = document.getElementById('edit-group-name').value.trim();
+    const description = document.getElementById('edit-group-description').value.trim();
+    
+    if (!name) {
+        showAlert('请输入组名', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/groups/${groupId}`, {
+            method: 'PUT',
+            headers: getAdminHeaders(),
+            body: JSON.stringify({
+                name: name,
+                description: description
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message || '组更新成功', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editGroupModal')).hide();
+            loadGroups();
+        } else {
+            throw new Error(data.message || '更新组失败');
+        }
+    } catch (error) {
+        handleApiError(error, '更新组失败');
+    }
+}
+
+// 删除组
+function deleteGroup(groupId, groupName) {
+    document.getElementById('delete-group-id').value = groupId;
+    document.getElementById('delete-group-name').textContent = groupName;
+    new bootstrap.Modal(document.getElementById('deleteGroupModal')).show();
+}
+
+// 确认删除组
+async function confirmDeleteGroup() {
+    const groupId = document.getElementById('delete-group-id').value;
+    
+    try {
+        const response = await fetch(`${API_BASE}/groups/${groupId}`, {
+            method: 'DELETE',
+            headers: getAdminHeaders()
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message || '组删除成功', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('deleteGroupModal')).hide();
+            loadGroups();
+        } else {
+            throw new Error(data.message || '删除组失败');
+        }
+    } catch (error) {
+        handleApiError(error, '删除组失败');
+    }
+}
+
+// 显示组成员管理
+async function showGroupMembers(groupId, groupName) {
+    document.getElementById('members-group-id').value = groupId;
+    document.getElementById('group-members-title').textContent = `组成员管理 - ${groupName}`;
+    document.getElementById('group-members-subtitle').textContent = `组ID: ${groupId}`;
+    
+    // 加载可添加的用户列表
+    await loadAvailableUsers(groupId);
+    
+    // 加载当前成员列表
+    await loadGroupMembers(groupId);
+    
+    new bootstrap.Modal(document.getElementById('groupMembersModal')).show();
+}
+
+// 加载可添加的用户列表
+async function loadAvailableUsers(groupId) {
+    try {
+        const response = await fetch(`${API_BASE}/groups/${groupId}/available-users`, {
+            headers: getAdminHeaders()
+        });
+        const data = await response.json();
+        
+        const select = document.getElementById('available-users-select');
+        select.innerHTML = '<option value="">选择用户...</option>';
+        
+        if (data.success && data.data && Array.isArray(data.data)) {
+            data.data.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.username} (${user.email || 'N/A'})`;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('加载可用用户失败:', error);
+    }
+}
+
+// 加载组成员列表
+async function loadGroupMembers(groupId) {
+    try {
+        const response = await fetch(`${API_BASE}/groups/${groupId}/members`, {
+            headers: getAdminHeaders()
+        });
+        const data = await response.json();
+        
+        const tbody = document.getElementById('group-members-table-body');
+        tbody.innerHTML = '';
+        
+        if (data.success && data.data && Array.isArray(data.data)) {
+            data.data.forEach(member => {
+                const row = createMemberRow(member, groupId);
+                tbody.appendChild(row);
+            });
+        } else {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="5" class="text-center text-muted">暂无成员</td>';
+            tbody.appendChild(row);
+        }
+    } catch (error) {
+        console.error('加载组成员失败:', error);
+    }
+}
+
+// 创建成员表格行
+function createMemberRow(member, groupId) {
+    const row = document.createElement('tr');
+    
+    row.innerHTML = `
+        <td>
+            <strong>${escapeHtml(member.username)}</strong>
+            ${member.role === 'admin' ? '<span class="badge bg-warning text-dark ms-1">管理员</span>' : '<span class="badge bg-info ms-1">成员</span>'}
+        </td>
+        <td>${escapeHtml(member.user_email || 'N/A')}</td>
+        <td>
+            <select class="form-select form-select-sm" onchange="updateMemberRole(${groupId}, ${member.user_id}, this.value)">
+                <option value="member" ${member.role === 'member' ? 'selected' : ''}>成员</option>
+                <option value="admin" ${member.role === 'admin' ? 'selected' : ''}>管理员</option>
+            </select>
+        </td>
+        <td><small class="text-muted">${formatDateTime(member.joined_at)}</small></td>
+        <td>
+            <button class="btn btn-outline-danger btn-sm" onclick="removeGroupMember(${groupId}, ${member.user_id}, '${escapeHtml(member.username)}')" title="移除成员">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/>
+                    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/>
+                </svg>
+            </button>
+        </td>
+    `;
+    
+    return row;
+}
+
+// 添加组成员
+async function addGroupMember() {
+    const groupId = document.getElementById('members-group-id').value;
+    const userId = document.getElementById('available-users-select').value;
+    const role = document.getElementById('member-role-select').value;
+    
+    if (!userId) {
+        showAlert('请选择用户', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/groups/${groupId}/members`, {
+            method: 'POST',
+            headers: getAdminHeaders(),
+            body: JSON.stringify({
+                user_id: parseInt(userId),
+                role: role
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message || '成员添加成功', 'success');
+            // 重新加载成员列表和可用用户列表
+            await loadGroupMembers(groupId);
+            await loadAvailableUsers(groupId);
+            // 重置选择
+            document.getElementById('available-users-select').value = '';
+            document.getElementById('member-role-select').value = 'member';
+            // 刷新组列表以更新成员数量
+            loadGroups();
+        } else {
+            throw new Error(data.message || '添加成员失败');
+        }
+    } catch (error) {
+        handleApiError(error, '添加成员失败');
+    }
+}
+
+// 移除组成员
+async function removeGroupMember(groupId, userId, username) {
+    if (!confirm(`确定要将用户 "${username}" 从组中移除吗？`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/groups/${groupId}/members/${userId}`, {
+            method: 'DELETE',
+            headers: getAdminHeaders()
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message || '成员移除成功', 'success');
+            // 重新加载成员列表和可用用户列表
+            await loadGroupMembers(groupId);
+            await loadAvailableUsers(groupId);
+            // 刷新组列表以更新成员数量
+            loadGroups();
+        } else {
+            throw new Error(data.message || '移除成员失败');
+        }
+    } catch (error) {
+        handleApiError(error, '移除成员失败');
+    }
+}
+
+// 更新成员角色
+async function updateMemberRole(groupId, userId, newRole) {
+    try {
+        const response = await fetch(`${API_BASE}/groups/${groupId}/members/${userId}`, {
+            method: 'PUT',
+            headers: getAdminHeaders(),
+            body: JSON.stringify({
+                role: newRole
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message || '角色更新成功', 'success');
+            // 重新加载成员列表
+            await loadGroupMembers(groupId);
+        } else {
+            throw new Error(data.message || '更新角色失败');
+        }
+    } catch (error) {
+        handleApiError(error, '更新角色失败');
+        // 刷新页面以恢复原始状态
+        loadGroupMembers(groupId);
     }
 }

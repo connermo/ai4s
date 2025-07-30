@@ -58,20 +58,42 @@ func (s *ContainerService) CreateContainer(user *models.User, gpuDevices string)
 func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDevices, password string) (*models.Container, error) {
 	containerName := fmt.Sprintf("dev-%s", user.Username)
 	
+	// 获取用户所属的组信息（用于挂载和权限设置）
+	groupService := NewGroupService()
+	userGroups, err := groupService.GetGroupsForContainer(user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user groups: %v", err)
+	}
+
+	// 构建组相关的环境变量
+	envVars := []string{
+		fmt.Sprintf("DEV_USER=%s", user.Username),
+		fmt.Sprintf("DEV_UID=%d", user.ID+1000),
+		fmt.Sprintf("DEV_GID=%d", user.ID+1000),
+		fmt.Sprintf("DEV_PASSWORD=%s", password), // 使用传入的密码
+		// Pip源配置
+		fmt.Sprintf("PIP_INDEX_URL=%s", os.Getenv("PIP_INDEX_URL")),
+		fmt.Sprintf("PIP_TRUSTED_HOST=%s", os.Getenv("PIP_TRUSTED_HOST")),
+		fmt.Sprintf("PIP_TIMEOUT=%s", getEnvWithDefault("PIP_TIMEOUT", "60")),
+	}
+
+	// 添加组相关环境变量
+	if len(userGroups) > 0 {
+		var groupNames []string
+		var groupGIDs []string
+		for _, group := range userGroups {
+			groupNames = append(groupNames, group.Name)
+			groupGIDs = append(groupGIDs, strconv.Itoa(group.GID))
+		}
+		envVars = append(envVars, fmt.Sprintf("USER_GROUPS=%s", strings.Join(groupNames, ",")))
+		envVars = append(envVars, fmt.Sprintf("USER_GROUP_GIDS=%s", strings.Join(groupGIDs, ",")))
+	}
+	
 	// 创建容器配置
 	config := &container.Config{
 		Image: userContainerImage,
 		// 不设置User，让容器以root启动确保SSH服务可以运行
-		Env: []string{
-			fmt.Sprintf("DEV_USER=%s", user.Username),
-			fmt.Sprintf("DEV_UID=%d", user.ID+1000),
-			fmt.Sprintf("DEV_GID=%d", user.ID+1000),
-			fmt.Sprintf("DEV_PASSWORD=%s", password), // 使用传入的密码
-			// Pip源配置
-			fmt.Sprintf("PIP_INDEX_URL=%s", os.Getenv("PIP_INDEX_URL")),
-			fmt.Sprintf("PIP_TRUSTED_HOST=%s", os.Getenv("PIP_TRUSTED_HOST")),
-			fmt.Sprintf("PIP_TIMEOUT=%s", getEnvWithDefault("PIP_TIMEOUT", "60")),
-		},
+		Env:          envVars,
 		ExposedPorts: s.getExposedPorts(user),
 	}
 
@@ -130,27 +152,63 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	
 	hostUserDir := fmt.Sprintf("%s/%s", hostUsersPath, user.Username)
 
+	// 基础挂载点
+	mounts := []mount.Mount{
+		{
+			Type:   mount.TypeBind,
+			Source: hostUserDir,
+			Target: containerHomePath,
+		},
+		{
+			Type:     mount.TypeBind,
+			Source:   hostSharedPath,
+			Target:   containerSharedPath,
+			ReadOnly: true,
+		},
+		{
+			Type:   mount.TypeBind,
+			Source: hostWorkspacePath,
+			Target: containerWorkspacePath,
+		},
+	}
+
+	// 添加组目录挂载
+	if len(userGroups) > 0 {
+		groupsDataPath := os.Getenv("GROUPS_DATA_PATH")
+		if groupsDataPath == "" {
+			groupsDataPath = "./data/groups"
+		}
+
+		hostGroupsPath := os.Getenv("HOST_GROUPS_PATH")
+		if hostGroupsPath == "" {
+			hostGroupsPath = groupsDataPath
+		}
+
+		containerGroupsPath := os.Getenv("CONTAINER_GROUPS_PATH")
+		if containerGroupsPath == "" {
+			containerGroupsPath = "/groups"
+		}
+
+		// 为每个组创建挂载点
+		for _, group := range userGroups {
+			hostGroupDir := fmt.Sprintf("%s/%s", hostGroupsPath, group.Name)
+			containerGroupDir := fmt.Sprintf("%s/%s", containerGroupsPath, group.Name)
+			
+			// 确保组目录存在
+			os.MkdirAll(hostGroupDir, 0775)
+			
+			mounts = append(mounts, mount.Mount{
+				Type:   mount.TypeBind,
+				Source: hostGroupDir,
+				Target: containerGroupDir,
+			})
+		}
+	}
+
 	hostConfig := &container.HostConfig{
 		PortBindings: s.getPortBindings(user),
-		Mounts: []mount.Mount{
-			{
-				Type:   mount.TypeBind,
-				Source: hostUserDir,
-				Target: containerHomePath,
-			},
-			{
-				Type:     mount.TypeBind,
-				Source:   hostSharedPath,
-				Target:   containerSharedPath,
-				ReadOnly: true,
-			},
-			{
-				Type:   mount.TypeBind,
-				Source: hostWorkspacePath,
-				Target: containerWorkspacePath,
-			},
-		},
-		Resources: container.Resources{},
+		Mounts:       mounts,
+		Resources:    container.Resources{},
 		RestartPolicy: container.RestartPolicy{
 			Name: "unless-stopped",
 		},

@@ -212,3 +212,42 @@ func (s *UserService) allocatePort() (int, error) {
 
 	return int(maxPort.Int64) + portStep, nil // 使用配置的步长
 }
+
+// GetUsersNotInGroup 获取不在指定组中的用户列表
+func (s *UserService) GetUsersNotInGroup(groupID int) ([]*models.User, error) {
+	query := `
+		SELECT id, username, email, is_active, is_admin, created_at
+		FROM users 
+		WHERE is_active = 1 
+		  AND id NOT IN (
+		    SELECT user_id FROM user_groups WHERE group_id = ?
+		  )
+		ORDER BY username
+	`
+
+	rows, err := s.db.Query(query, groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		user := &models.User{}
+		err := rows.Scan(
+			&user.ID, &user.Username, &user.Email,
+			&user.IsActive, &user.IsAdmin, &user.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	// 确保返回空数组而不是nil
+	if users == nil {
+		users = []*models.User{}
+	}
+
+	return users, nil
+}

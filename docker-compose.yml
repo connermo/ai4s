@@ -37,6 +37,7 @@ services:
       - "./data/users:/app/users"
       - "./data/shared-ro:/shared-ro:ro"
       - "./data/shared-rw:/shared-rw"
+      - "./data/groups:/app/groups"
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PORT=${PORT:-8080}
@@ -54,6 +55,10 @@ services:
       - HOST_USERS_PATH=${HOST_USERS_PATH:-${PWD}/data/users}
       - HOST_SHARED_RO_PATH=${HOST_SHARED_RO_PATH:-${PWD}/data/shared-ro}
       - HOST_SHARED_RW_PATH=${HOST_SHARED_RW_PATH:-${PWD}/data/shared-rw}
+      - HOST_GROUPS_PATH=${HOST_GROUPS_PATH:-${PWD}/data/groups}
+      # 组相关配置
+      - GROUPS_DATA_PATH=${GROUPS_DATA_PATH:-/app/groups}
+      - CONTAINER_GROUPS_PATH=${CONTAINER_GROUPS_PATH:-/groups}
     depends_on:
       mysql:
         condition: service_healthy

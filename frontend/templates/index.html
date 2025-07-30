@@ -50,6 +50,16 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="#groups" onclick="showSection('groups')">
+                                <svg class="sidebar-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                组管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="#dashboard" onclick="showSection('dashboard')">
                                 <svg class="sidebar-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <polyline points="22,12 18,12 15,21 9,3 6,12 2,12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -135,6 +145,41 @@
                             </thead>
                             <tbody id="containers-table-body">
                                 <!-- 容器数据将通过JS填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 组管理 -->
+                <div id="groups-section" class="section" style="display: none;">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h1">组管理</h1>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGroupModal">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <line x1="12" y1="8" x2="12" y2="16" stroke="currentColor" stroke-width="2"/>
+                                <line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            创建组
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>组名</th>
+                                    <th>描述</th>
+                                    <th>创建者</th>
+                                    <th>成员数</th>
+                                    <th>GID</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="groups-table-body">
+                                <!-- 组数据将通过JS填充 -->
                             </tbody>
                         </table>
                     </div>
@@ -373,6 +418,162 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                     &nbsp;&nbsp;
                     <button type="button" class="btn btn-primary" onclick="updatePassword()">修改密码</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建组模态框 -->
+    <div class="modal fade" id="addGroupModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">创建组</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addGroupForm">
+                        <div class="mb-3">
+                            <label for="group-name" class="form-label">组名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="group-name" required>
+                            <div class="form-text">组名将用于目录名称，建议使用英文和数字</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="group-description" class="form-label">描述 <span class="text-muted">(可选)</span></label>
+                            <textarea class="form-control" id="group-description" rows="3" placeholder="组的用途和说明"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="createGroup()">创建</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑组模态框 -->
+    <div class="modal fade" id="editGroupModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑组</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editGroupForm">
+                        <input type="hidden" id="edit-group-id">
+                        <div class="mb-3">
+                            <label for="edit-group-name" class="form-label">组名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="edit-group-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-group-description" class="form-label">描述 <span class="text-muted">(可选)</span></label>
+                            <textarea class="form-control" id="edit-group-description" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="updateGroup()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 组成员管理模态框 -->
+    <div class="modal fade" id="groupMembersModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <span id="group-members-title">组成员管理</span>
+                        <small class="text-muted ms-2" id="group-members-subtitle"></small>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="members-group-id">
+                    
+                    <!-- 添加成员区域 -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <label for="available-users-select" class="form-label">添加成员</label>
+                            <select class="form-control" id="available-users-select">
+                                <option value="">选择用户...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="member-role-select" class="form-label">角色</label>
+                            <select class="form-control" id="member-role-select">
+                                <option value="member">成员</option>
+                                <option value="admin">管理员</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="button" class="btn btn-primary" onclick="addGroupMember()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2"/>
+                                    <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 当前成员列表 -->
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>用户名</th>
+                                    <th>邮箱</th>
+                                    <th>角色</th>
+                                    <th>加入时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="group-members-table-body">
+                                <!-- 成员数据将通过JS填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除组确认模态框 -->
+    <div class="modal fade" id="deleteGroupModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">删除组</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="delete-group-id">
+                    <div class="alert alert-warning">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        确定要删除组 "<strong id="delete-group-name"></strong>" 吗？
+                    </div>
+                    <p class="mb-2">删除操作将：</p>
+                    <ul class="text-muted">
+                        <li>删除组和所有成员关系</li>
+                        <li>移除组目录（需要手动处理）</li>
+                        <li>释放组的GID资源</li>
+                        <li>此操作不可撤销</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDeleteGroup()">确认删除</button>
                 </div>
             </div>
         </div>

@@ -62,6 +62,24 @@ func main() {
 	adminAPI.HandleFunc("/containers/{id}/reset-password", authHandler.RequireAdmin(containerHandler.ResetContainerPassword)).Methods("PUT")
 	adminAPI.HandleFunc("/users/{userId:[0-9]+}/container", authHandler.RequireAuth(containerHandler.GetUserContainer)).Methods("GET")
 
+	// 组管理路由
+	groupHandler := handlers.NewGroupHandler()
+	adminAPI.HandleFunc("/groups", authHandler.RequireAuth(groupHandler.ListGroups)).Methods("GET")
+	adminAPI.HandleFunc("/groups", authHandler.RequireAdmin(groupHandler.CreateGroup)).Methods("POST")
+	adminAPI.HandleFunc("/groups/{id:[0-9]+}", authHandler.RequireAuth(groupHandler.GetGroup)).Methods("GET")
+	adminAPI.HandleFunc("/groups/{id:[0-9]+}", authHandler.RequireAuth(groupHandler.UpdateGroup)).Methods("PUT")
+	adminAPI.HandleFunc("/groups/{id:[0-9]+}", authHandler.RequireAdmin(groupHandler.DeleteGroup)).Methods("DELETE")
+	
+	// 组成员管理路由
+	adminAPI.HandleFunc("/groups/{id:[0-9]+}/members", authHandler.RequireAuth(groupHandler.GetGroupMembers)).Methods("GET")
+	adminAPI.HandleFunc("/groups/{id:[0-9]+}/members", authHandler.RequireAuth(groupHandler.AddGroupMember)).Methods("POST")
+	adminAPI.HandleFunc("/groups/{id:[0-9]+}/members/{user_id:[0-9]+}", authHandler.RequireAuth(groupHandler.RemoveGroupMember)).Methods("DELETE")
+	adminAPI.HandleFunc("/groups/{id:[0-9]+}/members/{user_id:[0-9]+}", authHandler.RequireAuth(groupHandler.UpdateMemberRole)).Methods("PUT")
+	adminAPI.HandleFunc("/groups/{id:[0-9]+}/available-users", authHandler.RequireAuth(groupHandler.GetAvailableUsers)).Methods("GET")
+	
+	// 用户组查询路由
+	adminAPI.HandleFunc("/users/{user_id:[0-9]+}/groups", authHandler.RequireAuth(groupHandler.GetUserGroups)).Methods("GET")
+
 	// 静态文件服务
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", 
 		http.FileServer(http.Dir("./static/"))))

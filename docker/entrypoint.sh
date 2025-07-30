@@ -54,6 +54,62 @@ fi
 chown -R $DEV_UID:$DEV_GID /home/$DEV_USER
     echo "用户主目录权限设置成功"
 
+echo ""
+echo "=== 组权限设置 ==="
+
+# 处理用户组信息
+if [ -n "$USER_GROUPS" ] && [ -n "$USER_GROUP_GIDS" ]; then
+    echo "配置用户组: $USER_GROUPS"
+    echo "组GID: $USER_GROUP_GIDS"
+    
+    # 将逗号分隔的字符串转换为数组
+    IFS=',' read -ra GROUP_NAMES <<< "$USER_GROUPS"
+    IFS=',' read -ra GROUP_GIDS <<< "$USER_GROUP_GIDS"
+    
+    # 为每个组创建系统组并将用户添加到组中
+    for i in "${!GROUP_NAMES[@]}"; do
+        GROUP_NAME="${GROUP_NAMES[$i]}"
+        GROUP_GID="${GROUP_GIDS[$i]}"
+        
+        echo "处理组: $GROUP_NAME (GID: $GROUP_GID)"
+        
+        # 创建系统组（如果不存在）
+        if ! getent group "$GROUP_NAME" > /dev/null 2>&1; then
+            if groupadd -g "$GROUP_GID" "$GROUP_NAME" 2>/dev/null; then
+                echo "  创建系统组: $GROUP_NAME ($GROUP_GID)"
+            else
+                echo "  警告: 组 $GROUP_NAME 创建失败，可能已存在"
+            fi
+        else
+            echo "  组 $GROUP_NAME 已存在"
+        fi
+        
+        # 将用户添加到组中
+        if usermod -a -G "$GROUP_NAME" "$DEV_USER" 2>/dev/null; then
+            echo "  将用户 $DEV_USER 添加到组 $GROUP_NAME"
+        else
+            echo "  警告: 无法将用户 $DEV_USER 添加到组 $GROUP_NAME"
+        fi
+        
+        # 设置组目录权限
+        GROUP_DIR="/groups/$GROUP_NAME"
+        if [ -d "$GROUP_DIR" ]; then
+            echo "  设置组目录权限: $GROUP_DIR"
+            chown -R ":$GROUP_NAME" "$GROUP_DIR" 2>/dev/null || echo "    警告: 无法设置组目录所有者"
+            chmod -R 775 "$GROUP_DIR" 2>/dev/null || echo "    警告: 无法设置组目录权限"
+            
+            # 设置组目录的默认权限（新创建的文件和目录会继承组权限）
+            find "$GROUP_DIR" -type d -exec chmod g+s {} \; 2>/dev/null || echo "    警告: 无法设置组目录的粘滞位"
+        else
+            echo "  警告: 组目录 $GROUP_DIR 不存在"
+        fi
+    done
+    
+    echo "组权限配置完成"
+else
+    echo "用户未分配到任何组"
+fi
+
 # 创建必要的目录
 mkdir -p /home/$DEV_USER/.jupyter
 mkdir -p /home/$DEV_USER/.vscode-server
@@ -521,6 +577,26 @@ ln -sfnT /shared-ro /home/$DEV_USER/shared-ro
 ln -sfnT /shared-rw /home/$DEV_USER/shared-rw
 chown -h $DEV_UID:$DEV_GID /home/$DEV_USER/shared-ro /home/$DEV_USER/shared-rw
 
+# 为用户组创建符号链接
+if [ -n "$USER_GROUPS" ]; then
+    echo "创建组目录符号链接..."
+    IFS=',' read -ra GROUP_NAMES <<< "$USER_GROUPS"
+    for GROUP_NAME in "${GROUP_NAMES[@]}"; do
+        if [ -d "/groups/$GROUP_NAME" ]; then
+            echo "  创建组 $GROUP_NAME 的符号链接"
+            ln -sfnT "/groups/$GROUP_NAME" "/home/$DEV_USER/group-$GROUP_NAME"
+            chown -h $DEV_UID:$DEV_GID "/home/$DEV_USER/group-$GROUP_NAME"
+        fi
+    done
+    
+    # 创建一个通用的groups目录链接
+    if [ -d "/groups" ]; then
+        ln -sfnT "/groups" "/home/$DEV_USER/groups"
+        chown -h $DEV_UID:$DEV_GID "/home/$DEV_USER/groups"
+        echo "  创建通用组目录符号链接: ~/groups"
+    fi
+fi
+
 echo ""
 echo "=== 启动服务 ==="
 
@@ -559,8 +635,10 @@ if mkdir -p /home/$DEV_USER; then
 ## 目录结构
 
 - \`~/\` 或 \`/home/$DEV_USER\`: 个人主目录 (读写，私有)
-- \`~/shared\` 或 \`/shared\`: 共享只读目录 (所有用户共享，只读)
-- \`~/workspace\` 或 \`/workspace\`: 共享工作区 (所有用户共享，可读写)
+- \`~/shared-ro\` 或 \`/shared-ro\`: 全局共享只读目录 (所有用户共享，只读)
+- \`~/shared-rw\` 或 \`/shared-rw\`: 全局共享工作区 (所有用户共享，可读写)
+- \`~/groups\` 或 \`/groups\`: 用户组共享目录 (仅组成员可访问)
+- \`~/group-<组名>\`: 特定组的快捷链接 (如 ~/group-ml, ~/group-dev)
 
 ## 启动服务
 
