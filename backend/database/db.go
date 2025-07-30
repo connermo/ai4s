@@ -146,43 +146,43 @@ func ensureTablesExist() error {
 
 	// 确保组管理相关表存在
 	fmt.Printf("DEBUG: Creating groups table\n")
-	_, err = DB.Exec(`CREATE TABLE IF NOT EXISTS groups (
-		id INT AUTO_INCREMENT PRIMARY KEY,
-		name VARCHAR(100) UNIQUE NOT NULL,
-		description TEXT,
-		creator_id INT NOT NULL,
-		gid INT UNIQUE NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-		FOREIGN KEY (creator_id) REFERENCES users (id) ON DELETE CASCADE
-	)`)
+	_, err = DB.Exec("CREATE TABLE IF NOT EXISTS `groups` (" +
+		"id INT AUTO_INCREMENT PRIMARY KEY," +
+		"name VARCHAR(100) UNIQUE NOT NULL," +
+		"description TEXT," +
+		"creator_id INT NOT NULL," +
+		"gid INT UNIQUE NOT NULL," +
+		"created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+		"updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
+		"FOREIGN KEY (creator_id) REFERENCES users (id) ON DELETE CASCADE" +
+		")")
 	if err != nil {
 		return fmt.Errorf("failed to create groups table: %v", err)
 	}
 
 	fmt.Printf("DEBUG: Creating user_groups table\n")
-	_, err = DB.Exec(`CREATE TABLE IF NOT EXISTS user_groups (
-		id INT AUTO_INCREMENT PRIMARY KEY,
-		user_id INT NOT NULL,
-		group_id INT NOT NULL,
-		role ENUM('member', 'admin') DEFAULT 'member',
-		joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		UNIQUE KEY unique_user_group (user_id, group_id),
-		FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-		FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE
-	)`)
+	_, err = DB.Exec("CREATE TABLE IF NOT EXISTS user_groups (" +
+		"id INT AUTO_INCREMENT PRIMARY KEY," +
+		"user_id INT NOT NULL," +
+		"group_id INT NOT NULL," +
+		"role ENUM('member', 'admin') DEFAULT 'member'," +
+		"joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+		"UNIQUE KEY unique_user_group (user_id, group_id)," +
+		"FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE," +
+		"FOREIGN KEY (group_id) REFERENCES `groups` (id) ON DELETE CASCADE" +
+		")")
 	if err != nil {
 		return fmt.Errorf("failed to create user_groups table: %v", err)
 	}
 
 	fmt.Printf("DEBUG: Creating gid_allocation table\n")
-	_, err = DB.Exec(`CREATE TABLE IF NOT EXISTS gid_allocation (
-		id INT AUTO_INCREMENT PRIMARY KEY,
-		gid INT UNIQUE NOT NULL,
-		allocated_to_group_id INT,
-		allocated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		FOREIGN KEY (allocated_to_group_id) REFERENCES groups (id) ON DELETE SET NULL
-	)`)
+	_, err = DB.Exec("CREATE TABLE IF NOT EXISTS gid_allocation (" +
+		"id INT AUTO_INCREMENT PRIMARY KEY," +
+		"gid INT UNIQUE NOT NULL," +
+		"allocated_to_group_id INT," +
+		"allocated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+		"FOREIGN KEY (allocated_to_group_id) REFERENCES `groups` (id) ON DELETE SET NULL" +
+		")")
 	if err != nil {
 		return fmt.Errorf("failed to create gid_allocation table: %v", err)
 	}
@@ -248,9 +248,9 @@ func createIndexesDirectly() error {
 		"CREATE INDEX idx_containers_status ON containers(status)",
 		"CREATE INDEX idx_container_stats_container_id ON container_stats(container_id)",
 		"CREATE INDEX idx_container_stats_timestamp ON container_stats(timestamp)",
-		"CREATE INDEX idx_groups_name ON groups(name)",
-		"CREATE INDEX idx_groups_creator_id ON groups(creator_id)",
-		"CREATE INDEX idx_groups_gid ON groups(gid)",
+		"CREATE INDEX idx_groups_name ON `groups`(name)",
+		"CREATE INDEX idx_groups_creator_id ON `groups`(creator_id)",
+		"CREATE INDEX idx_groups_gid ON `groups`(gid)",
 		"CREATE INDEX idx_user_groups_user_id ON user_groups(user_id)",
 		"CREATE INDEX idx_user_groups_group_id ON user_groups(group_id)",
 		"CREATE INDEX idx_gid_allocation_gid ON gid_allocation(gid)",
