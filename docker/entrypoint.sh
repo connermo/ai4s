@@ -16,12 +16,23 @@ echo "=== 目录挂载检查 ==="
 echo "个人主目录: /home/$DEV_USER $([ -d "/home/$DEV_USER" ] && echo "✓" || echo "✗")"
 echo "共享只读: /shared-ro $([ -d "/shared-ro" ] && echo "✓" || echo "✗")"
 echo "共享读写: /shared-rw $([ -d "/shared-rw" ] && echo "✓" || echo "✗")"
+echo "组共享目录: /groups $([ -d "/groups" ] && echo "✓" || echo "✗")"
 echo ""
 
 # 检查是否以root身份运行
 if [ "$(id -u)" != "0" ]; then
     echo "错误: 容器需要以root身份启动才能创建用户"
     exit 1
+fi
+
+# 确保组目录存在
+echo "=== 初始化组目录结构 ==="
+if [ ! -d "/groups" ]; then
+    mkdir -p /groups
+    chmod 755 /groups
+    echo "创建 /groups 目录"
+else
+    echo "/groups 目录已存在"
 fi
 
 # 创建用户组
@@ -637,8 +648,9 @@ if mkdir -p /home/$DEV_USER; then
 - \`~/\` 或 \`/home/$DEV_USER\`: 个人主目录 (读写，私有)
 - \`~/shared-ro\` 或 \`/shared-ro\`: 全局共享只读目录 (所有用户共享，只读)
 - \`~/shared-rw\` 或 \`/shared-rw\`: 全局共享工作区 (所有用户共享，可读写)
-- \`~/groups\` 或 \`/groups\`: 用户组共享目录 (仅组成员可访问)
+- \`~/groups\` 或 \`/groups\`: 用户组共享目录根目录 (所有组的统一入口)
 - \`~/group-<组名>\`: 特定组的快捷链接 (如 ~/group-ml, ~/group-dev)
+- \`/groups/<组名>\`: 组共享目录 (仅组成员可访问)
 
 ## 启动服务
 
