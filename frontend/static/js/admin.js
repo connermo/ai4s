@@ -57,6 +57,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 设置密码类型切换事件
     setupPasswordTypeToggle();
     
+    // 初始化模态框事件监听
+    initializeModalEvents();
+    
     // 监听创建容器模态框显示事件，实时刷新用户列表（增强健壮性）
     const createContainerModal = document.getElementById('createContainerModal');
     if (createContainerModal) {
@@ -190,8 +193,7 @@ async function loadUsers() {
             tbody.appendChild(row);
         }
     } catch (error) {
-        console.error('加载用户失败:', error);
-        showAlert('加载用户失败', 'danger');
+        handleApiError(error, '加载用户失败');
     }
 }
 
@@ -266,8 +268,11 @@ async function createUser() {
         
         if (response.ok) {
             showAlert('用户创建成功！', 'success');
-            document.getElementById('addUserForm').reset();
-            bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+            // 重置表单
+            resetForm('addUserForm');
+            // 关闭模态框
+            closeModal('addUserModal');
+            // 刷新数据
             loadUsers();
             loadUserOptions(); // 刷新用户选项列表
         } else {
@@ -275,8 +280,7 @@ async function createUser() {
             showAlert(`创建失败: ${error}`, 'danger');
         }
     } catch (error) {
-        console.error('创建用户失败:', error);
-        showAlert('创建用户失败', 'danger');
+        handleApiError(error, '创建用户失败');
     }
 }
 
@@ -305,8 +309,7 @@ async function deleteUser(id, username) {
             showAlert('删除失败', 'danger');
         }
     } catch (error) {
-        console.error('删除用户失败:', error);
-        showAlert('删除用户失败', 'danger');
+        handleApiError(error, '删除用户失败');
     }
 }
 
@@ -379,12 +382,11 @@ async function loadContainers(forceRefresh = false) {
         }
         
     } catch (error) {
-        console.error('加载容器失败:', error);
         const tbody = document.getElementById('containers-table-body');
         if (tbody) {
             tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">加载失败，请刷新页面重试</td></tr>';
         }
-        showAlert('加载容器失败: ' + error.message, 'danger');
+        handleApiError(error, '加载容器失败');
     } finally {
         isContainerLoading = false;
     }
@@ -524,8 +526,7 @@ async function startContainer(id) {
             }
         }
     } catch (error) {
-        console.error('启动容器失败:', error);
-        showAlert('启动容器失败: ' + error.message, 'danger');
+        handleApiError(error, '启动容器失败');
         // 失败时强制刷新显示真实状态
         if (!isContainerLoading) {
             loadContainers(true);
@@ -560,8 +561,7 @@ async function stopContainer(id) {
             }
         }
     } catch (error) {
-        console.error('停止容器失败:', error);
-        showAlert('停止容器失败: ' + error.message, 'danger');
+        handleApiError(error, '停止容器失败');
         // 失败时强制刷新显示真实状态
         if (!isContainerLoading) {
             loadContainers(true);
@@ -599,8 +599,7 @@ async function removeContainer(id, name) {
             }
         }
     } catch (error) {
-        console.error('删除容器失败:', error);
-        showAlert('删除容器失败: ' + error.message, 'danger');
+        handleApiError(error, '删除容器失败');
         // 失败时强制刷新显示真实状态
         if (!isContainerLoading) {
             loadContainers(true);
@@ -756,9 +755,10 @@ async function createContainer() {
         if (response.ok) {
             const responseData = await response.json();
             showAlert('容器创建成功！', 'success');
-            document.getElementById('createContainerForm').reset();
-            
-            bootstrap.Modal.getInstance(document.getElementById('createContainerModal')).hide();
+            // 重置表单
+            resetForm('createContainerForm');
+            // 关闭模态框
+            closeModal('createContainerModal');
             
             // 显示用户通知信息
             setTimeout(() => {
@@ -777,8 +777,7 @@ async function createContainer() {
             showAlert(`创建失败: ${error}`, 'danger');
         }
     } catch (error) {
-        console.error('创建容器失败:', error);
-        showAlert('创建容器失败', 'danger');
+        handleApiError(error, '创建容器失败');
     }
 }
 
@@ -812,8 +811,7 @@ async function loadDashboard() {
         document.getElementById('disk-usage').textContent = '23%';
         
     } catch (error) {
-        console.error('加载仪表板数据失败:', error);
-        showAlert('加载仪表板数据失败', 'danger');
+        handleApiError(error, '加载仪表板数据失败');
     }
 }
 
@@ -920,8 +918,7 @@ async function editUser(id) {
         // 显示模态框
         new bootstrap.Modal(document.getElementById('editUserModal')).show();
     } catch (error) {
-        console.error('获取用户信息失败:', error);
-        showAlert('获取用户信息失败', 'danger');
+        handleApiError(error, '获取用户信息失败');
     }
 }
 
@@ -955,7 +952,9 @@ async function updateUser() {
         
         if (response.ok) {
             showAlert('用户更新成功', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+            // 关闭模态框
+            closeModal('editUserModal');
+            // 刷新数据
             loadUsers();
             loadUserOptions(); // 刷新用户选项列表
         } else {
@@ -963,8 +962,7 @@ async function updateUser() {
             showAlert(`更新失败: ${error}`, 'danger');
         }
     } catch (error) {
-        console.error('更新用户失败:', error);
-        showAlert('更新用户失败', 'danger');
+        handleApiError(error, '更新用户失败');
     }
 }
 
@@ -985,9 +983,91 @@ async function changePassword(id) {
         // 显示模态框
         new bootstrap.Modal(document.getElementById('changePasswordModal')).show();
     } catch (error) {
-        console.error('获取用户信息失败:', error);
-        showAlert('获取用户信息失败', 'danger');
+        handleApiError(error, '获取用户信息失败');
     }
+}
+
+// 通用模态框关闭函数
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        const modalInstance = bootstrap.Modal.getInstance(modal);
+        if (modalInstance) {
+            modalInstance.hide();
+        } else {
+            // 如果获取不到实例，直接隐藏模态框
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+                backdrop.remove();
+            }
+        }
+    }
+}
+
+// 通用表单重置函数
+function resetForm(formId) {
+    const form = document.getElementById(formId);
+    if (form) {
+        form.reset();
+        // 清除可能的验证状态
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            input.classList.remove('is-valid', 'is-invalid');
+        });
+    }
+}
+
+// 改进的错误处理函数
+function handleApiError(error, defaultMessage = '操作失败') {
+    console.error('API错误:', error);
+    
+    let message = defaultMessage;
+    
+    if (error.response) {
+        // 服务器响应了错误状态码
+        try {
+            const errorText = error.response.text();
+            if (errorText) {
+                message = errorText;
+            }
+        } catch (e) {
+            message = `服务器错误 (${error.response.status})`;
+        }
+    } else if (error.request) {
+        // 请求已发出但没有收到响应
+        message = '网络连接失败，请检查网络连接';
+    } else {
+        // 其他错误
+        message = error.message || defaultMessage;
+    }
+    
+    showAlert(message, 'danger');
+}
+
+// 初始化模态框事件监听
+function initializeModalEvents() {
+    // 为所有模态框添加隐藏事件监听，自动重置表单
+    const modals = [
+        'addUserModal',
+        'editUserModal', 
+        'changePasswordModal',
+        'createContainerModal',
+        'resetContainerPasswordModal'
+    ];
+    
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.addEventListener('hidden.bs.modal', function() {
+                // 获取对应的表单ID
+                const formId = modalId.replace('Modal', 'Form');
+                resetForm(formId);
+            });
+        }
+    });
 }
 
 // 更新密码
@@ -1023,14 +1103,16 @@ async function updatePassword() {
         
         if (response.ok) {
             showAlert('密码修改成功', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+            // 关闭模态框
+            closeModal('changePasswordModal');
+            // 重置表单
+            resetForm('changePasswordForm');
         } else {
             const error = await response.text();
             showAlert(`密码修改失败: ${error}`, 'danger');
         }
     } catch (error) {
-        console.error('修改密码失败:', error);
-        showAlert('修改密码失败', 'danger');
+        handleApiError(error, '修改密码失败');
     }
 }
 
@@ -1079,15 +1161,18 @@ async function resetContainerPassword() {
         
         if (response.ok) {
             showAlert('容器服务密码重置成功！新密码已应用到SSH、VSCode和Jupyter服务', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('resetContainerPasswordModal')).hide();
-            loadContainers(); // 刷新容器列表
+            // 关闭模态框
+            closeModal('resetContainerPasswordModal');
+            // 重置表单
+            resetForm('resetContainerPasswordForm');
+            // 刷新容器列表
+            loadContainers();
         } else {
             const error = await response.text();
             showAlert(`密码重置失败: ${error}`, 'danger');
         }
     } catch (error) {
-        console.error('重置容器密码失败:', error);
-        showAlert('重置容器密码失败', 'danger');
+        handleApiError(error, '重置容器密码失败');
     }
 }
 

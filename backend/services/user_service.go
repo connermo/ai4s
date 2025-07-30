@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
-	
+
 	"gpu-dev-platform/database"
 	"gpu-dev-platform/models"
 )
@@ -44,8 +45,8 @@ func (s *UserService) CreateUser(username, password, email string) (*models.User
 		INSERT INTO users (username, password, email, is_active, is_admin, created_at, updated_at, base_port)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	
-	result, err := s.db.Exec(query, user.Username, user.Password, user.Email, 
+
+	result, err := s.db.Exec(query, user.Username, user.Password, user.Email,
 		user.IsActive, user.IsAdmin, user.CreatedAt, user.UpdatedAt, user.BasePort)
 	if err != nil {
 		return nil, err
@@ -68,17 +69,17 @@ func (s *UserService) GetUserByID(id int) (*models.User, error) {
 		       base_port, COALESCE(last_login, created_at)
 		FROM users WHERE id = ?
 	`
-	
+
 	err := s.db.QueryRow(query, id).Scan(
 		&user.ID, &user.Username, &user.Password, &user.Email,
 		&user.IsActive, &user.IsAdmin, &user.CreatedAt, &user.UpdatedAt,
 		&user.ContainerID, &user.BasePort, &user.LastLogin,
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return user, nil
 }
 
@@ -90,17 +91,17 @@ func (s *UserService) GetUserByUsername(username string) (*models.User, error) {
 		       base_port, COALESCE(last_login, created_at)
 		FROM users WHERE username = ?
 	`
-	
+
 	err := s.db.QueryRow(query, username).Scan(
 		&user.ID, &user.Username, &user.Password, &user.Email,
 		&user.IsActive, &user.IsAdmin, &user.CreatedAt, &user.UpdatedAt,
 		&user.ContainerID, &user.BasePort, &user.LastLogin,
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return user, nil
 }
 
@@ -111,13 +112,13 @@ func (s *UserService) ListUsers() ([]*models.User, error) {
 		       base_port, COALESCE(last_login, created_at)
 		FROM users ORDER BY created_at DESC
 	`
-	
+
 	rows, err := s.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var users []*models.User
 	for rows.Next() {
 		user := &models.User{}
@@ -131,12 +132,12 @@ func (s *UserService) ListUsers() ([]*models.User, error) {
 		}
 		users = append(users, user)
 	}
-	
+
 	// 确保返回空数组而不是nil
 	if users == nil {
 		users = []*models.User{}
 	}
-	
+
 	return users, nil
 }
 
@@ -144,10 +145,10 @@ func (s *UserService) UpdateUser(id int, updates map[string]interface{}) error {
 	if len(updates) == 0 {
 		return nil
 	}
-	
+
 	setParts := []string{}
 	args := []interface{}{}
-	
+
 	for field, value := range updates {
 		if field == "password" {
 			user := &models.User{}
@@ -159,14 +160,14 @@ func (s *UserService) UpdateUser(id int, updates map[string]interface{}) error {
 		setParts = append(setParts, field+" = ?")
 		args = append(args, value)
 	}
-	
+
 	setParts = append(setParts, "updated_at = ?")
 	args = append(args, time.Now())
 	args = append(args, id)
-	
-	query := fmt.Sprintf("UPDATE users SET %s WHERE id = ?", 
-		fmt.Sprintf("%s", setParts))
-	
+
+	query := fmt.Sprintf("UPDATE users SET %s WHERE id = ?",
+		strings.Join(setParts, ", "))
+
 	_, err := s.db.Exec(query, args...)
 	return err
 }
@@ -177,7 +178,7 @@ func (s *UserService) DeleteUser(id int) error {
 }
 
 func (s *UserService) UpdateLastLogin(userID int) error {
-	_, err := s.db.Exec("UPDATE users SET last_login = ? WHERE id = ?", 
+	_, err := s.db.Exec("UPDATE users SET last_login = ? WHERE id = ?",
 		time.Now(), userID)
 	return err
 }
@@ -191,23 +192,23 @@ func (s *UserService) allocatePort() (int, error) {
 			defaultPortPrefix = p
 		}
 	}
-	
+
 	portStep := 100
 	if step := os.Getenv("PORT_STEP"); step != "" {
 		if s, err := strconv.Atoi(step); err == nil {
 			portStep = s
 		}
 	}
-	
+
 	var maxPort sql.NullInt64
 	err := s.db.QueryRow("SELECT MAX(base_port) FROM users").Scan(&maxPort)
 	if err != nil && err != sql.ErrNoRows {
 		return 0, err
 	}
-	
+
 	if !maxPort.Valid {
 		return defaultPortPrefix, nil // 使用配置的起始端口
 	}
-	
+
 	return int(maxPort.Int64) + portStep, nil // 使用配置的步长
 }
