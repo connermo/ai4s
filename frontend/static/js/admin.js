@@ -12,6 +12,24 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// 格式化日期时间
+function formatDateTime(dateTimeStr) {
+    if (!dateTimeStr) return '';
+    try {
+        const date = new Date(dateTimeStr);
+        return date.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    } catch (error) {
+        return dateTimeStr;
+    }
+}
+
 // 检查管理员认证
 function checkAdminAuth() {
     const admin = sessionStorage.getItem('admin');
