@@ -157,7 +157,9 @@ ai4s/
 - `~/shared-ro` 或 `/shared-ro`: 全局共享只读目录
 - `~/shared-rw` 或 `/shared-rw`: 全局共享读写目录  
 - `~/groups` 或 `/groups`: 组共享目录根目录
-- `~/groups/<组名>`: 组共享目录 (仅组成员可访问，如 ~/groups/research)
+- `~/groups/<组名>/`: 组共享目录 (仅组成员可访问)
+  - `~/groups/<组名>/shared-rw/`: 组协作工作区 (所有组成员可读写)
+  - `~/groups/<组名>/shared-ro/`: 组资源目录 (管理员可写，成员只读)
 
 ### 使用示例
 
@@ -170,15 +172,21 @@ ai4s/
    ```bash
    # 进入组共享目录
    cd ~/groups/research
-   # 或使用快捷命令
-   groups
-   ls  # 查看所有可访问的组目录
+   ls  # 查看组目录结构: shared-rw/ shared-ro/
+   
+   # 协作工作区 (所有组成员可读写)
+   cd ~/groups/research/shared-rw
+   echo "team work" > project.txt
+   
+   # 资源目录 (管理员发布，成员只读)
+   cd ~/groups/research/shared-ro
+   ls -la  # 查看管理员发布的资源和配置
    ```
 
 3. **权限说明**：
-   - 组管理员: 可管理组成员和设置
-   - 组成员: 可读写组共享目录
-   - 非成员: 无法访问组共享目录
+   - **组管理员**: 可管理组成员和设置，对shared-ro目录有写权限
+   - **组成员**: 对shared-rw目录有读写权限，对shared-ro目录只读
+   - **非成员**: 无法访问组共享目录
 
 ## API文档
 

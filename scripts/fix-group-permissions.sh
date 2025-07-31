@@ -68,8 +68,17 @@ else
                         chown -R \"root:\$group_name\" \"\$group_dir\" 2>/dev/null || true
                         chmod -R 775 \"\$group_dir\" 2>/dev/null || true
                         find \"\$group_dir\" -type d -exec chmod g+s {} \; 2>/dev/null || true
+                        
+                        # 创建标准子目录结构
+                        mkdir -p \"\$group_dir/shared-rw\" \"\$group_dir/shared-ro\" 2>/dev/null || true
+                        chown \"root:\$group_name\" \"\$group_dir/shared-rw\" \"\$group_dir/shared-ro\" 2>/dev/null || true
+                        chmod 775 \"\$group_dir/shared-rw\" 2>/dev/null || true
+                        chmod 755 \"\$group_dir/shared-ro\" 2>/dev/null || true
+                        chmod g+s \"\$group_dir/shared-rw\" \"\$group_dir/shared-ro\" 2>/dev/null || true
+                        
                         perm=\$(ls -ld \"\$group_dir\" | cut -d' ' -f1)
                         echo \"        ✓ 权限: \$perm\"
+                        echo \"        ✓ 子目录: shared-rw (775), shared-ro (755)\"
                     else
                         echo \"        ⚠ 系统组 \$group_name 不存在\"
                     fi
