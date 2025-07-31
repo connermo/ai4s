@@ -694,29 +694,54 @@ async function loadUserOptions(retryCount = 0) {
         // 处理null或空数组的情况
         if (users && Array.isArray(users)) {
             const availableUsers = users.filter(user => user && !user.container_id);
+            const usersWithContainers = users.filter(user => user && user.container_id);
             
             // 清空并重新填充选项
             select.innerHTML = '<option value="">选择用户</option>';
             
-            if (availableUsers.length === 0) {
+            if (availableUsers.length === 0 && usersWithContainers.length === 0) {
                 const option = document.createElement('option');
                 option.value = '';
-                option.textContent = '暂无可用用户（所有用户都已有容器）';
+                option.textContent = '暂无用户，请先创建用户';
                 option.disabled = true;
                 select.appendChild(option);
             } else {
-                availableUsers.forEach(user => {
-                    if (user && user.id && user.username) {
-                        const option = document.createElement('option');
-                        option.value = user.id;
-                        option.textContent = user.username;
-                        select.appendChild(option);
-                    }
-                });
-                console.log(`成功加载 ${availableUsers.length} 个可用用户`);
+                // 添加没有容器的用户
+                if (availableUsers.length > 0) {
+                    const groupOption = document.createElement('optgroup');
+                    groupOption.label = '可创建容器的用户';
+                    availableUsers.forEach(user => {
+                        if (user && user.id && user.username) {
+                            const option = document.createElement('option');
+                            option.value = user.id;
+                            option.textContent = user.username;
+                            groupOption.appendChild(option);
+                        }
+                    });
+                    select.appendChild(groupOption);
+                }
+                
+                // 添加已有容器的用户（重新创建选项）
+                if (usersWithContainers.length > 0) {
+                    const groupOption = document.createElement('optgroup');
+                    groupOption.label = '重新创建容器';
+                    usersWithContainers.forEach(user => {
+                        if (user && user.id && user.username) {
+                            const option = document.createElement('option');
+                            option.value = user.id;
+                            option.textContent = `${user.username} (重新创建)`;
+                            option.style.color = '#ff6b35';
+                            groupOption.appendChild(option);
+                        }
+                    });
+                    select.appendChild(groupOption);
+                }
+                
+                console.log(`成功加载 ${availableUsers.length} 个可用用户，${usersWithContainers.length} 个已有容器用户`);
                 
                 // 恢复之前的选择（如果该用户仍然可用）
-                if (currentValue && availableUsers.some(user => user.id == currentValue)) {
+                const allUsers = [...availableUsers, ...usersWithContainers];
+                if (currentValue && allUsers.some(user => user.id == currentValue)) {
                     select.value = currentValue;
                     console.log(`恢复用户选择: ${currentValue}`);
                 }
