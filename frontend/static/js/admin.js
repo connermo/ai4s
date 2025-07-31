@@ -93,7 +93,12 @@ document.addEventListener('DOMContentLoaded', function() {
         createContainerModal.addEventListener('shown.bs.modal', function() {
             console.log('创建容器模态框打开，刷新用户列表...');
             loadUserOptions(0); // 实时获取最新用户列表，重置重试计数
-            generateSecurePassword(); // 自动生成密码
+            
+            // 只在密码字段为空时才自动生成密码，避免覆盖用户输入
+            const passwordField = document.getElementById('service-password');
+            if (passwordField && (!passwordField.value || passwordField.value.trim() === '')) {
+                generateSecurePassword();
+            }
         });
         
         // 备用事件监听（防止Bootstrap事件失效）
@@ -680,6 +685,9 @@ async function loadUserOptions(retryCount = 0) {
             return;
         }
         
+        // 保存当前选择的用户ID
+        const currentValue = select.value;
+        
         // 显示加载状态
         select.innerHTML = '<option value="">正在加载用户...</option>';
         
@@ -706,6 +714,12 @@ async function loadUserOptions(retryCount = 0) {
                     }
                 });
                 console.log(`成功加载 ${availableUsers.length} 个可用用户`);
+                
+                // 恢复之前的选择（如果该用户仍然可用）
+                if (currentValue && availableUsers.some(user => user.id == currentValue)) {
+                    select.value = currentValue;
+                    console.log(`恢复用户选择: ${currentValue}`);
+                }
             }
         } else {
             // 没有用户数据
