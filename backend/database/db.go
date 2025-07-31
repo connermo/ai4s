@@ -144,12 +144,8 @@ func ensureTablesExist() error {
 		return fmt.Errorf("failed to create container_stats table: %v", err)
 	}
 
-	// 确保组管理相关表存在 - 先清理旧的表和约束
-	fmt.Printf("DEBUG: Cleaning up old group tables\n")
-	DB.Exec("DROP TABLE IF EXISTS user_groups")
-	DB.Exec("DROP TABLE IF EXISTS gid_allocation") 
-	DB.Exec("DROP TABLE IF EXISTS `groups`")
-	DB.Exec("DROP TABLE IF EXISTS grps")
+	// 确保组管理相关表存在
+	fmt.Printf("DEBUG: Creating group management tables\n")
 
 	fmt.Printf("DEBUG: Creating grps table\n")
 	_, err = DB.Exec("CREATE TABLE IF NOT EXISTS grps (" +
