@@ -14,12 +14,20 @@ import (
 type GroupHandler struct {
 	groupService *services.GroupService
 	userService  *services.UserService
+	syncService  *services.GroupSyncService
 }
 
 func NewGroupHandler() *GroupHandler {
+	syncService, err := services.NewGroupSyncService()
+	if err != nil {
+		// 记录错误但不阻止处理器创建
+		fmt.Printf("警告: 无法创建GroupSyncService: %v\n", err)
+	}
+	
 	return &GroupHandler{
 		groupService: services.NewGroupService(),
 		userService:  services.NewUserService(),
+		syncService:  syncService,
 	}
 }
 
@@ -301,6 +309,11 @@ func (h *GroupHandler) AddGroupMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 同步用户容器的组权限
+	if h.syncService != nil {
+		go h.syncUserContainerGroups(req.UserID)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -338,6 +351,11 @@ func (h *GroupHandler) RemoveGroupMember(w http.ResponseWriter, r *http.Request)
 		}
 		h.writeJSONError(w, "Failed to remove member: "+err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	// 同步用户容器的组权限
+	if h.syncService != nil {
+		go h.syncUserContainerGroups(memberUserID)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -388,6 +406,11 @@ func (h *GroupHandler) UpdateMemberRole(w http.ResponseWriter, r *http.Request) 
 		}
 		h.writeJSONError(w, "Failed to update member role: "+err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	// 同步用户容器的组权限（角色变更不影响组访问权限，但记录日志）
+	if h.syncService != nil {
+		go h.syncUserContainerGroups(memberUserID)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -469,4 +492,42 @@ func (h *GroupHandler) GetAvailableUsers(w http.ResponseWriter, r *http.Request)
 		"success": true,
 		"data":    users,
 	})
+}
+
+// syncUserContainerGroups 异步同步用户容器的组权限
+func (h *GroupHandler) syncUserContainerGroups(userID int) {
+	if h.syncService == nil {
+		return
+	}
+	
+	// 获取用户信息
+	user, err := h.userService.GetUserByID(userID)
+	if err != nil {
+		fmt.Printf("警告: 无法获取用户信息 (ID: %d): %v\n", userID, err)
+		return
+	}
+	
+	// 获取用户的组信息
+	userGroups, err := h.groupService.GetGroupsForContainer(userID)
+	if err != nil {
+		fmt.Printf("警告: 无法获取用户组信息 (用户: %s): %v\n", user.Username, err)
+		return
+	}
+	
+	// 构建组名和GID列表
+	var groupNames []string
+	var groupGIDs []string
+	for _, group := range userGroups {
+		groupNames = append(groupNames, group.Name)
+		groupGIDs = append(groupGIDs, fmt.Sprintf("%d", group.GID))
+	}
+	
+	// 同步容器组权限
+	err = h.syncService.SyncUserContainerGroups(user.Username, groupNames, groupGIDs)
+	if err != nil {
+		fmt.Printf("警告: 容器组同步失败 (用户: %s): %v\n", user.Username, err)
+		return
+	}
+	
+	fmt.Printf("容器组权限同步成功 (用户: %s, 组: %v)\n", user.Username, groupNames)
 }
