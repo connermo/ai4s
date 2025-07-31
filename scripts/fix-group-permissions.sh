@@ -48,35 +48,36 @@ else
         echo "  修复容器: $container"
         
         # 在容器内执行权限修复脚本
-        docker exec "$container" bash -c '
-            echo "    检查 /groups 目录..."
-            if [ ! -d "/groups" ]; then
-                echo "    创建 /groups 目录"
+        docker exec "$container" bash -c "
+            echo '    检查 /groups 目录...'
+            if [ ! -d '/groups' ]; then
+                echo '    创建 /groups 目录'
                 mkdir -p /groups
                 chmod 755 /groups
             fi
             
-            echo "    修复组目录权限..."
+            echo '    修复组目录权限...'
             for group_dir in /groups/*; do
-                if [ -d "$group_dir" ]; then
-                    group_name=$(basename "$group_dir")
-                    echo "      处理组: $group_name"
+                if [ -d \"\$group_dir\" ]; then
+                    group_name=\$(basename \"\$group_dir\")
+                    echo \"      处理组: \$group_name\"
                     
                     # 检查组是否存在
-                    if getent group "$group_name" > /dev/null 2>&1; then
+                    if getent group \"\$group_name\" > /dev/null 2>&1; then
                         # 设置正确的所有者和权限
-                        chown -R "root:$group_name" "$group_dir" 2>/dev/null || true
-                        chmod -R 775 "$group_dir" 2>/dev/null || true
-                        find "$group_dir" -type d -exec chmod g+s {} \; 2>/dev/null || true
-                        echo "        ✓ 权限: $(ls -ld "$group_dir" | cut -d' -f1)"
+                        chown -R \"root:\$group_name\" \"\$group_dir\" 2>/dev/null || true
+                        chmod -R 775 \"\$group_dir\" 2>/dev/null || true
+                        find \"\$group_dir\" -type d -exec chmod g+s {} \; 2>/dev/null || true
+                        perm=\$(ls -ld \"\$group_dir\" | cut -d' ' -f1)
+                        echo \"        ✓ 权限: \$perm\"
                     else
-                        echo "        ⚠ 系统组 $group_name 不存在"
+                        echo \"        ⚠ 系统组 \$group_name 不存在\"
                     fi
                 fi
             done
             
-            echo "    容器权限修复完成"
-        ' 2>/dev/null || echo "    容器 $container 权限修复失败"
+            echo '    容器权限修复完成'
+        " 2>/dev/null || echo "    容器 $container 权限修复失败"
     done
 fi
 
