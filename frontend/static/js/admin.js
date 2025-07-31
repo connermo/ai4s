@@ -125,6 +125,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 优化的定时刷新机制（减少不必要的刷新）
     setInterval(() => {
+        // 检查是否有模态框打开，如果有则跳过刷新
+        const openModals = document.querySelectorAll('.modal.show');
+        if (openModals.length > 0) {
+            console.log('检测到打开的模态框，跳过自动刷新');
+            return;
+        }
+        
         if (currentSection === 'users') {
             loadUsers();
         } else if (currentSection === 'containers' && !isContainerLoading) {
