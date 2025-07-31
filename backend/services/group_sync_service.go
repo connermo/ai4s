@@ -131,10 +131,20 @@ for i in "${!GROUP_NAMES[@]}"; do
     # 设置组目录权限（如果存在）
     GROUP_DIR="/groups/$GROUP_NAME"
     if [ -d "$GROUP_DIR" ]; then
-        chown -R ":$GROUP_NAME" "$GROUP_DIR" 2>/dev/null || true
+        # 确保目录所有者是root，组是对应的组
+        chown -R "root:$GROUP_NAME" "$GROUP_DIR" 2>/dev/null || true
+        # 设置目录权限为775，确保组成员有写权限
         chmod -R 775 "$GROUP_DIR" 2>/dev/null || true
+        # 设置组粘滞位，新文件继承组权限
         find "$GROUP_DIR" -type d -exec chmod g+s {} \; 2>/dev/null || true
-        echo "  更新组目录权限: $GROUP_DIR"
+        echo "  更新组目录权限: $GROUP_DIR (权限: $(ls -ld "$GROUP_DIR" 2>/dev/null | cut -d' ' -f1))"
+    else
+        # 如果目录不存在，创建它
+        mkdir -p "$GROUP_DIR" 2>/dev/null || true
+        chown "root:$GROUP_NAME" "$GROUP_DIR" 2>/dev/null || true
+        chmod 775 "$GROUP_DIR" 2>/dev/null || true
+        chmod g+s "$GROUP_DIR" 2>/dev/null || true
+        echo "  创建组目录: $GROUP_DIR"
     fi
 done
 

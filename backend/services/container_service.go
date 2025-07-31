@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -194,8 +195,12 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 			hostGroupDir := fmt.Sprintf("%s/%s", hostGroupsPath, group.Name)
 			containerGroupDir := fmt.Sprintf("%s/%s", containerGroupsPath, group.Name)
 			
-			// 确保组目录存在
-			os.MkdirAll(hostGroupDir, 0775)
+			// 确保组目录存在，设置正确权限
+			if err := os.MkdirAll(hostGroupDir, 0775); err == nil {
+				// 设置目录权限为775，确保组成员有写权限
+				os.Chmod(hostGroupDir, 0775)
+				log.Printf("创建组目录: %s (权限: 775)", hostGroupDir)
+			}
 			
 			mounts = append(mounts, mount.Mount{
 				Type:   mount.TypeBind,
