@@ -59,24 +59,23 @@ func (s *ContainerService) CreateContainer(user *models.User, gpuDevices string)
 func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDevices, password string) (*models.Container, error) {
 	containerName := fmt.Sprintf("dev-%s", user.Username)
 	
-	// 检查是否已存在同名容器
+	// 检查数据库中是否已有容器记录
+	if user.ContainerID != "" {
+		return nil, fmt.Errorf("用户 %s 已有容器，容器ID: %s", user.Username, user.ContainerID)
+	}
+	
+	// 检查Docker中是否存在孤立容器（数据库中没记录但Docker中存在）
 	_, err := s.dockerClient.ContainerInspect(context.Background(), containerName)
 	if err == nil {
-		// 容器已存在，尝试移除
-		log.Printf("发现已存在的容器 %s，尝试清理...", containerName)
+		// 发现孤立容器，自动清理
+		log.Printf("发现孤立容器 %s（数据库中无记录），自动清理...", containerName)
 		removeErr := s.dockerClient.ContainerRemove(context.Background(), containerName, types.ContainerRemoveOptions{
 			Force: true, // 强制删除，即使容器正在运行
 		})
 		if removeErr != nil {
-			return nil, fmt.Errorf("failed to remove existing container %s: %v", containerName, removeErr)
+			return nil, fmt.Errorf("failed to remove orphaned container %s: %v", containerName, removeErr)
 		}
-		log.Printf("成功清理已存在的容器 %s", containerName)
-	}
-	
-	// 清理数据库中可能存在的旧记录
-	_, cleanupErr := database.DB.Exec("UPDATE users SET container_id = NULL WHERE id = ?", user.ID)
-	if cleanupErr != nil {
-		log.Printf("警告: 清理用户容器记录失败: %v", cleanupErr)
+		log.Printf("成功清理孤立容器 %s", containerName)
 	}
 	
 	// 获取用户所属的组信息（用于挂载和权限设置）
