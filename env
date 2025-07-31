@@ -1,0 +1,46 @@
+# 数据库配置
+DB_DSN=platform:platform123@tcp(mysql:3306)/gpu_platform?charset=utf8mb4&parseTime=True&loc=Local
+
+# 服务端口
+PORT=8080
+
+# 用户端口配置
+# 默认端口前缀，用户端口将在此基础上分配
+# 例如：9000 表示用户端口从9000开始分配
+DEFAULT_PORT_PREFIX=9000
+# 用户端口分配步长（每个用户占用的端口数量）
+# 例如：10 表示第一个用户使用9000-9009，第二个用户使用9010-9019
+# 端口分配：0=SSH, 1=VSCode, 2=Jupyter, 3-9=备用应用
+PORT_STEP=10
+
+# 数据存储路径配置（管理后端容器内路径）
+# 这些路径是管理后端容器内看到的路径，对应docker-compose.yml中的挂载目标
+# 注意：需要与docker-compose.yml中的挂载路径保持一致
+USERS_DATA_PATH=/app/users
+SHARED_DATA_PATH=/shared-ro
+WORKSPACE_DATA_PATH=/shared-rw
+
+# 容器内路径配置（用户容器内的路径）
+CONTAINER_HOME_PATH=/home
+CONTAINER_SHARED_PATH=/shared-ro
+CONTAINER_WORKSPACE_PATH=/shared-rw
+
+# 用户容器镜像
+USER_CONTAINER_IMAGE=connermo/ai4s-env:latest
+
+# 宿主机路径配置（用于创建用户容器的挂载）
+# 这些路径必须是宿主机的绝对路径
+HOST_USERS_PATH=${PWD}/data/users
+HOST_SHARED_RO_PATH=${PWD}/data/shared-ro
+HOST_SHARED_RW_PATH=${PWD}/data/shared-rw
+
+# Pip源配置（可选，用于加速Python包安装）
+# 取消注释以下行来使用清华大学镜像源
+# PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+# PIP_TRUSTED_HOST=pypi.tuna.tsinghua.edu.cn
+# PIP_TIMEOUT=60
+
+# 内网Pip源配置示例（企业内网环境）
+# PIP_INDEX_URL=http://your-internal-pypi.company.com/simple/
+# PIP_TRUSTED_HOST=your-internal-pypi.company.com
+# PIP_TIMEOUT=60

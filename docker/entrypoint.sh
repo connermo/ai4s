@@ -106,13 +106,24 @@ if [ -n "$USER_GROUPS" ] && [ -n "$USER_GROUP_GIDS" ]; then
         GROUP_DIR="/groups/$GROUP_NAME"
         if [ -d "$GROUP_DIR" ]; then
             echo "  设置组目录权限: $GROUP_DIR"
-            chown -R ":$GROUP_NAME" "$GROUP_DIR" 2>/dev/null || echo "    警告: 无法设置组目录所有者"
+            
+            # 确保目录所有者是root，组是对应的组
+            chown -R "root:$GROUP_NAME" "$GROUP_DIR" 2>/dev/null || echo "    警告: 无法设置组目录所有者"
+            
+            # 设置目录权限为775 (rwxrwxr-x)，确保组成员有写权限
             chmod -R 775 "$GROUP_DIR" 2>/dev/null || echo "    警告: 无法设置组目录权限"
             
-            # 设置组目录的默认权限（新创建的文件和目录会继承组权限）
+            # 设置组目录的粘滞位，新创建的文件和目录会继承组权限
             find "$GROUP_DIR" -type d -exec chmod g+s {} \; 2>/dev/null || echo "    警告: 无法设置组目录的粘滞位"
+            
+            # 验证权限设置
+            echo "    目录权限: $(ls -ld "$GROUP_DIR" 2>/dev/null | cut -d' ' -f1)"
         else
-            echo "  警告: 组目录 $GROUP_DIR 不存在"
+            echo "  警告: 组目录 $GROUP_DIR 不存在，将创建目录"
+            mkdir -p "$GROUP_DIR"
+            chown "root:$GROUP_NAME" "$GROUP_DIR" 2>/dev/null
+            chmod 775 "$GROUP_DIR" 2>/dev/null
+            chmod g+s "$GROUP_DIR" 2>/dev/null
         fi
     done
     

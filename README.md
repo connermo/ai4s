@@ -232,9 +232,15 @@ ai4s/
 
 4. **组共享目录无法访问**
    - 确认用户已加入对应组
-   - 检查组目录权限设置
+   - 检查组目录权限设置 (应为775)
    - 验证容器内/groups目录是否存在
    - 检查GID分配是否有冲突
+   
+5. **组目录写权限问题**
+   - 运行权限诊断: `./scripts/check-group-permissions.sh`
+   - 自动修复权限: `./scripts/fix-group-permissions.sh`
+   - 容器内测试写权限: `docker exec dev-username /app/scripts/test-group-write-permissions.sh`
+   - 详细排查指南: 参见 `docs/group-permissions-troubleshooting.md`
 
 ### 日志查看
 
