@@ -649,3 +649,34 @@ func (s *GroupService) GetGroupsForContainer(userID int) ([]models.Group, error)
 
 	return groups, nil
 }
+
+// GetGroupsWithRolesForContainer 获取用户容器需要挂载的组目录信息，包含用户在各组中的角色
+func (s *GroupService) GetGroupsWithRolesForContainer(userID int) ([]models.Group, []string, error) {
+	query := `
+		SELECT g.id, g.name, g.gid, ug.role
+		FROM grps g
+		INNER JOIN user_groups ug ON g.id = ug.group_id
+		WHERE ug.user_id = ?
+		ORDER BY g.name`
+
+	rows, err := s.db.Query(query, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var groups []models.Group
+	var roles []string
+	for rows.Next() {
+		var group models.Group
+		var role string
+		err := rows.Scan(&group.ID, &group.Name, &group.GID, &role)
+		if err != nil {
+			return nil, nil, err
+		}
+		groups = append(groups, group)
+		roles = append(roles, role)
+	}
+
+	return groups, roles, nil
+}

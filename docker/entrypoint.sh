@@ -72,10 +72,11 @@ echo "=== 组权限设置 ==="
 if [ -n "$USER_GROUPS" ] && [ -n "$USER_GROUP_GIDS" ]; then
     echo "配置用户组: $USER_GROUPS"
     echo "组GID: $USER_GROUP_GIDS"
-    
+    echo "用户角色: $USER_ROLES"
     # 将逗号分隔的字符串转换为数组
     IFS=',' read -ra GROUP_NAMES <<< "$USER_GROUPS"
     IFS=',' read -ra GROUP_GIDS <<< "$USER_GROUP_GIDS"
+    IFS=',' read -ra ROLES <<< "$USER_ROLES"
     
     # 为每个组创建系统组并将用户添加到组中
     for i in "${!GROUP_NAMES[@]}"; do
@@ -125,7 +126,59 @@ if [ -n "$USER_GROUPS" ] && [ -n "$USER_GROUP_GIDS" ]; then
             chmod 775 "$GROUP_DIR" 2>/dev/null
             chmod g+s "$GROUP_DIR" 2>/dev/null
         fi
+        
+        # 创建标准子目录结构
+        echo "  创建组子目录结构..."
+        
+        # shared-rw: 所有组成员可读写
+        SHARED_RW_DIR="$GROUP_DIR/shared-rw"
+        mkdir -p "$SHARED_RW_DIR" 2>/dev/null || true
+        chown "root:$GROUP_NAME" "$SHARED_RW_DIR" 2>/dev/null || true
+        chmod 775 "$SHARED_RW_DIR" 2>/dev/null || true
+        chmod g+s "$SHARED_RW_DIR" 2>/dev/null || true
+        echo "    ✓ 共享读写目录: shared-rw (775)"
+        
+        # shared-ro: 只有管理员可写，其他成员只读
+        SHARED_RO_DIR="$GROUP_DIR/shared-ro"
+        mkdir -p "$SHARED_RO_DIR" 2>/dev/null || true
+        chown "root:$GROUP_NAME" "$SHARED_RO_DIR" 2>/dev/null || true
+        chmod 755 "$SHARED_RO_DIR" 2>/dev/null || true
+        chmod g+s "$SHARED_RO_DIR" 2>/dev/null || true
+        
+        # 检查当前用户是否为该组的管理员
+        CURRENT_ROLE=""
+        if [ ${#ROLES[@]} -gt $i ]; then
+            CURRENT_ROLE="${ROLES[$i]}"
+        fi
+        
+        if [ "$CURRENT_ROLE" = "admin" ]; then
+            echo "    设置管理员权限: $DEV_USER 对 $GROUP_NAME/shared-ro"
+            
+            # 尝试使用ACL设置权限
+            if command -v setfacl >/dev/null 2>&1; then
+                setfacl -m "u:$DEV_USER:rwx" "$SHARED_RO_DIR" 2>/dev/null || {
+                    echo "      ACL设置失败，使用传统方法..."
+                    chown "$DEV_USER:$GROUP_NAME" "$SHARED_RO_DIR" 2>/dev/null || true
+                }
+                # 设置默认ACL，新文件也会有正确权限
+                setfacl -d -m "u:$DEV_USER:rwx" "$SHARED_RO_DIR" 2>/dev/null || true
+                setfacl -d -m "g:$GROUP_NAME:r-x" "$SHARED_RO_DIR" 2>/dev/null || true
+                echo "    ✓ 管理员专用目录: shared-ro (755 + ACL)"
+            else
+                chown "$DEV_USER:$GROUP_NAME" "$SHARED_RO_DIR" 2>/dev/null || true
+                echo "    ✓ 管理员专用目录: shared-ro (755, 所有者: $DEV_USER)"
+            fi
+            
+            # 创建管理员标记文件
+            if ! grep -q "^$DEV_USER$" "$GROUP_DIR/.group_admins" 2>/dev/null; then
+                echo "$DEV_USER" >> "$GROUP_DIR/.group_admins"
+            fi
+            chmod 644 "$GROUP_DIR/.group_admins" 2>/dev/null || true
+        else
+            echo "    ✓ 成员只读目录: shared-ro (755)"
+        fi
     done
+    
     
     echo "组权限配置完成"
 else
@@ -659,7 +712,9 @@ if mkdir -p /home/$DEV_USER; then
 - \`~/shared-ro\` 或 \`/shared-ro\`: 全局共享只读目录 (所有用户共享，只读)
 - \`~/shared-rw\` 或 \`/shared-rw\`: 全局共享工作区 (所有用户共享，可读写)
 - \`~/groups\` 或 \`/groups\`: 用户组共享目录根目录 (所有组的统一入口)
-- \`~/groups/<组名>\`: 组共享目录 (仅组成员可访问，如 ~/groups/research)
+- \`~/groups/<组名>/\`: 组共享目录 (仅组成员可访问)
+  - \`~/groups/<组名>/shared-rw/\`: 组协作工作区 (所有组成员可读写)
+  - \`~/groups/<组名>/shared-ro/\`: 组资源目录 (管理员可写，成员只读)
 
 ## 启动服务
 

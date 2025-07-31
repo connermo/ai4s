@@ -100,18 +100,25 @@ func (s *GroupSyncService) updateContainerUserGroupsWithRoles(containerName, use
 	log.Printf("更新容器 %s 中用户 %s 的组权限", containerName, username)
 
 	// 构建组管理脚本
+	rolesStr := ""
+	if len(roles) > 0 {
+		rolesStr = strings.Join(roles, ",")
+	}
+	
 	script := `#!/bin/bash
 set -e
 
 USERNAME="` + username + `"
 USER_GROUPS="` + strings.Join(groups, ",") + `"
 USER_GROUP_GIDS="` + strings.Join(groupGIDs, ",") + `"
+USER_ROLES="` + rolesStr + `"
 
 echo "更新用户 $USERNAME 的组权限..."
 
 # 将逗号分隔的字符串转换为数组
 IFS=',' read -ra GROUP_NAMES <<< "$USER_GROUPS"
 IFS=',' read -ra GROUP_GIDS <<< "$USER_GROUP_GIDS"
+IFS=',' read -ra ROLES <<< "$USER_ROLES"
 
 # 移除用户的所有组（除了主组）
 CURRENT_GROUPS=$(groups $USERNAME | cut -d: -f2)
@@ -174,7 +181,39 @@ for i in "${!GROUP_NAMES[@]}"; do
     chown "root:$GROUP_NAME" "$SHARED_RO_DIR" 2>/dev/null || true
     chmod 755 "$SHARED_RO_DIR" 2>/dev/null || true
     chmod g+s "$SHARED_RO_DIR" 2>/dev/null || true
-    echo "    ✓ 管理员专用目录: shared-ro (755)"
+    
+    # 检查当前用户是否为该组的管理员
+    CURRENT_ROLE=""
+    if [ ${#ROLES[@]} -gt $i ]; then
+        CURRENT_ROLE="${ROLES[$i]}"
+    fi
+    
+    if [ "$CURRENT_ROLE" = "admin" ]; then
+        echo "  设置管理员权限: $USERNAME 对 $GROUP_NAME/shared-ro"
+        
+        # 尝试使用ACL设置权限
+        if command -v setfacl >/dev/null 2>&1; then
+            setfacl -m "u:$USERNAME:rwx" "$SHARED_RO_DIR" 2>/dev/null || {
+                echo "    ACL设置失败，使用传统方法..."
+                chown "$USERNAME:$GROUP_NAME" "$SHARED_RO_DIR" 2>/dev/null || true
+            }
+            # 设置默认ACL，新文件也会有正确权限
+            setfacl -d -m "u:$USERNAME:rwx" "$SHARED_RO_DIR" 2>/dev/null || true
+            setfacl -d -m "g:$GROUP_NAME:r-x" "$SHARED_RO_DIR" 2>/dev/null || true
+            echo "    ✓ 管理员专用目录: shared-ro (755 + ACL)"
+        else
+            chown "$USERNAME:$GROUP_NAME" "$SHARED_RO_DIR" 2>/dev/null || true
+            echo "    ✓ 管理员专用目录: shared-ro (755, 所有者: $USERNAME)"
+        fi
+        
+        # 创建管理员标记文件
+        if ! grep -q "^$USERNAME$" "$GROUP_DIR/.group_admins" 2>/dev/null; then
+            echo "$USERNAME" >> "$GROUP_DIR/.group_admins"
+        fi
+        chmod 644 "$GROUP_DIR/.group_admins" 2>/dev/null || true
+    else
+        echo "    ✓ 成员只读目录: shared-ro (755)"
+    fi
 done
 
 

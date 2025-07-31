@@ -507,14 +507,14 @@ func (h *GroupHandler) syncUserContainerGroups(userID int) {
 		return
 	}
 	
-	// 获取用户的组信息
-	userGroups, err := h.groupService.GetGroupsForContainer(userID)
+	// 获取用户的组信息，包含角色
+	userGroups, roles, err := h.groupService.GetGroupsWithRolesForContainer(userID)
 	if err != nil {
 		fmt.Printf("警告: 无法获取用户组信息 (用户: %s): %v\n", user.Username, err)
 		return
 	}
 	
-	// 构建组名和GID列表
+	// 构建组名、GID和角色列表
 	var groupNames []string
 	var groupGIDs []string
 	for _, group := range userGroups {
@@ -522,8 +522,8 @@ func (h *GroupHandler) syncUserContainerGroups(userID int) {
 		groupGIDs = append(groupGIDs, fmt.Sprintf("%d", group.GID))
 	}
 	
-	// 同步容器组权限
-	err = h.syncService.SyncUserContainerGroups(user.Username, groupNames, groupGIDs)
+	// 同步容器组权限，包含角色信息
+	err = h.syncService.SyncUserContainerGroupsWithRoles(user.Username, groupNames, groupGIDs, roles)
 	if err != nil {
 		fmt.Printf("警告: 容器组同步失败 (用户: %s): %v\n", user.Username, err)
 		return

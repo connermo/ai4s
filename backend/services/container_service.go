@@ -61,7 +61,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	
 	// 获取用户所属的组信息（用于挂载和权限设置）
 	groupService := NewGroupService()
-	userGroups, err := groupService.GetGroupsForContainer(user.ID)
+	userGroups, roles, err := groupService.GetGroupsWithRolesForContainer(user.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user groups: %v", err)
 	}
@@ -88,6 +88,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		}
 		envVars = append(envVars, fmt.Sprintf("USER_GROUPS=%s", strings.Join(groupNames, ",")))
 		envVars = append(envVars, fmt.Sprintf("USER_GROUP_GIDS=%s", strings.Join(groupGIDs, ",")))
+		envVars = append(envVars, fmt.Sprintf("USER_ROLES=%s", strings.Join(roles, ",")))
 		// 用户ID传递给容器，用于动态查询角色
 		envVars = append(envVars, fmt.Sprintf("USER_ID=%d", user.ID))
 	}
