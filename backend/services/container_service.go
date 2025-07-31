@@ -88,6 +88,8 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		}
 		envVars = append(envVars, fmt.Sprintf("USER_GROUPS=%s", strings.Join(groupNames, ",")))
 		envVars = append(envVars, fmt.Sprintf("USER_GROUP_GIDS=%s", strings.Join(groupGIDs, ",")))
+		// 用户ID传递给容器，用于动态查询角色
+		envVars = append(envVars, fmt.Sprintf("USER_ID=%d", user.ID))
 	}
 	
 	// 创建容器配置

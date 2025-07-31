@@ -31,6 +31,11 @@ func NewGroupSyncService() (*GroupSyncService, error) {
 
 // SyncUserContainerGroups 同步用户容器的组权限和挂载
 func (s *GroupSyncService) SyncUserContainerGroups(username string, groups []string, groupGIDs []string) error {
+	return s.SyncUserContainerGroupsWithRoles(username, groups, groupGIDs, nil)
+}
+
+// SyncUserContainerGroupsWithRoles 同步用户容器的组权限，支持角色信息
+func (s *GroupSyncService) SyncUserContainerGroupsWithRoles(username string, groups []string, groupGIDs []string, roles []string) error {
 	// 查找用户容器
 	containerName := fmt.Sprintf("dev-%s", username)
 	
@@ -67,7 +72,7 @@ func (s *GroupSyncService) SyncUserContainerGroups(username string, groups []str
 	}
 
 	// 1. 更新容器内的用户组权限
-	if err := s.updateContainerUserGroups(containerName, username, groups, groupGIDs); err != nil {
+	if err := s.updateContainerUserGroupsWithRoles(containerName, username, groups, groupGIDs, roles); err != nil {
 		return fmt.Errorf("failed to update container user groups: %v", err)
 	}
 
@@ -85,8 +90,13 @@ func (s *GroupSyncService) SyncUserContainerGroups(username string, groups []str
 	return nil
 }
 
-// updateContainerUserGroups 更新容器内用户的组权限
+// updateContainerUserGroups 更新容器内用户的组权限（兼容性方法）
 func (s *GroupSyncService) updateContainerUserGroups(containerName, username string, groups, groupGIDs []string) error {
+	return s.updateContainerUserGroupsWithRoles(containerName, username, groups, groupGIDs, nil)
+}
+
+// updateContainerUserGroupsWithRoles 更新容器内用户的组权限，支持角色信息
+func (s *GroupSyncService) updateContainerUserGroupsWithRoles(containerName, username string, groups, groupGIDs, roles []string) error {
 	log.Printf("更新容器 %s 中用户 %s 的组权限", containerName, username)
 
 	// 构建组管理脚本
@@ -146,7 +156,27 @@ for i in "${!GROUP_NAMES[@]}"; do
         chmod g+s "$GROUP_DIR" 2>/dev/null || true
         echo "  创建组目录: $GROUP_DIR"
     fi
+    
+    # 创建标准子目录结构
+    echo "  创建组子目录结构..."
+    
+    # shared-rw: 所有组成员可读写
+    SHARED_RW_DIR="$GROUP_DIR/shared-rw"
+    mkdir -p "$SHARED_RW_DIR" 2>/dev/null || true
+    chown "root:$GROUP_NAME" "$SHARED_RW_DIR" 2>/dev/null || true
+    chmod 775 "$SHARED_RW_DIR" 2>/dev/null || true
+    chmod g+s "$SHARED_RW_DIR" 2>/dev/null || true
+    echo "    ✓ 共享读写目录: shared-rw (775)"
+    
+    # shared-ro: 只有管理员可写，其他成员只读
+    SHARED_RO_DIR="$GROUP_DIR/shared-ro"
+    mkdir -p "$SHARED_RO_DIR" 2>/dev/null || true
+    chown "root:$GROUP_NAME" "$SHARED_RO_DIR" 2>/dev/null || true
+    chmod 755 "$SHARED_RO_DIR" 2>/dev/null || true
+    chmod g+s "$SHARED_RO_DIR" 2>/dev/null || true
+    echo "    ✓ 管理员专用目录: shared-ro (755)"
 done
+
 
 echo "用户组权限更新完成"
 `

@@ -417,6 +417,38 @@ func (s *GroupService) GetUserGroups(userID int) ([]models.UserGroup, error) {
 	return userGroups, nil
 }
 
+// IsGroupAdmin 检查用户是否是组管理员
+func (s *GroupService) IsGroupAdmin(groupID int, userID int) (bool, error) {
+	query := `SELECT role FROM user_groups WHERE group_id = ? AND user_id = ?`
+	
+	var role string
+	err := s.db.QueryRow(query, groupID, userID).Scan(&role)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil // 用户不在组中
+		}
+		return false, err
+	}
+	
+	return role == "admin", nil
+}
+
+// CanManageGroupAdvanced 检查用户是否有组的高级管理权限
+func (s *GroupService) CanManageGroupAdvanced(groupID int, userID int, isSystemAdmin bool) (bool, error) {
+	// 系统管理员有所有权限
+	if isSystemAdmin {
+		return true, nil
+	}
+	
+	// 检查是否是组管理员
+	isGroupAdmin, err := s.IsGroupAdmin(groupID, userID)
+	if err != nil {
+		return false, err
+	}
+	
+	return isGroupAdmin, nil
+}
+
 // GetGroupMembers 获取组成员列表
 func (s *GroupService) GetGroupMembers(groupID int, userID int, isAdmin bool) ([]models.UserGroup, error) {
 	// 检查访问权限（组成员或管理员可以查看）
