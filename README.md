@@ -10,6 +10,7 @@
 4. **组管理**: 多级用户组织，支持组共享目录和权限管理
 5. **端口管理**: 每用户独立端口分配，避免冲突
 6. **GPU支持**: 基于NVIDIA CUDA，支持深度学习框架
+7. **极简配置**: 只需配置一个数据根目录，其他自动生成
 
 ## 快速开始
 
@@ -28,49 +29,51 @@ git clone https://github.com/connermo/ai4s.git
 cd ai4s
 ```
 
-2. **配置环境变量**
+2. **一键配置和启动**
 ```bash
 # 复制环境变量模板
 cp .env.example .env
 
-# 根据需要修改 .env 文件中的配置：
-# 1. 端口配置：
-#    DEFAULT_PORT_PREFIX=10000 # 用户端口起始前缀
-#    PORT_STEP=10             # 每个用户的端口步长 (占用10个端口)
-# 2. 数据存储路径：
-#    USERS_DATA_PATH=/app/users
-#    SHARED_DATA_PATH=/shared-ro
-#    WORKSPACE_DATA_PATH=/shared-rw
-#    GROUPS_DATA_PATH=/app/groups
-# 3. 宿主机路径：
-#    HOST_USERS_PATH=${PWD}/data/users
-#    HOST_SHARED_RO_PATH=${PWD}/data/shared-ro
-#    HOST_SHARED_RW_PATH=${PWD}/data/shared-rw
-#    HOST_GROUPS_PATH=${PWD}/data/groups
+# 自动配置数据目录并启动服务
+./scripts/setup-simple.sh
 ```
 
-3. **创建数据目录**
-```bash
-# 根据 .env 文件中配置的路径创建目录
-mkdir -p data/users data/shared-ro data/shared-rw data/groups
-
-# 设置适当的权限
-chmod 755 data/users data/shared-ro data/shared-rw data/groups
-```
-
-4. **构建镜像**
-```bash
-./scripts/build.sh
-```
-
-5. **启动平台**
-```bash
-./scripts/start.sh
-```
-
-6. **访问管理界面**
+3. **访问管理界面**
 - 地址: http://localhost:8080
 - 默认管理员: admin / admin123
+
+### 配置说明
+
+**极简配置** - 只需要配置一个变量：
+
+```bash
+# .env 文件中的核心配置
+DATA_ROOT="${PWD}/data"  # 数据根目录，其他目录自动生成
+```
+
+**自动生成的目录结构**：
+```
+${DATA_ROOT}/
+├── users/          # 用户私有目录
+├── shared-ro/      # 全局共享只读目录
+├── shared-rw/      # 全局共享读写目录
+└── groups/         # 组共享目录
+```
+
+**可选配置**：
+```bash
+# 端口配置（可选，有默认值）
+DEFAULT_PORT_PREFIX=10000  # 用户端口起始前缀
+PORT_STEP=10              # 每个用户的端口步长
+
+# 数据库配置（可选，有默认值）
+DB_DSN="platform:platform123@tcp(mysql:3306)/gpu_platform?charset=utf8mb4&parseTime=True&loc=Local"
+PORT=8080
+
+# Pip源配置（可选，用于加速Python包安装）
+PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+PIP_TRUSTED_HOST=pypi.tuna.tsinghua.edu.cn
+```
 
 ### 管理操作
 
@@ -99,10 +102,22 @@ chmod 755 data/users data/shared-ro data/shared-rw data/groups
 
 ### 管理脚本
 
-- `./scripts/build.sh` - 构建所有镜像
+- `./scripts/setup-simple.sh` - 一键配置和启动
 - `./scripts/start.sh` - 启动平台服务
 - `./scripts/stop.sh` - 停止所有服务
 - `./scripts/cleanup.sh` - 清理所有数据（谨慎使用）
+- `./scripts/reset-database.sh` - 重置数据库（保留数据目录）
+- `./scripts/reset-database-complete.sh` - 完全重置（包括数据目录）
+
+### 测试验证
+
+```bash
+# 验证用户目录挂载
+./tests/test-user-mount.sh
+
+# 验证网站访问
+./tests/test-website-access.sh
+```
 
 ## 架构概述
 
@@ -121,7 +136,9 @@ ai4s/
 │   ├── Dockerfile.dev      # 开发容器镜像
 │   └── entrypoint.sh       # 容器启动脚本 (含组权限设置)
 ├── scripts/                # 部署和管理脚本
-├── data/                   # 数据存储目录
+├── tests/                  # 测试脚本
+├── docs/                   # 文档目录
+├── data/                   # 数据存储目录（自动生成）
 │   ├── users/              # 用户隔离目录
 │   ├── shared-ro/          # 共享目录(只读)
 │   ├── shared-rw/          # 共享工作目录(读写)
@@ -250,6 +267,12 @@ ai4s/
    - 容器内测试写权限: `docker exec dev-username /app/scripts/test-group-write-permissions.sh`
    - 详细排查指南: 参见 `docs/group-permissions-troubleshooting.md`
 
+6. **"bind source path does not exist" 错误**
+   - 运行 `./scripts/setup-simple.sh` 重新配置
+   - 检查 `DATA_ROOT` 路径是否正确
+   - 确认目录权限设置正确
+   - 详细指南: 参见 `docs/故障排除指南.md`
+
 ### 日志查看
 
 ```bash
@@ -304,6 +327,14 @@ RUN pip3 install your-package
 # 添加系统工具
 RUN apt-get update && apt-get install -y your-tool
 ```
+
+## 文档
+
+详细文档请查看 `docs/` 目录：
+
+- `docs/README.md` - 文档索引
+- `docs/故障排除指南.md` - 常见问题解决方案
+- `docs/配置简化演进总结.md` - 配置简化历程
 
 ## 许可证
 

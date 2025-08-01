@@ -11,19 +11,36 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 创建必要的宿主机目录
-echo -e "${BLUE}检查并创建共享目录...${NC}"
-mkdir -p ./data/shared-ro
-mkdir -p ./data/shared-rw
-mkdir -p ./data/users
+# 加载.env文件获取DATA_ROOT配置
+if [ -f ".env" ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# 获取数据根目录
+DATA_ROOT=${DATA_ROOT:-./data}
+echo -e "${BLUE}数据根目录: ${DATA_ROOT}${NC}"
+
+# 检查并创建必要的宿主机目录
+echo -e "${BLUE}检查并创建数据目录结构...${NC}"
+mkdir -p "${DATA_ROOT}/users"
+mkdir -p "${DATA_ROOT}/shared-ro"
+mkdir -p "${DATA_ROOT}/shared-rw"
+mkdir -p "${DATA_ROOT}/groups"
 
 # 设置权限
-chmod 755 ./data
-chmod 755 ./data/shared-ro
-chmod 777 ./data/shared-rw
-chmod 777 ./data/users
+chmod 755 "${DATA_ROOT}"
+chmod 755 "${DATA_ROOT}/users"
+chmod 755 "${DATA_ROOT}/shared-ro"
+chmod 777 "${DATA_ROOT}/shared-rw"
+chmod 755 "${DATA_ROOT}/groups"
 
-echo -e "${GREEN}✓ 目录结构准备就绪${NC}"
+echo -e "${GREEN}✓ 宿主机目录结构准备就绪${NC}"
+echo ""
+
+# 显示目录结构
+echo -e "${BLUE}目录结构:${NC}"
+tree "${DATA_ROOT}" 2>/dev/null || ls -la "${DATA_ROOT}"
+echo ""
 echo ""
 
 # 检查是否已构建镜像
@@ -46,6 +63,22 @@ fi
 # 等待服务启动
 echo "等待服务启动..."
 sleep 5
+
+# 检查容器内目录结构
+echo -e "${BLUE}检查容器内目录结构...${NC}"
+if docker ps | grep -q "ai4s-platform-backend"; then
+    if docker exec ai4s-platform-backend ls -la /app/data/ >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ 容器内目录结构正常${NC}"
+        echo -e "${BLUE}容器内目录:${NC}"
+        docker exec ai4s-platform-backend ls -la /app/data/ | sed 's/^/  /'
+    else
+        echo -e "${YELLOW}警告: 容器内目录可能还在初始化中...${NC}"
+    fi
+else
+    echo -e "${RED}错误: 后端容器未运行${NC}"
+    exit 1
+fi
+echo ""
 
 # 检查服务状态
 if curl -s http://localhost:8080/api/users > /dev/null; then

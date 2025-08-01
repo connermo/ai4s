@@ -22,12 +22,6 @@ import (
 
 var userContainerImage = "connermo/ai4s-env:latest"
 
-func init() {
-	if img := os.Getenv("USER_CONTAINER_IMAGE"); img != "" {
-		userContainerImage = img
-	}
-}
-
 type ContainerService struct {
 	db           *sql.DB
 	dockerClient *client.Client
@@ -102,60 +96,32 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		ExposedPorts: s.getExposedPorts(user),
 	}
 
-	// 从环境变量获取路径配置
-	usersDataPath := os.Getenv("USERS_DATA_PATH")
-	if usersDataPath == "" {
-		usersDataPath = "/app/users"
+	// 从环境变量获取数据根目录配置
+	dataRoot := os.Getenv("DATA_ROOT")
+	if dataRoot == "" {
+		return nil, fmt.Errorf("DATA_ROOT environment variable not set")
 	}
 
-	sharedDataPath := os.Getenv("SHARED_DATA_PATH")
-	if sharedDataPath == "" {
-		sharedDataPath = "/app/shared"
-	}
+	// 使用统一的默认配置
+	containerHomePath := "/home"
+	containerSharedPath := "/shared-ro"
+	containerWorkspacePath := "/shared-rw"
 
-	workspaceDataPath := os.Getenv("WORKSPACE_DATA_PATH")
-	if workspaceDataPath == "" {
-		workspaceDataPath = "/shared-rw"
-	}
+	// 自动生成子目录路径
+	usersDataPath := "/app/data/users"
+	sharedRoPath := "/app/data/shared-ro"
+	sharedRwPath := "/app/data/shared-rw"
 
-	containerHomePath := os.Getenv("CONTAINER_HOME_PATH")
-	if containerHomePath == "" {
-		containerHomePath = "/home"
-	}
-
-	containerSharedPath := os.Getenv("CONTAINER_SHARED_RO_PATH")
-	if containerSharedPath == "" {
-		containerSharedPath = "/shared-ro"
-	}
-
-	containerWorkspacePath := os.Getenv("CONTAINER_SHARED_RW_PATH")
-	if containerWorkspacePath == "" {
-		containerWorkspacePath = "/shared-rw"
-	}
-
-	// 创建用户目录（如果不存在）
+	// 创建必要的目录
 	userDir := fmt.Sprintf("%s/%s", usersDataPath, user.Username)
 	os.MkdirAll(userDir, 0755)
-	os.MkdirAll(sharedDataPath, 0755)
-	os.MkdirAll(workspaceDataPath, 0755)
+	os.MkdirAll(sharedRoPath, 0755)
+	os.MkdirAll(sharedRwPath, 0755)
 
-	// 从环境变量获取宿主机绝对路径
-	hostSharedPath := os.Getenv("HOST_SHARED_RO_PATH")
-	if hostSharedPath == "" {
-		return nil, fmt.Errorf("HOST_SHARED_RO_PATH environment variable not set")
-	}
-
-	hostWorkspacePath := os.Getenv("HOST_SHARED_RW_PATH")
-	if hostWorkspacePath == "" {
-		return nil, fmt.Errorf("HOST_SHARED_RW_PATH environment variable not set")
-	}
-
-	hostUsersPath := os.Getenv("HOST_USERS_PATH")
-	if hostUsersPath == "" {
-		return nil, fmt.Errorf("HOST_USERS_PATH environment variable not set")
-	}
-
-	hostUserDir := fmt.Sprintf("%s/%s", hostUsersPath, user.Username)
+	// 宿主机路径（基于DATA_ROOT）
+	hostUserDir := fmt.Sprintf("%s/users/%s", dataRoot, user.Username)
+	hostSharedPath := fmt.Sprintf("%s/shared-ro", dataRoot)
+	hostWorkspacePath := fmt.Sprintf("%s/shared-rw", dataRoot)
 
 	// 基础挂载点
 	mounts := []mount.Mount{
@@ -179,20 +145,10 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 
 	// 添加组目录挂载
 	if len(userGroups) > 0 {
-		groupsDataPath := os.Getenv("GROUPS_DATA_PATH")
-		if groupsDataPath == "" {
-			groupsDataPath = "./data/groups"
-		}
+		containerGroupsPath := "/groups"
 
-		hostGroupsPath := os.Getenv("HOST_GROUPS_PATH")
-		if hostGroupsPath == "" {
-			hostGroupsPath = groupsDataPath
-		}
-
-		containerGroupsPath := os.Getenv("CONTAINER_GROUPS_PATH")
-		if containerGroupsPath == "" {
-			containerGroupsPath = "/groups"
-		}
+		// 宿主机组目录路径
+		hostGroupsPath := fmt.Sprintf("%s/groups", dataRoot)
 
 		// 为每个组创建挂载点
 		for _, group := range userGroups {
