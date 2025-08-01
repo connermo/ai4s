@@ -614,76 +614,98 @@ cert: false`, newPassword)
 	}
 
 	// 5. 重启服务（确保VSCode使用新配置）
-	killServicesScript := `
-echo "开始重启服务..."
-echo "杀死现有进程..."
-
-# 强制杀死Jupyter进程
+	// 分步执行，避免pkill影响exec会话
+	killProcessScript := `
+echo "=== 开始杀死现有进程 ==="
 pkill -f "jupyter" || echo "没有找到jupyter进程"
-sleep 1
-
-# 更精确地杀死code-server进程
-echo "正在查找code-server进程..."
-ps aux | grep -E "code-server|/usr/lib/code-server" | grep -v grep || echo "没有找到code-server进程"
-
-echo "强制杀死code-server进程..."
 pkill -f "/usr/lib/code-server" || echo "没有找到code-server主进程"
 pkill -f "code-server" || echo "没有找到code-server进程"
-sleep 1
-
-# 再次检查并强制杀死残留进程
 pkill -9 -f "code-server" 2>/dev/null || true
-sleep 2
+sleep 3
+echo "=== 进程杀死完成 ==="
+`
 
-echo "验证进程是否已被杀死..."
-ps aux | grep -E "code-server|jupyter" | grep -v grep || echo "所有服务进程已被杀死"
+	restartServicesScript := `
+echo "=== 开始重启服务 ==="
 
 echo "重启Jupyter服务..."
-# 使用与entrypoint.sh完全相同的启动方式，通过命令行参数传递密码
 HASH=\$(python3 -c "from jupyter_server.auth import passwd; print(passwd('` + newPassword + `'))" 2>/dev/null)
-su - ` + username + ` -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password='\$HASH' >/tmp/jupyter.log 2>&1 &"
-echo "Jupyter启动命令已执行，等待启动完成..."
-sleep 8
+su - ` + username + ` -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password=\"\$HASH\" >/tmp/jupyter.log 2>&1 &"
+echo "Jupyter启动命令已执行"
+sleep 5
 
 echo "重启VSCode服务..."
 su - ` + username + ` -c "nohup code-server >/tmp/code-server.log 2>&1 &"
-echo "VSCode启动命令已执行，等待启动完成..."
+echo "VSCode启动命令已执行"
 sleep 5
 
-echo "验证服务是否成功启动..."
-ps aux | grep -E "code-server|jupyter" | grep -v grep || echo "警告: 服务可能未成功启动"
+echo "=== 验证服务启动状态 ==="
+ps aux | grep -E "code-server|jupyter" | grep -v grep || echo "警告: 部分服务可能未启动"
 
-echo "服务重启完成"
+echo "=== 服务重启完成 ==="
 `
 
+	// 第一步：杀死进程
 	execConfig4 := types.ExecConfig{
-		Cmd:          []string{"sh", "-c", killServicesScript},
+		Cmd:          []string{"sh", "-c", killProcessScript},
 		AttachStdout: true,
 		AttachStderr: true,
 	}
 
 	execResp4, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, execConfig4)
 	if err != nil {
+		return fmt.Errorf("创建进程杀死命令失败: %v", err)
+	}
+
+	// 执行杀死进程脚本
+	execAttachResp4, err := s.dockerClient.ContainerExecAttach(context.Background(), execResp4.ID, types.ExecStartCheck{})
+	if err != nil {
+		return fmt.Errorf("启动进程杀死脚本失败: %v", err)
+	}
+	defer execAttachResp4.Close()
+
+	// 读取杀死进程脚本输出
+	output, err := io.ReadAll(execAttachResp4.Reader)
+	if err != nil {
+		log.Printf("读取杀死进程脚本输出失败: %v", err)
+	} else {
+		log.Printf("杀死进程脚本输出: %s", string(output))
+	}
+
+	// 等待杀死进程完成
+	log.Printf("等待进程杀死完成...")
+	time.Sleep(5 * time.Second)
+
+	// 第二步：重启服务
+	execConfig5 := types.ExecConfig{
+		Cmd:          []string{"sh", "-c", restartServicesScript},
+		AttachStdout: true,
+		AttachStderr: true,
+	}
+
+	execResp5, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, execConfig5)
+	if err != nil {
 		return fmt.Errorf("创建服务重启命令失败: %v", err)
 	}
 
-	// 启动重启脚本
-	err = s.dockerClient.ContainerExecStart(context.Background(), execResp4.ID, types.ExecStartCheck{})
+	// 执行服务重启脚本
+	execAttachResp5, err := s.dockerClient.ContainerExecAttach(context.Background(), execResp5.ID, types.ExecStartCheck{})
 	if err != nil {
 		return fmt.Errorf("启动服务重启脚本失败: %v", err)
 	}
+	defer execAttachResp5.Close()
 
-	// 等待脚本执行完成
-	log.Printf("等待重启脚本执行完成...")
-	time.Sleep(15 * time.Second)
-
-	// 检查脚本执行结果
-	inspectResp, err := s.dockerClient.ContainerExecInspect(context.Background(), execResp4.ID)
+	// 读取服务重启脚本输出
+	output2, err := io.ReadAll(execAttachResp5.Reader)
 	if err != nil {
-		log.Printf("检查脚本执行状态失败: %v", err)
+		log.Printf("读取服务重启脚本输出失败: %v", err)
 	} else {
-		log.Printf("脚本执行状态: Running=%v, ExitCode=%d", inspectResp.Running, inspectResp.ExitCode)
+		log.Printf("服务重启脚本输出: %s", string(output2))
 	}
+
+	// 等待服务重启完成
+	log.Printf("等待服务重启完成...")
+	time.Sleep(10 * time.Second)
 
 	// 验证服务启动状态
 	log.Printf("验证服务启动状态...")
