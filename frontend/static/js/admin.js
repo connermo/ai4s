@@ -2,7 +2,7 @@
 const API_BASE = '/api';
 
 // 当前显示的section
-let currentSection = 'users';
+let currentSection = localStorage.getItem('ai4s-current-section') || 'users';
 
 // HTML转义函数，防止XSS攻击
 function escapeHtml(text) {
@@ -75,6 +75,9 @@ let isContainerLoading = false;
 document.addEventListener('DOMContentLoaded', function() {
     // 检查管理员认证
     checkAdminAuth();
+    
+    // 恢复上次访问的标签页
+    showSection(currentSection);
     
     loadUsers();
     loadContainers();
@@ -215,6 +218,8 @@ function showSection(sectionName) {
     document.querySelector(`[href="#${sectionName}"]`).classList.add('active');
     
     currentSection = sectionName;
+    // 保存当前标签页到localStorage
+    localStorage.setItem('ai4s-current-section', sectionName);
     
     // 根据section加载对应数据
     if (sectionName === 'users') {
