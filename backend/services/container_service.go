@@ -576,73 +576,24 @@ cert: false`, newPassword)
 		return fmt.Errorf("执行VSCode配置更新失败: %v", err)
 	}
 
-	// 4. 重启服务（杀死现有进程让它们重启）
+	// 4. 重启服务（分步骤执行避免超时）
 	killServicesScript := `
-echo "开始重启服务..."
-echo "杀死现有进程..."
-
-# 杀死Jupyter进程
-echo "查找并杀死Jupyter进程..."
-ps aux | grep "jupyter lab" | grep -v grep | awk '{print $2}' | xargs -r kill -9 || echo "没有找到jupyter进程"
-pkill -f "jupyter-lab" || echo "没有找到jupyter-lab进程"
+echo "=== 第1步: 停止现有服务 ==="
+pkill -f "jupyter" || echo "无jupyter进程"
+pkill -f "code-server" || echo "无code-server进程"
 sleep 2
 
-# 杀死code-server进程 - 使用更准确的匹配
-echo "查找并杀死code-server进程..."
-ps aux | grep code-server | grep -v grep | awk '{print $2}' | xargs -r kill -9 || echo "没有找到code-server进程"
-pkill -f "code-server" || echo "没有找到code-server进程"
-# 额外杀死可能的node进程
-pkill -f "/usr/lib/code-server" || echo "没有找到code-server相关进程"
-sleep 3
+echo "=== 第2步: 生成新密码哈希 ==="
+HASH=\$(python3 -c "from jupyter_server.auth import passwd; print(passwd('` + newPassword + `'))" 2>/dev/null || echo "sha1:error")
+echo "密码哈希: \$HASH"
 
-# 验证进程已被杀死
-echo "验证进程状态..."
-if pgrep -f "jupyter" > /dev/null; then
-    echo "警告: 仍有jupyter进程在运行"
-    ps aux | grep jupyter | grep -v grep
-fi
-if pgrep -f "code-server" > /dev/null; then
-    echo "警告: 仍有code-server进程在运行"
-    ps aux | grep code-server | grep -v grep
-fi
+echo "=== 第3步: 启动Jupyter ==="
+su - ` + username + ` -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password='\$HASH' >/tmp/jupyter.log 2>&1 &" || echo "Jupyter启动失败"
 
-echo "重启Jupyter服务..."
-export DEV_PASSWORD='` + newPassword + `'
-# 等待Jupyter完全停止
-sleep 2
-echo "启动Jupyter Lab..."
-# 先生成密码哈希，然后启动服务
-JUPYTER_HASH=\$(python3 -c "from jupyter_server.auth import passwd; print(passwd('` + newPassword + `'))")
-echo "生成的密码哈希: \$JUPYTER_HASH"
-su - ` + username + ` -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password='\$JUPYTER_HASH' > /tmp/jupyter.log 2>&1 &"
-sleep 3
-echo "检查Jupyter启动状态..."
-ps aux | grep jupyter | grep -v grep || echo "警告: Jupyter启动失败"
+echo "=== 第4步: 启动VSCode ==="
+su - ` + username + ` -c "export PASSWORD='` + newPassword + `' && nohup code-server >/tmp/code-server.log 2>&1 &" || echo "VSCode启动失败"
 
-echo "重启VSCode服务..."
-su - ` + username + ` -c "export PASSWORD='` + newPassword + `' && nohup code-server > /tmp/code-server.log 2>&1 &"
-sleep 3
-
-# 验证服务启动
-echo "验证服务启动状态..."
-if pgrep -f "jupyter" > /dev/null; then
-    echo "✓ Jupyter服务已启动"
-else
-    echo "✗ Jupyter服务启动失败"
-fi
-if pgrep -f "code-server" > /dev/null; then
-    echo "✓ VSCode服务已启动"
-else
-    echo "✗ VSCode服务启动失败"
-fi
-
-echo "显示服务日志..."
-echo "=== Jupyter日志 ==="
-tail -5 /tmp/jupyter.log 2>/dev/null || echo "无Jupyter日志"
-echo "=== VSCode日志 ==="
-tail -5 /tmp/code-server.log 2>/dev/null || echo "无VSCode日志"
-
-echo "服务重启完成"
+echo "=== 完成 ==="
 `
 
 	execConfig4 := types.ExecConfig{
@@ -664,7 +615,7 @@ echo "服务重启完成"
 	
 	// 等待脚本执行完成
 	log.Printf("等待重启脚本执行完成...")
-	time.Sleep(15 * time.Second)
+	time.Sleep(8 * time.Second)
 	
 	// 检查脚本执行结果
 	inspectResp, err := s.dockerClient.ContainerExecInspect(context.Background(), execResp4.ID)
