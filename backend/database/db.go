@@ -7,7 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	
+
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -46,13 +46,13 @@ func createTables() error {
 	// 检查是否已经创建了索引
 	var count int
 	err := DB.QueryRow("SELECT COUNT(*) FROM db_init_status WHERE component = 'indexes' AND initialized = TRUE").Scan(&count)
-	
+
 	// 如果查询出错或者计数为0，需要创建索引
 	if err != nil || count == 0 {
 		if err := createIndexesDirectly(); err != nil {
 			return fmt.Errorf("failed to create indexes: %v", err)
 		}
-		
+
 		// 标记索引已创建
 		_, err = DB.Exec("INSERT INTO db_init_status (component, initialized) VALUES ('indexes', TRUE) ON DUPLICATE KEY UPDATE initialized = TRUE")
 		if err != nil {
@@ -215,7 +215,7 @@ func ensureTablesExist() error {
 
 	// 确保默认管理员用户存在
 	fmt.Printf("DEBUG: Creating default admin user\n")
-	
+
 	// 从环境变量获取端口前缀
 	defaultPortPrefix := 9000
 	if prefix := os.Getenv("DEFAULT_PORT_PREFIX"); prefix != "" {
@@ -223,7 +223,7 @@ func ensureTablesExist() error {
 			defaultPortPrefix = p
 		}
 	}
-	
+
 	_, err = DB.Exec(`INSERT IGNORE INTO users (username, password, email, is_admin, base_port) 
 		VALUES ('admin', '$2a$10$7kCbgG3FCL5wfatLw7RnL.qefBo7t1OwiGxfWma3vGHZSkYy67k12', 'admin@example.com', TRUE, ?)`, defaultPortPrefix)
 	if err != nil {
@@ -235,19 +235,19 @@ func ensureTablesExist() error {
 
 func verifyTablesExist() error {
 	tables := []string{"users", "containers", "container_stats", "grps", "user_groups", "gid_allocation", "system_config", "db_init_status"}
-	
+
 	for _, table := range tables {
 		var exists int
 		err := DB.QueryRow("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?", table).Scan(&exists)
 		if err != nil {
 			return fmt.Errorf("failed to check if table %s exists: %v", table, err)
 		}
-		
+
 		if exists == 0 {
 			return fmt.Errorf("table %s does not exist after creation attempt", table)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -267,7 +267,7 @@ func createIndexesDirectly() error {
 		"CREATE INDEX idx_gid_allocation_gid ON gid_allocation(gid)",
 		"CREATE INDEX idx_system_config_key_name ON system_config(key_name)",
 	}
-	
+
 	for _, indexSQL := range indexes {
 		_, err := DB.Exec(indexSQL)
 		if err != nil {
@@ -278,7 +278,7 @@ func createIndexesDirectly() error {
 			return fmt.Errorf("failed to create index '%s': %v", indexSQL, err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -294,7 +294,7 @@ func executeSQL(filename string) error {
 		if stmt == "" || strings.HasPrefix(stmt, "--") {
 			continue
 		}
-		
+
 		_, err = DB.Exec(stmt)
 		if err != nil {
 			return fmt.Errorf("failed to execute statement '%s': %v", stmt, err)
@@ -315,7 +315,7 @@ func executeIndexes() error {
 		if stmt == "" || strings.HasPrefix(stmt, "--") {
 			continue
 		}
-		
+
 		_, err = DB.Exec(stmt)
 		if err != nil {
 			// 忽略索引已存在的错误

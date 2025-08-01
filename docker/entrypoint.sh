@@ -59,7 +59,9 @@ if ! id -u $DEV_USER > /dev/null 2>&1; then
         echo "警告: 用户创建失败，可能已存在"
     fi
 else
-    echo "用户 $DEV_USER 已存在"
+    # 用户已存在，静默处理
+    # 确保密码是最新的
+    echo "$DEV_USER:$DEV_PASSWORD" | chpasswd 2>/dev/null
 fi
 
 chown -R $DEV_UID:$DEV_GID /home/$DEV_USER
@@ -92,16 +94,10 @@ if [ -n "$USER_GROUPS" ] && [ -n "$USER_GROUP_GIDS" ]; then
             else
                 echo "  警告: 组 $GROUP_NAME 创建失败，可能已存在"
             fi
-        else
-            echo "  组 $GROUP_NAME 已存在"
         fi
         
-        # 将用户添加到组中
-        if usermod -a -G "$GROUP_NAME" "$DEV_USER" 2>/dev/null; then
-            echo "  将用户 $DEV_USER 添加到组 $GROUP_NAME"
-        else
-            echo "  警告: 无法将用户 $DEV_USER 添加到组 $GROUP_NAME"
-        fi
+        # 将用户添加到组中（静默处理，避免重复信息）
+        usermod -a -G "$GROUP_NAME" "$DEV_USER" 2>/dev/null
         
         # 设置组目录权限
         GROUP_DIR="/groups/$GROUP_NAME"
