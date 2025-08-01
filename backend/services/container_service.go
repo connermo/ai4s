@@ -576,24 +576,14 @@ cert: false`, newPassword)
 		return fmt.Errorf("执行VSCode配置更新失败: %v", err)
 	}
 
-	// 4. 重启服务（分步骤执行避免超时）
+	// 4. 重启服务（最简化执行）
 	killServicesScript := `
-echo "=== 第1步: 停止现有服务 ==="
-pkill -f "jupyter" || echo "无jupyter进程"
-pkill -f "code-server" || echo "无code-server进程"
-sleep 2
-
-echo "=== 第2步: 生成新密码哈希 ==="
-HASH=\$(python3 -c "from jupyter_server.auth import passwd; print(passwd('` + newPassword + `'))" 2>/dev/null || echo "sha1:error")
-echo "密码哈希: \$HASH"
-
-echo "=== 第3步: 启动Jupyter ==="
-su - ` + username + ` -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password='\$HASH' >/tmp/jupyter.log 2>&1 &" || echo "Jupyter启动失败"
-
-echo "=== 第4步: 启动VSCode ==="
-su - ` + username + ` -c "export PASSWORD='` + newPassword + `' && nohup code-server >/tmp/code-server.log 2>&1 &" || echo "VSCode启动失败"
-
-echo "=== 完成 ==="
+pkill -f "jupyter" || true
+pkill -f "code-server" || true
+HASH=\$(python3 -c "from jupyter_server.auth import passwd; print(passwd('` + newPassword + `'))" 2>/dev/null)
+su - ` + username + ` -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password='\$HASH' >/tmp/jupyter.log 2>&1 &"
+su - ` + username + ` -c "export PASSWORD='` + newPassword + `' && nohup code-server >/tmp/code-server.log 2>&1 &"
+echo "服务重启完成"
 `
 
 	execConfig4 := types.ExecConfig{
@@ -615,7 +605,7 @@ echo "=== 完成 ==="
 	
 	// 等待脚本执行完成
 	log.Printf("等待重启脚本执行完成...")
-	time.Sleep(8 * time.Second)
+	time.Sleep(5 * time.Second)
 	
 	// 检查脚本执行结果
 	inspectResp, err := s.dockerClient.ContainerExecInspect(context.Background(), execResp4.ID)
