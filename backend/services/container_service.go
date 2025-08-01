@@ -601,6 +601,13 @@ su - ` + username + ` -c "nohup code-server > /tmp/code-server.log 2>&1 &"
 		return fmt.Errorf("执行服务重启失败: %v", err)
 	}
 
+	// 5. 重启容器以确保所有服务使用新密码
+	log.Printf("重启容器 %s 以确保密码更新生效", containerID)
+	err = s.dockerClient.ContainerRestart(context.Background(), containerID, container.StopOptions{})
+	if err != nil {
+		return fmt.Errorf("重启容器失败: %v", err)
+	}
+
 	return nil
 }
 
