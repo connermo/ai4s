@@ -1804,10 +1804,15 @@ async function confirmDeleteGroup() {
         
         if (data.success) {
             showAlert(data.message || '组删除成功', 'success');
+            // 关闭删除确认模态框
             const modal = bootstrap.Modal.getInstance(document.getElementById('deleteGroupModal'));
             if (modal) {
                 modal.hide();
+            } else {
+                // 备用方案：使用通用关闭函数
+                closeModal('deleteGroupModal');
             }
+            // 刷新组列表
             loadGroups();
         } else {
             throw new Error(data.message || '删除组失败');
