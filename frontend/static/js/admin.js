@@ -61,6 +61,19 @@ function checkAdminAuth() {
 // 获取管理员认证头
 function getAdminHeaders() {
     const adminToken = sessionStorage.getItem('adminToken');
+    const admin = sessionStorage.getItem('admin');
+    
+    // 添加调试信息
+    console.log('DEBUG: getAdminHeaders - adminToken:', adminToken ? 'exists' : 'missing');
+    if (admin) {
+        try {
+            const adminData = JSON.parse(admin);
+            console.log('DEBUG: getAdminHeaders - admin user ID:', adminData.id);
+        } catch (e) {
+            console.log('DEBUG: getAdminHeaders - failed to parse admin data:', e);
+        }
+    }
+    
     return {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${adminToken}`
@@ -1446,7 +1459,10 @@ function selectAndCopy(button) {
         showAlert('内容已复制到剪贴板！', 'success');
         // 关闭模态框
         const modal = button.closest('.modal');
-        bootstrap.Modal.getInstance(modal).hide();
+        const modalInstance = bootstrap.Modal.getInstance(modal);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
     } catch (err) {
         showAlert('复制失败，请手动选择并复制文本', 'warning');
     }
@@ -1692,7 +1708,10 @@ async function createGroup() {
         
         if (data.success) {
             showAlert(data.message || '组创建成功', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('addGroupModal')).hide();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addGroupModal'));
+            if (modal) {
+                modal.hide();
+            }
             document.getElementById('addGroupForm').reset();
             loadGroups();
         } else {
@@ -1751,7 +1770,10 @@ async function updateGroup() {
         
         if (data.success) {
             showAlert(data.message || '组更新成功', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('editGroupModal')).hide();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editGroupModal'));
+            if (modal) {
+                modal.hide();
+            }
             loadGroups();
         } else {
             throw new Error(data.message || '更新组失败');
@@ -1782,7 +1804,10 @@ async function confirmDeleteGroup() {
         
         if (data.success) {
             showAlert(data.message || '组删除成功', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('deleteGroupModal')).hide();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteGroupModal'));
+            if (modal) {
+                modal.hide();
+            }
             loadGroups();
         } else {
             throw new Error(data.message || '删除组失败');
