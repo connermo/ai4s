@@ -656,24 +656,26 @@ echo "服务重启完成"
 		return fmt.Errorf("创建服务重启命令失败: %v", err)
 	}
 
-	// 捕获重启脚本的输出
-	execAttachResp4, err := s.dockerClient.ContainerExecAttach(context.Background(), execResp4.ID, types.ExecStartCheck{})
+	// 启动重启脚本
+	err = s.dockerClient.ContainerExecStart(context.Background(), execResp4.ID, types.ExecStartCheck{})
 	if err != nil {
-		return fmt.Errorf("执行服务重启失败: %v", err)
+		return fmt.Errorf("启动服务重启脚本失败: %v", err)
 	}
-	defer execAttachResp4.Close()
-
-	// 读取输出
-	output, err := io.ReadAll(execAttachResp4.Reader)
+	
+	// 等待脚本执行完成
+	log.Printf("等待重启脚本执行完成...")
+	time.Sleep(15 * time.Second)
+	
+	// 检查脚本执行结果
+	inspectResp, err := s.dockerClient.ContainerExecInspect(context.Background(), execResp4.ID)
 	if err != nil {
-		log.Printf("读取重启脚本输出失败: %v", err)
+		log.Printf("检查脚本执行状态失败: %v", err)
 	} else {
-		log.Printf("重启脚本输出: %s", string(output))
+		log.Printf("脚本执行状态: Running=%v, ExitCode=%d", inspectResp.Running, inspectResp.ExitCode)
 	}
 
-	// 等待服务启动完成并验证
-	log.Printf("等待服务启动完成...")
-	time.Sleep(5 * time.Second)
+	// 验证服务启动状态
+	log.Printf("验证服务启动状态...")
 	
 	// 验证服务是否真正启动
 	verifyScript := `
