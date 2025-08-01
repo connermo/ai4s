@@ -617,10 +617,26 @@ cert: false`, newPassword)
 	killServicesScript := `
 echo "开始重启服务..."
 echo "杀死现有进程..."
+
+# 强制杀死Jupyter进程
 pkill -f "jupyter" || echo "没有找到jupyter进程"
-sleep 2
+sleep 1
+
+# 更精确地杀死code-server进程
+echo "正在查找code-server进程..."
+ps aux | grep -E "code-server|/usr/lib/code-server" | grep -v grep || echo "没有找到code-server进程"
+
+echo "强制杀死code-server进程..."
+pkill -f "/usr/lib/code-server" || echo "没有找到code-server主进程"
 pkill -f "code-server" || echo "没有找到code-server进程"
+sleep 1
+
+# 再次检查并强制杀死残留进程
+pkill -9 -f "code-server" 2>/dev/null || true
 sleep 2
+
+echo "验证进程是否已被杀死..."
+ps aux | grep -E "code-server|jupyter" | grep -v grep || echo "所有服务进程已被杀死"
 
 echo "重启Jupyter服务..."
 # 使用与entrypoint.sh完全相同的启动方式，通过命令行参数传递密码
@@ -633,6 +649,9 @@ echo "重启VSCode服务..."
 su - ` + username + ` -c "nohup code-server >/tmp/code-server.log 2>&1 &"
 echo "VSCode启动命令已执行，等待启动完成..."
 sleep 5
+
+echo "验证服务是否成功启动..."
+ps aux | grep -E "code-server|jupyter" | grep -v grep || echo "警告: 服务可能未成功启动"
 
 echo "服务重启完成"
 `
