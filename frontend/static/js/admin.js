@@ -128,6 +128,50 @@ document.addEventListener('DOMContentLoaded', function() {
             element.addEventListener('focus', function(e) {
                 e.stopPropagation();
             });
+            
+            // 防止文本选择拖拽导致模态框关闭
+            element.addEventListener('mousedown', function(e) {
+                e.stopPropagation();
+                // 标记开始文本选择
+                element.setAttribute('data-selecting', 'true');
+            });
+            
+            element.addEventListener('mousemove', function(e) {
+                if (element.getAttribute('data-selecting') === 'true') {
+                    e.stopPropagation();
+                }
+            });
+            
+            element.addEventListener('mouseup', function(e) {
+                e.stopPropagation();
+                // 清除文本选择标记
+                element.removeAttribute('data-selecting');
+            });
+            
+            // 处理拖拽离开元素的情况
+            element.addEventListener('mouseleave', function(e) {
+                if (element.getAttribute('data-selecting') === 'true') {
+                    e.stopPropagation();
+                }
+            });
+        });
+        
+        // 额外处理模态框背景的鼠标事件，防止在文本选择过程中关闭模态框
+        createContainerModal.addEventListener('mousedown', function(e) {
+            if (e.target === createContainerModal) {
+                // 检查是否有元素正在进行文本选择
+                const selectingElements = createContainerModal.querySelectorAll('[data-selecting="true"]');
+                if (selectingElements.length > 0) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }
+        });
+        
+        createContainerModal.addEventListener('mouseup', function(e) {
+            // 清理所有选择标记
+            const selectingElements = createContainerModal.querySelectorAll('[data-selecting="true"]');
+            selectingElements.forEach(el => el.removeAttribute('data-selecting'));
         });
     }
     
