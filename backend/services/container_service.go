@@ -576,13 +576,21 @@ cert: false`, newPassword)
 		return fmt.Errorf("执行VSCode配置更新失败: %v", err)
 	}
 
-	// 4. 重启服务（最简化执行）
+	// 4. 重启服务（确保VSCode使用新配置）
 	killServicesScript := `
 pkill -f "jupyter" || true
 pkill -f "code-server" || true
 HASH=\$(python3 -c "from jupyter_server.auth import passwd; print(passwd('` + newPassword + `'))" 2>/dev/null)
 su - ` + username + ` -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password='\$HASH' >/tmp/jupyter.log 2>&1 &"
-su - ` + username + ` -c "export PASSWORD='` + newPassword + `' && nohup code-server >/tmp/code-server.log 2>&1 &"
+# 重新生成VSCode配置文件确保使用新密码
+cat > /home/` + username + `/.config/code-server/config.yaml << EOF
+bind-addr: 0.0.0.0:8080
+auth: password
+password: ` + newPassword + `
+cert: false
+EOF
+chown ` + username + `:` + username + ` /home/` + username + `/.config/code-server/config.yaml
+su - ` + username + ` -c "nohup code-server >/tmp/code-server.log 2>&1 &"
 echo "服务重启完成"
 `
 
