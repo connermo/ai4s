@@ -488,10 +488,10 @@ func (s *ContainerService) ResetContainerPassword(containerID, newPassword strin
 	}
 
 	// 执行密码重置命令
-	// 1. 重置系统用户密码
+	// 1. 重置系统用户密码和更新环境变量
 	passwordInput := fmt.Sprintf("%s:%s", username, newPassword)
 	execConfig := types.ExecConfig{
-		Cmd:          []string{"chpasswd"},
+		Cmd:          []string{"sh", "-c", fmt.Sprintf("echo '%s' | chpasswd && export DEV_PASSWORD='%s'", passwordInput, newPassword)},
 		AttachStdin:  true,
 		AttachStdout: true,
 		AttachStderr: true,

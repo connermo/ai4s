@@ -686,7 +686,16 @@ echo "启动Jupyter Lab..."
 
     # 启动VSCode Server
 echo "启动VSCode Server..."
-    su - $DEV_USER -c "PASSWORD='$DEV_PASSWORD' nohup code-server --bind-addr 0.0.0.0:8080 --auth password > /tmp/code-server.log 2>&1 &"
+    # 创建VSCode配置文件
+    mkdir -p /home/$DEV_USER/.config/code-server
+    cat > /home/$DEV_USER/.config/code-server/config.yaml << EOF
+bind-addr: 0.0.0.0:8080
+auth: password
+password: $DEV_PASSWORD
+cert: false
+EOF
+    chown $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server/config.yaml
+    su - $DEV_USER -c "nohup code-server > /tmp/code-server.log 2>&1 &"
 else
     echo "警告: 用户 $DEV_USER 不存在，无法启动用户服务。"
 fi
