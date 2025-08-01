@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +13,11 @@ import (
 )
 
 func main() {
+	// 初始化数据目录
+	if err := initDataDirectories(); err != nil {
+		log.Fatal("Failed to initialize data directories:", err)
+	}
+
 	// 初始化数据库
 	dbDSN := os.Getenv("DB_DSN")
 	if dbDSN == "" {
@@ -121,4 +127,41 @@ func main() {
 
 	log.Printf("Server starting on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, handler))
+}
+
+// initDataDirectories 初始化数据目录结构
+func initDataDirectories() error {
+	dataRoot := os.Getenv("DATA_ROOT")
+	if dataRoot == "" {
+		dataRoot = "/app/data" // 默认路径
+	}
+
+	// 需要创建的目录列表
+	directories := []string{
+		dataRoot,
+		dataRoot + "/users",
+		dataRoot + "/shared-ro",
+		dataRoot + "/shared-rw",
+		dataRoot + "/groups",
+	}
+
+	log.Printf("Initializing data directories in: %s", dataRoot)
+
+	for _, dir := range directories {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("failed to create directory %s: %v", dir, err)
+		}
+		log.Printf("✓ Created directory: %s", dir)
+	}
+
+	// 设置共享读写目录的特殊权限
+	sharedRwDir := dataRoot + "/shared-rw"
+	if err := os.Chmod(sharedRwDir, 0777); err != nil {
+		log.Printf("Warning: failed to set permissions for %s: %v", sharedRwDir, err)
+	} else {
+		log.Printf("✓ Set permissions for shared-rw directory: 777")
+	}
+
+	log.Printf("Data directories initialization completed")
+	return nil
 }
