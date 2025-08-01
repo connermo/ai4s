@@ -669,10 +669,10 @@ echo "服务重启完成"
 	
 	// 验证服务是否真正启动
 	verifyScript := `
-echo "=== 最终验证服务状态 ===
-ps aux | grep -E "(jupyter|code-server)" | grep -v grep
+echo "=== 最终验证服务状态 ==="
+ps aux | grep -E "jupyter|code-server" | grep -v grep
 echo "=== 端口监听状态 ==="
-netstat -tlnp | grep -E "(8080|8888)" || echo "未发现服务端口监听"
+netstat -tlnp | grep -E "8080|8888" || echo "未发现服务端口监听"
 echo "=== 最新日志 ==="
 echo "Jupyter最新日志:"
 tail -3 /tmp/jupyter.log 2>/dev/null || echo "无Jupyter日志文件"
