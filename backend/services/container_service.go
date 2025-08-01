@@ -12,6 +12,7 @@ import (
 
 	"gpu-dev-platform/database"
 	"gpu-dev-platform/models"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -58,7 +59,7 @@ func (s *ContainerService) CreateContainer(user *models.User, gpuDevices string)
 
 func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDevices, password string) (*models.Container, error) {
 	containerName := fmt.Sprintf("dev-%s", user.Username)
-	
+
 	// 获取用户所属的组信息（用于挂载和权限设置）
 	groupService := NewGroupService()
 	userGroups, roles, err := groupService.GetGroupsWithRolesForContainer(user.ID)
@@ -92,7 +93,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		// 用户ID传递给容器，用于动态查询角色
 		envVars = append(envVars, fmt.Sprintf("USER_ID=%d", user.ID))
 	}
-	
+
 	// 创建容器配置
 	config := &container.Config{
 		Image: userContainerImage,
@@ -106,36 +107,36 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	if usersDataPath == "" {
 		usersDataPath = "/app/users"
 	}
-	
+
 	sharedDataPath := os.Getenv("SHARED_DATA_PATH")
 	if sharedDataPath == "" {
 		sharedDataPath = "/app/shared"
 	}
-	
+
 	workspaceDataPath := os.Getenv("WORKSPACE_DATA_PATH")
 	if workspaceDataPath == "" {
 		workspaceDataPath = "/shared-rw"
 	}
-	
+
 	containerHomePath := os.Getenv("CONTAINER_HOME_PATH")
 	if containerHomePath == "" {
 		containerHomePath = "/home"
 	}
-	
+
 	containerSharedPath := os.Getenv("CONTAINER_SHARED_RO_PATH")
 	if containerSharedPath == "" {
-		containerSharedPath = "/shared"
+		containerSharedPath = "/shared-ro"
 	}
-	
+
 	containerWorkspacePath := os.Getenv("CONTAINER_SHARED_RW_PATH")
 	if containerWorkspacePath == "" {
-		containerWorkspacePath = "/workspace"
+		containerWorkspacePath = "/shared-rw"
 	}
 
 	// 创建用户目录（如果不存在）
 	userDir := fmt.Sprintf("%s/%s", usersDataPath, user.Username)
 	os.MkdirAll(userDir, 0755)
-	os.MkdirAll(sharedDataPath, 0755)  
+	os.MkdirAll(sharedDataPath, 0755)
 	os.MkdirAll(workspaceDataPath, 0755)
 
 	// 从环境变量获取宿主机绝对路径
@@ -143,17 +144,17 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	if hostSharedPath == "" {
 		return nil, fmt.Errorf("HOST_SHARED_RO_PATH environment variable not set")
 	}
-	
+
 	hostWorkspacePath := os.Getenv("HOST_SHARED_RW_PATH")
 	if hostWorkspacePath == "" {
 		return nil, fmt.Errorf("HOST_SHARED_RW_PATH environment variable not set")
 	}
-	
+
 	hostUsersPath := os.Getenv("HOST_USERS_PATH")
 	if hostUsersPath == "" {
 		return nil, fmt.Errorf("HOST_USERS_PATH environment variable not set")
 	}
-	
+
 	hostUserDir := fmt.Sprintf("%s/%s", hostUsersPath, user.Username)
 
 	// 基础挂载点
@@ -161,7 +162,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		{
 			Type:   mount.TypeBind,
 			Source: hostUserDir,
-			Target: containerHomePath,
+			Target: fmt.Sprintf("%s/%s", containerHomePath, user.Username),
 		},
 		{
 			Type:     mount.TypeBind,
@@ -197,14 +198,14 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		for _, group := range userGroups {
 			hostGroupDir := fmt.Sprintf("%s/%s", hostGroupsPath, group.Name)
 			containerGroupDir := fmt.Sprintf("%s/%s", containerGroupsPath, group.Name)
-			
+
 			// 确保组目录存在，设置正确权限
 			if err := os.MkdirAll(hostGroupDir, 0775); err == nil {
 				// 设置目录权限为775，确保组成员有写权限
 				os.Chmod(hostGroupDir, 0775)
 				log.Printf("创建组目录: %s (权限: 775)", hostGroupDir)
 			}
-			
+
 			mounts = append(mounts, mount.Mount{
 				Type:   mount.TypeBind,
 				Source: hostGroupDir,
@@ -232,12 +233,12 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 				deviceIDs = append(deviceIDs, strings.TrimSpace(id))
 			}
 		}
-		
+
 		deviceRequest := container.DeviceRequest{
-				Driver:       "nvidia",
-				Capabilities: [][]string{{"gpu"}},
+			Driver:       "nvidia",
+			Capabilities: [][]string{{"gpu"}},
 		}
-		
+
 		if len(deviceIDs) > 0 {
 			// 指定特定GPU设备
 			deviceRequest.DeviceIDs = deviceIDs
@@ -245,7 +246,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 			// 使用所有GPU
 			deviceRequest.Count = -1
 		}
-		
+
 		hostConfig.DeviceRequests = []container.DeviceRequest{deviceRequest}
 	}
 
@@ -281,7 +282,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		INSERT INTO containers (id, user_id, name, status, image_name, cpu_limit, memory_limit, gpu_devices, created_at, updated_at, last_seen)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	
+
 	_, err = s.db.Exec(query, cont.ID, cont.UserID, cont.Name, cont.Status,
 		cont.ImageName, cont.CPULimit, cont.MemoryLimit, cont.GPUDevices,
 		cont.CreatedAt, cont.UpdatedAt, cont.LastSeen)
@@ -290,7 +291,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	}
 
 	// 更新用户的容器ID
-	_, err = s.db.Exec("UPDATE users SET container_id = ? WHERE id = ?", 
+	_, err = s.db.Exec("UPDATE users SET container_id = ? WHERE id = ?",
 		cont.ID, user.ID)
 	if err != nil {
 		return nil, err
@@ -321,7 +322,7 @@ func (s *ContainerService) StartContainer(containerID string) error {
 
 func (s *ContainerService) StopContainer(containerID string) error {
 	timeout := 30
-	err := s.dockerClient.ContainerStop(context.Background(), containerID, 
+	err := s.dockerClient.ContainerStop(context.Background(), containerID,
 		container.StopOptions{Timeout: &timeout})
 	if err != nil {
 		return err
@@ -334,12 +335,12 @@ func (s *ContainerService) StopContainer(containerID string) error {
 }
 
 func (s *ContainerService) RemoveContainer(containerID string) error {
-	err := s.dockerClient.ContainerRemove(context.Background(), containerID, 
+	err := s.dockerClient.ContainerRemove(context.Background(), containerID,
 		types.ContainerRemoveOptions{Force: true})
 	if err != nil {
 		msg := strings.ToLower(err.Error())
 		if !(strings.Contains(msg, "no such container") || strings.Contains(msg, "not found") || strings.Contains(msg, "does not exist")) {
-		return err
+			return err
 		}
 	}
 	// 无论如何都要删数据库
@@ -357,18 +358,18 @@ func (s *ContainerService) GetContainerByID(containerID string) (*models.Contain
 		       COALESCE(gpu_devices, ''), created_at, updated_at, last_seen
 		FROM containers WHERE id = ?
 	`
-	
+
 	err := s.db.QueryRow(query, containerID).Scan(
 		&container.ID, &container.UserID, &container.Name, &container.Status,
 		&container.ImageName, &container.CPULimit, &container.MemoryLimit,
 		&container.GPUDevices, &container.CreatedAt, &container.UpdatedAt,
 		&container.LastSeen,
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return container, nil
 }
 
@@ -393,13 +394,13 @@ func (s *ContainerService) ListContainers() ([]interface{}, error) {
 		       COALESCE(gpu_devices, ''), created_at, updated_at, last_seen
 		FROM containers ORDER BY created_at DESC
 	`
-	
+
 	rows, err := s.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var containers []interface{}
 	for rows.Next() {
 		container := &models.Container{}
@@ -425,17 +426,17 @@ func (s *ContainerService) ListContainers() ([]interface{}, error) {
 		}
 		// 用map扩展返回
 		containerMap := map[string]interface{}{
-			"id": container.ID,
-			"user_id": container.UserID,
-			"name": container.Name,
-			"status": container.Status,
-			"image_name": container.ImageName,
-			"cpu_limit": container.CPULimit,
-			"memory_limit": container.MemoryLimit,
-			"gpu_devices": container.GPUDevices,
-			"created_at": container.CreatedAt,
-			"updated_at": container.UpdatedAt,
-			"last_seen": container.LastSeen,
+			"id":            container.ID,
+			"user_id":       container.UserID,
+			"name":          container.Name,
+			"status":        container.Status,
+			"image_name":    container.ImageName,
+			"cpu_limit":     container.CPULimit,
+			"memory_limit":  container.MemoryLimit,
+			"gpu_devices":   container.GPUDevices,
+			"created_at":    container.CreatedAt,
+			"updated_at":    container.UpdatedAt,
+			"last_seen":     container.LastSeen,
 			"actual_status": actualStatus,
 		}
 		containers = append(containers, containerMap)
@@ -448,24 +449,24 @@ func (s *ContainerService) ListContainers() ([]interface{}, error) {
 
 func (s *ContainerService) getExposedPorts(user *models.User) nat.PortSet {
 	exposed := make(nat.PortSet)
-	
+
 	// 容器内需要暴露的端口
 	containerPorts := []string{
 		"22/tcp",   // SSH
 		"8080/tcp", // VSCode Server
 		"8888/tcp", // Jupyter Lab
 	}
-	
+
 	// 添加备用应用端口 8003-8009
 	for i := 3; i <= 9; i++ {
 		containerPorts = append(containerPorts, fmt.Sprintf("80%02d/tcp", i))
 	}
-	
+
 	for _, port := range containerPorts {
 		portKey := nat.Port(port)
 		exposed[portKey] = struct{}{}
 	}
-	
+
 	return exposed
 }
 
@@ -571,7 +572,7 @@ password: %s
 cert: false`, newPassword)
 
 	execConfig3 := types.ExecConfig{
-		Cmd: []string{"sh", "-c", fmt.Sprintf("mkdir -p /home/%s/.config/code-server && echo '%s' > /home/%s/.config/code-server/config.yaml", username, codeServerConfig, username)},
+		Cmd:          []string{"sh", "-c", fmt.Sprintf("mkdir -p /home/%s/.config/code-server && echo '%s' > /home/%s/.config/code-server/config.yaml", username, codeServerConfig, username)},
 		AttachStdout: true,
 		AttachStderr: true,
 	}
@@ -618,25 +619,25 @@ su - ` + username + ` -c "nohup code-server > /tmp/code-server.log 2>&1 &"
 func (s *ContainerService) getPortBindings(user *models.User) nat.PortMap {
 	ports := user.GetPorts()
 	bindings := make(nat.PortMap)
-	
+
 	// SSH (端口22 -> base_port+0)
 	sshPort := nat.Port("22/tcp")
 	bindings[sshPort] = []nat.PortBinding{
 		{HostPort: strconv.Itoa(ports["ssh"])},
 	}
-	
+
 	// VSCode Server (端口8080 -> base_port+1)
 	vscodePort := nat.Port("8080/tcp")
 	bindings[vscodePort] = []nat.PortBinding{
 		{HostPort: strconv.Itoa(ports["vscode"])},
 	}
-	
+
 	// Jupyter Lab (端口8888 -> base_port+2)
 	jupyterPort := nat.Port("8888/tcp")
 	bindings[jupyterPort] = []nat.PortBinding{
 		{HostPort: strconv.Itoa(ports["jupyter"])},
 	}
-	
+
 	// 备用应用端口映射 (容器内端口8003-8009 -> base_port+3到base_port+9)
 	for i := 3; i <= 9; i++ {
 		containerPort := nat.Port(fmt.Sprintf("80%02d/tcp", i))
@@ -645,6 +646,6 @@ func (s *ContainerService) getPortBindings(user *models.User) nat.PortMap {
 			{HostPort: strconv.Itoa(ports[appKey])},
 		}
 	}
-	
+
 	return bindings
 }
