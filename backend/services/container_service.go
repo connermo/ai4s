@@ -130,10 +130,20 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	hostSharedPath := fmt.Sprintf("%s/shared-ro", hostDataRoot)
 	hostWorkspacePath := fmt.Sprintf("%s/shared-rw", hostDataRoot)
 
-	// 创建必要的宿主机目录
-	os.MkdirAll(hostUserDir, 0755)
-	os.MkdirAll(hostSharedPath, 0755)
-	os.MkdirAll(hostWorkspacePath, 0755)
+	// 通过容器内挂载点创建目录（因为/app/data挂载到宿主机的hostDataRoot）
+	containerDataRoot := os.Getenv("DATA_ROOT") // 容器内的数据根目录 /app/data
+	if containerDataRoot == "" {
+		containerDataRoot = "/app/data"
+	}
+	
+	containerUserDir := fmt.Sprintf("%s/users/%s", containerDataRoot, user.Username)
+	containerSharedRoDir := fmt.Sprintf("%s/shared-ro", containerDataRoot)
+	containerSharedRwDir := fmt.Sprintf("%s/shared-rw", containerDataRoot)
+	
+	// 在容器内创建目录（会通过挂载反映到宿主机）
+	os.MkdirAll(containerUserDir, 0755)
+	os.MkdirAll(containerSharedRoDir, 0755)
+	os.MkdirAll(containerSharedRwDir, 0755)
 
 	// 基础挂载点
 	mounts := []mount.Mount{
