@@ -111,57 +111,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // 专门处理鼠标拖拽选择文本导致模态框关闭的问题
-        let isTextSelecting = false;
-        let selectStartTarget = null;
-        
-        // 监听模态框内的鼠标按下事件
-        createContainerModal.addEventListener('mousedown', function(e) {
-            // 如果点击的是输入框或其他表单元素，标记开始文本选择
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
-                isTextSelecting = true;
-                selectStartTarget = e.target;
-                console.log('开始文本选择');
-            }
-            // 如果点击的是模态框背景，阻止事件
-            else if (e.target === createContainerModal) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }
-        });
-        
-        // 监听全局鼠标释放事件
-        document.addEventListener('mouseup', function(e) {
-            if (isTextSelecting) {
-                console.log('结束文本选择');
-                isTextSelecting = false;
-                selectStartTarget = null;
-            }
-        });
-        
-        // 阻止模态框的hide事件（当文本选择进行中时）
-        createContainerModal.addEventListener('hide.bs.modal', function(e) {
-            // 如果正在进行文本选择，阻止关闭
-            if (isTextSelecting) {
-                console.log('阻止模态框关闭 - 正在进行文本选择');
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-                return false;
-            }
+        // 密码输入框点击自动全选功能
+        const passwordInput = createContainerModal.querySelector('#service-password');
+        if (passwordInput) {
+            passwordInput.addEventListener('click', function() {
+                // 延迟执行全选，确保点击事件完成后再执行
+                setTimeout(() => {
+                    this.select();
+                }, 10);
+            });
             
-            // 检查是否是取消按钮触发的关闭
-            const cancelButton = createContainerModal.querySelector('[data-bs-dismiss="modal"]');
-            if (cancelButton && !cancelButton.contains(document.activeElement) && !e.target.hasAttribute('data-bs-dismiss')) {
-                // 如果不是取消按钮触发的，也阻止关闭
-                console.log('阻止模态框关闭 - 非取消按钮触发');
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-                return false;
-            }
-        });
+            passwordInput.addEventListener('focus', function() {
+                // 焦点事件也自动全选
+                setTimeout(() => {
+                    this.select();
+                }, 10);
+            });
+        }
     }
     
     // 添加创建容器按钮点击事件作为最后的保障
