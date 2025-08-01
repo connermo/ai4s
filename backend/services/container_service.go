@@ -54,9 +54,19 @@ func (s *ContainerService) CreateContainer(user *models.User, gpuDevices string)
 func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDevices, password string) (*models.Container, error) {
 	containerName := fmt.Sprintf("dev-%s", user.Username)
 	
-	// 检查数据库中是否已有容器记录
+	// 检查数据库中是否已有容器记录，如果存在则验证容器状态
 	if user.ContainerID != "" {
-		return nil, fmt.Errorf("用户 %s 已有容器，容器ID: %s", user.Username, user.ContainerID)
+		// 检查Docker中是否真的存在这个容器
+		_, err := s.dockerClient.ContainerInspect(context.Background(), user.ContainerID)
+		if err != nil {
+			// 容器不存在，清理数据库记录并继续创建
+			log.Printf("用户 %s 的容器 %s 在Docker中不存在，清理数据库记录并重新创建", user.Username, user.ContainerID)
+			_, _ = s.db.Exec("DELETE FROM containers WHERE id = ?", user.ContainerID)
+			_, _ = s.db.Exec("UPDATE users SET container_id = '' WHERE id = ?", user.ID)
+		} else {
+			// 容器确实存在，返回错误
+			return nil, fmt.Errorf("用户 %s 已有容器，容器ID: %s", user.Username, user.ContainerID)
+		}
 	}
 	
 	// 检查Docker中是否存在孤立容器（数据库中没记录但Docker中存在）
