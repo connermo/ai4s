@@ -110,6 +110,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadUserOptions(0);
             }
         });
+
+        // 防止意外关闭：阻止模态框内部点击事件冒泡到模态框背景
+        const modalDialog = createContainerModal.querySelector('.modal-dialog');
+        if (modalDialog) {
+            modalDialog.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+
+        // 防止表单元素点击导致模态框关闭
+        const formElements = createContainerModal.querySelectorAll('input, select, button, textarea');
+        formElements.forEach(element => {
+            element.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            element.addEventListener('focus', function(e) {
+                e.stopPropagation();
+            });
+        });
     }
     
     // 添加创建容器按钮点击事件作为最后的保障

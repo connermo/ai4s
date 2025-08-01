@@ -267,27 +267,27 @@
                     <form id="createContainerForm">
                         <div class="mb-3">
                             <label for="container-user-id" class="form-label">用户</label>
-                            <select class="form-control" id="container-user-id" required>
+                            <select class="form-control" id="container-user-id" required onclick="event.stopPropagation()">
                                 <!-- 用户选项将通过JS填充 -->
                             </select>
                         </div>
                         <div class="mb-3">
                             <label for="gpu-devices" class="form-label">GPU设备</label>
-                            <input type="text" class="form-control" id="gpu-devices" placeholder="0,1,2">
+                            <input type="text" class="form-control" id="gpu-devices" placeholder="0,1,2" onclick="event.stopPropagation()">
                             <div class="form-text">可选，指定GPU设备ID，用逗号分隔</div>
                         </div>
                         <div class="mb-3">
                             <label for="service-password" class="form-label">服务登录密码 <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <input type="text" class="form-control" id="service-password" placeholder="可手动输入或点击生成密码" required minlength="8">
-                                <button class="btn btn-outline-secondary" type="button" id="generate-password" onclick="generateSecurePassword()" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="custom-tooltip" title="生成强密码，底色深蓝，字体白色">
+                                <input type="text" class="form-control" id="service-password" placeholder="可手动输入或点击生成密码" required minlength="8" onclick="event.stopPropagation()">
+                                <button class="btn btn-outline-secondary" type="button" id="generate-password" onclick="generateSecurePassword(); event.stopPropagation();" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="custom-tooltip" title="生成强密码，底色深蓝，字体白色">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <polyline points="23 4 23 10 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                         <polyline points="1 20 1 14 7 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                         <path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                     </svg>
                                 </button>
-                                <button class="btn btn-outline-secondary" type="button" id="copy-password" onclick="copyPassword()" title="复制密码">
+                                <button class="btn btn-outline-secondary" type="button" id="copy-password" onclick="copyPassword(); event.stopPropagation();" title="复制密码">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
                                         <path d="m5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/>
