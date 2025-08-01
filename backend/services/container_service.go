@@ -611,8 +611,10 @@ export DEV_PASSWORD='` + newPassword + `'
 # 等待Jupyter完全停止
 sleep 2
 echo "启动Jupyter Lab..."
-# 使用更简单的启动命令，参考容器启动脚本
-su - ` + username + ` -c "export DEV_PASSWORD='` + newPassword + `' && nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password='\$(python3 -c \"from jupyter_server.auth import passwd; print(passwd('\''` + newPassword + `'\''))\")' > /tmp/jupyter.log 2>&1 &"
+# 先生成密码哈希，然后启动服务
+JUPYTER_HASH=\$(python3 -c "from jupyter_server.auth import passwd; print(passwd('` + newPassword + `'))")
+echo "生成的密码哈希: \$JUPYTER_HASH"
+su - ` + username + ` -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password='\$JUPYTER_HASH' > /tmp/jupyter.log 2>&1 &"
 sleep 3
 echo "检查Jupyter启动状态..."
 ps aux | grep jupyter | grep -v grep || echo "警告: Jupyter启动失败"
