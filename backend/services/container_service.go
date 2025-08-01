@@ -521,12 +521,12 @@ import os
 from jupyter_server.auth import passwd
 
 password_hash = passwd('%s')
-config_content = '''c.ServerApp.ip = '0.0.0.0'
+config_content = f'''c.ServerApp.ip = '0.0.0.0'
 c.ServerApp.port = 8888
 c.ServerApp.allow_root = True
 c.ServerApp.open_browser = False
 c.ServerApp.token = ''
-c.ServerApp.password = '%s'
+c.ServerApp.password = '{password_hash}'
 c.ServerApp.allow_origin = '*'
 c.ServerApp.allow_remote_access = True
 c.ServerApp.root_dir = '/home/%s'
@@ -535,7 +535,7 @@ c.ServerApp.disable_check_xsrf = True'''
 os.makedirs('/home/%s/.jupyter', exist_ok=True)
 with open('/home/%s/.jupyter/jupyter_lab_config.py', 'w') as f:
     f.write(config_content)
-`, newPassword, "' + password_hash + '", username, username, username)
+`, newPassword, username, username, username)
 
 	execConfig2 := types.ExecConfig{
 		Cmd:          []string{"python3", "-c", jupyterConfigScript},
