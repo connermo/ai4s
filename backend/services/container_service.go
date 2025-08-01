@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -580,12 +581,18 @@ cert: false`, newPassword)
 echo "开始重启服务..."
 echo "杀死现有进程..."
 pkill -f "jupyter lab" || echo "没有找到jupyter进程"
-pkill -f "code-server" || echo "没有找到code-server进程"
+sleep 1
+echo "查找code-server进程..."
+ps aux | grep code-server | grep -v grep || echo "没有找到code-server进程"
+echo "杀死code-server进程..."
+pkill -f "/usr/lib/code-server/lib/node" || echo "没有找到code-server进程"
 sleep 2
 echo "重启Jupyter服务..."
 su - ` + username + ` -c "nohup jupyter lab --config=/home/` + username + `/.jupyter/jupyter_lab_config.py > /tmp/jupyter.log 2>&1 &"
+sleep 1
 echo "重启VSCode服务..."
 su - ` + username + ` -c "nohup code-server > /tmp/code-server.log 2>&1 &"
+sleep 1
 echo "服务重启完成"
 `
 
@@ -600,9 +607,19 @@ echo "服务重启完成"
 		return fmt.Errorf("创建服务重启命令失败: %v", err)
 	}
 
-	err = s.dockerClient.ContainerExecStart(context.Background(), execResp4.ID, types.ExecStartCheck{})
+	// 捕获重启脚本的输出
+	execAttachResp4, err := s.dockerClient.ContainerExecAttach(context.Background(), execResp4.ID, types.ExecStartCheck{})
 	if err != nil {
 		return fmt.Errorf("执行服务重启失败: %v", err)
+	}
+	defer execAttachResp4.Close()
+
+	// 读取输出
+	output, err := io.ReadAll(execAttachResp4.Reader)
+	if err != nil {
+		log.Printf("读取重启脚本输出失败: %v", err)
+	} else {
+		log.Printf("重启脚本输出: %s", string(output))
 	}
 
 	// 等待服务启动完成
