@@ -577,12 +577,16 @@ cert: false`, newPassword)
 
 	// 4. 重启服务（杀死现有进程让它们重启）
 	killServicesScript := `
-pkill -f "jupyter lab" || true
-pkill -f "code-server" || true
-sleep 1
-# 重启服务（使用配置文件方式）
+echo "开始重启服务..."
+echo "杀死现有进程..."
+pkill -f "jupyter lab" || echo "没有找到jupyter进程"
+pkill -f "code-server" || echo "没有找到code-server进程"
+sleep 2
+echo "重启Jupyter服务..."
 su - ` + username + ` -c "nohup jupyter lab --config=/home/` + username + `/.jupyter/jupyter_lab_config.py > /tmp/jupyter.log 2>&1 &"
+echo "重启VSCode服务..."
 su - ` + username + ` -c "nohup code-server > /tmp/code-server.log 2>&1 &"
+echo "服务重启完成"
 `
 
 	execConfig4 := types.ExecConfig{
