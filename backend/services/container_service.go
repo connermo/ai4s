@@ -580,19 +580,60 @@ cert: false`, newPassword)
 	killServicesScript := `
 echo "开始重启服务..."
 echo "杀死现有进程..."
-pkill -f "jupyter lab" || echo "没有找到jupyter进程"
-sleep 1
-echo "查找code-server进程..."
-ps aux | grep code-server | grep -v grep || echo "没有找到code-server进程"
-echo "杀死code-server进程..."
-pkill -f "/usr/lib/code-server/lib/node" || echo "没有找到code-server进程"
+
+# 杀死Jupyter进程
+echo "查找并杀死Jupyter进程..."
+ps aux | grep "jupyter lab" | grep -v grep | awk '{print $2}' | xargs -r kill -9 || echo "没有找到jupyter进程"
+pkill -f "jupyter-lab" || echo "没有找到jupyter-lab进程"
 sleep 2
+
+# 杀死code-server进程 - 使用更准确的匹配
+echo "查找并杀死code-server进程..."
+ps aux | grep code-server | grep -v grep | awk '{print $2}' | xargs -r kill -9 || echo "没有找到code-server进程"
+pkill -f "code-server" || echo "没有找到code-server进程"
+# 额外杀死可能的node进程
+pkill -f "/usr/lib/code-server" || echo "没有找到code-server相关进程"
+sleep 3
+
+# 验证进程已被杀死
+echo "验证进程状态..."
+if pgrep -f "jupyter" > /dev/null; then
+    echo "警告: 仍有jupyter进程在运行"
+    ps aux | grep jupyter | grep -v grep
+fi
+if pgrep -f "code-server" > /dev/null; then
+    echo "警告: 仍有code-server进程在运行"
+    ps aux | grep code-server | grep -v grep
+fi
+
 echo "重启Jupyter服务..."
-su - ` + username + ` -c "nohup jupyter lab --config=/home/` + username + `/.jupyter/jupyter_lab_config.py > /tmp/jupyter.log 2>&1 &"
-sleep 1
+export DEV_PASSWORD='` + newPassword + `'
+su - ` + username + ` -c "export DEV_PASSWORD='` + newPassword + `' && nohup jupyter lab --config=/home/` + username + `/.jupyter/jupyter_lab_config.py > /tmp/jupyter.log 2>&1 &"
+sleep 2
+
 echo "重启VSCode服务..."
-su - ` + username + ` -c "nohup code-server > /tmp/code-server.log 2>&1 &"
-sleep 1
+su - ` + username + ` -c "export PASSWORD='` + newPassword + `' && nohup code-server > /tmp/code-server.log 2>&1 &"
+sleep 3
+
+# 验证服务启动
+echo "验证服务启动状态..."
+if pgrep -f "jupyter" > /dev/null; then
+    echo "✓ Jupyter服务已启动"
+else
+    echo "✗ Jupyter服务启动失败"
+fi
+if pgrep -f "code-server" > /dev/null; then
+    echo "✓ VSCode服务已启动"
+else
+    echo "✗ VSCode服务启动失败"
+fi
+
+echo "显示服务日志..."
+echo "=== Jupyter日志 ==="
+tail -5 /tmp/jupyter.log 2>/dev/null || echo "无Jupyter日志"
+echo "=== VSCode日志 ==="
+tail -5 /tmp/code-server.log 2>/dev/null || echo "无VSCode日志"
+
 echo "服务重启完成"
 `
 
@@ -622,9 +663,38 @@ echo "服务重启完成"
 		log.Printf("重启脚本输出: %s", string(output))
 	}
 
-	// 等待服务启动完成
+	// 等待服务启动完成并验证
 	log.Printf("等待服务启动完成...")
-	time.Sleep(3 * time.Second)
+	time.Sleep(5 * time.Second)
+	
+	// 验证服务是否真正启动
+	verifyScript := `
+echo "=== 最终验证服务状态 ===
+ps aux | grep -E "(jupyter|code-server)" | grep -v grep
+echo "=== 端口监听状态 ==="
+netstat -tlnp | grep -E "(8080|8888)" || echo "未发现服务端口监听"
+echo "=== 最新日志 ==="
+echo "Jupyter最新日志:"
+tail -3 /tmp/jupyter.log 2>/dev/null || echo "无Jupyter日志文件"
+echo "VSCode最新日志:"
+tail -3 /tmp/code-server.log 2>/dev/null || echo "无VSCode日志文件"
+`
+	
+	verifyConfig := types.ExecConfig{
+		Cmd:          []string{"sh", "-c", verifyScript},
+		AttachStdout: true,
+		AttachStderr: true,
+	}
+	
+	verifyResp, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, verifyConfig)
+	if err == nil {
+		verifyAttachResp, err := s.dockerClient.ContainerExecAttach(context.Background(), verifyResp.ID, types.ExecStartCheck{})
+		if err == nil {
+			defer verifyAttachResp.Close()
+			verifyOutput, _ := io.ReadAll(verifyAttachResp.Reader)
+			log.Printf("最终验证结果: %s", string(verifyOutput))
+		}
+	}
 
 	return nil
 }
