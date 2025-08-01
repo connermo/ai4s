@@ -553,14 +553,14 @@ with open('/home/%s/.jupyter/jupyter_lab_config.py', 'w') as f:
 		return fmt.Errorf("执行Jupyter配置更新失败: %v", err)
 	}
 
-	// 3. 更新code-server配置
+	// 3. 更新code-server配置和环境变量
 	codeServerConfig := fmt.Sprintf(`bind-addr: 0.0.0.0:8080
 auth: password
 password: %s
 cert: false`, newPassword)
 
 	execConfig3 := types.ExecConfig{
-		Cmd:          []string{"sh", "-c", fmt.Sprintf("mkdir -p /home/%s/.config/code-server && echo '%s' > /home/%s/.config/code-server/config.yaml", username, codeServerConfig, username)},
+		Cmd:          []string{"sh", "-c", fmt.Sprintf("mkdir -p /home/%s/.config/code-server && echo '%s' > /home/%s/.config/code-server/config.yaml && export PASSWORD='%s'", username, codeServerConfig, username, newPassword)},
 		AttachStdout: true,
 		AttachStderr: true,
 	}
@@ -575,14 +575,14 @@ cert: false`, newPassword)
 		return fmt.Errorf("执行VSCode配置更新失败: %v", err)
 	}
 
-	// 4. 重启服务（可选，杀死现有进程让它们重启）
+	// 4. 重启服务（杀死现有进程让它们重启）
 	killServicesScript := `
 pkill -f "jupyter lab" || true
 pkill -f "code-server" || true
 sleep 2
 # 重启服务
 su - ` + username + ` -c "nohup jupyter lab --config=/home/` + username + `/.jupyter/jupyter_lab_config.py > /tmp/jupyter.log 2>&1 &"
-su - ` + username + ` -c "nohup code-server > /tmp/code-server.log 2>&1 &"
+su - ` + username + ` -c "PASSWORD='` + newPassword + `' nohup code-server --bind-addr 0.0.0.0:8080 --auth password > /tmp/code-server.log 2>&1 &"
 `
 
 	execConfig4 := types.ExecConfig{
