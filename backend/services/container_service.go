@@ -114,10 +114,10 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		ExposedPorts: s.getExposedPorts(user),
 	}
 
-	// 从环境变量获取数据根目录配置
-	dataRoot := os.Getenv("DATA_ROOT")
-	if dataRoot == "" {
-		return nil, fmt.Errorf("DATA_ROOT environment variable not set")
+	// 从环境变量获取宿主机数据根目录配置
+	hostDataRoot := os.Getenv("HOST_DATA_ROOT")
+	if hostDataRoot == "" {
+		return nil, fmt.Errorf("HOST_DATA_ROOT environment variable not set")
 	}
 
 	// 使用统一的默认配置
@@ -125,10 +125,10 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	containerSharedPath := "/shared-ro"
 	containerWorkspacePath := "/shared-rw"
 
-	// 宿主机路径（基于DATA_ROOT）
-	hostUserDir := fmt.Sprintf("%s/users/%s", dataRoot, user.Username)
-	hostSharedPath := fmt.Sprintf("%s/shared-ro", dataRoot)
-	hostWorkspacePath := fmt.Sprintf("%s/shared-rw", dataRoot)
+	// 宿主机路径（基于HOST_DATA_ROOT）
+	hostUserDir := fmt.Sprintf("%s/users/%s", hostDataRoot, user.Username)
+	hostSharedPath := fmt.Sprintf("%s/shared-ro", hostDataRoot)
+	hostWorkspacePath := fmt.Sprintf("%s/shared-rw", hostDataRoot)
 
 	// 创建必要的宿主机目录
 	os.MkdirAll(hostUserDir, 0755)
@@ -160,7 +160,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		containerGroupsPath := "/groups"
 
 		// 宿主机组目录路径
-		hostGroupsPath := fmt.Sprintf("%s/groups", dataRoot)
+		hostGroupsPath := fmt.Sprintf("%s/groups", hostDataRoot)
 
 		// 为每个组创建挂载点
 		for _, group := range userGroups {

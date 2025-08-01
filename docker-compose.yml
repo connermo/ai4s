@@ -42,6 +42,7 @@ services:
       - DEFAULT_PORT_PREFIX=${DEFAULT_PORT_PREFIX:-10000}
       - PORT_STEP=${PORT_STEP:-10}
       - DATA_ROOT=/app/data
+      - HOST_DATA_ROOT=${DATA_ROOT:-/root/work/ai4s/data}
     depends_on:
       mysql:
         condition: service_healthy
