@@ -111,68 +111,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // 防止意外关闭：阻止模态框内部点击事件冒泡到模态框背景
-        const modalDialog = createContainerModal.querySelector('.modal-dialog');
-        if (modalDialog) {
-            modalDialog.addEventListener('click', function(e) {
-                e.stopPropagation();
-            });
-        }
-
-        // 防止表单元素点击导致模态框关闭
-        const formElements = createContainerModal.querySelectorAll('input, select, button, textarea');
-        formElements.forEach(element => {
-            element.addEventListener('click', function(e) {
-                e.stopPropagation();
-            });
-            element.addEventListener('focus', function(e) {
-                e.stopPropagation();
-            });
-            
-            // 防止文本选择拖拽导致模态框关闭
-            element.addEventListener('mousedown', function(e) {
-                e.stopPropagation();
-                // 标记开始文本选择
-                element.setAttribute('data-selecting', 'true');
-            });
-            
-            element.addEventListener('mousemove', function(e) {
-                if (element.getAttribute('data-selecting') === 'true') {
-                    e.stopPropagation();
-                }
-            });
-            
-            element.addEventListener('mouseup', function(e) {
-                e.stopPropagation();
-                // 清除文本选择标记
-                element.removeAttribute('data-selecting');
-            });
-            
-            // 处理拖拽离开元素的情况
-            element.addEventListener('mouseleave', function(e) {
-                if (element.getAttribute('data-selecting') === 'true') {
-                    e.stopPropagation();
-                }
-            });
-        });
-        
-        // 额外处理模态框背景的鼠标事件，防止在文本选择过程中关闭模态框
-        createContainerModal.addEventListener('mousedown', function(e) {
-            if (e.target === createContainerModal) {
-                // 检查是否有元素正在进行文本选择
-                const selectingElements = createContainerModal.querySelectorAll('[data-selecting="true"]');
-                if (selectingElements.length > 0) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-            }
-        });
-        
-        createContainerModal.addEventListener('mouseup', function(e) {
-            // 清理所有选择标记
-            const selectingElements = createContainerModal.querySelectorAll('[data-selecting="true"]');
-            selectingElements.forEach(el => el.removeAttribute('data-selecting'));
-        });
+        // 完全禁用模态框的自动关闭行为，只允许通过取消按钮关闭
+        // 由于HTML中已设置 data-bs-backdrop="false" 和 data-bs-keyboard="false"
+        // 并移除了右上角关闭按钮，模态框现在只能通过取消按钮关闭
     }
     
     // 添加创建容器按钮点击事件作为最后的保障
