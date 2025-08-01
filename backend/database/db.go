@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"strconv"
 	"strings"
 	
 	_ "github.com/go-sql-driver/mysql"
@@ -213,8 +215,17 @@ func ensureTablesExist() error {
 
 	// 确保默认管理员用户存在
 	fmt.Printf("DEBUG: Creating default admin user\n")
+	
+	// 从环境变量获取端口前缀
+	defaultPortPrefix := 9000
+	if prefix := os.Getenv("DEFAULT_PORT_PREFIX"); prefix != "" {
+		if p, err := strconv.Atoi(prefix); err == nil {
+			defaultPortPrefix = p
+		}
+	}
+	
 	_, err = DB.Exec(`INSERT IGNORE INTO users (username, password, email, is_admin, base_port) 
-		VALUES ('admin', '$2a$10$7kCbgG3FCL5wfatLw7RnL.qefBo7t1OwiGxfWma3vGHZSkYy67k12', 'admin@example.com', TRUE, 9001)`)
+		VALUES ('admin', '$2a$10$7kCbgG3FCL5wfatLw7RnL.qefBo7t1OwiGxfWma3vGHZSkYy67k12', 'admin@example.com', TRUE, ?)`, defaultPortPrefix)
 	if err != nil {
 		return fmt.Errorf("failed to create default admin user: %v", err)
 	}
