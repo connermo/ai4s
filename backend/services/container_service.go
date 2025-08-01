@@ -609,9 +609,13 @@ fi
 echo "重启Jupyter服务..."
 export DEV_PASSWORD='` + newPassword + `'
 # 等待Jupyter完全停止
-sleep 1
-su - ` + username + ` -c "export DEV_PASSWORD='` + newPassword + `' && nohup jupyter lab --config=/home/` + username + `/.jupyter/jupyter_lab_config.py > /tmp/jupyter.log 2>&1 &"
+sleep 2
+echo "启动Jupyter Lab..."
+# 使用更简单的启动命令，参考容器启动脚本
+su - ` + username + ` -c "export DEV_PASSWORD='` + newPassword + `' && nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password='\$(python3 -c \"from jupyter_server.auth import passwd; print(passwd('\''` + newPassword + `'\''))\")' > /tmp/jupyter.log 2>&1 &"
 sleep 3
+echo "检查Jupyter启动状态..."
+ps aux | grep jupyter | grep -v grep || echo "警告: Jupyter启动失败"
 
 echo "重启VSCode服务..."
 su - ` + username + ` -c "export PASSWORD='` + newPassword + `' && nohup code-server > /tmp/code-server.log 2>&1 &"
