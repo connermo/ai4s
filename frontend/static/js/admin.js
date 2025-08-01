@@ -274,7 +274,7 @@ function createUserRow(user) {
     row.innerHTML = `
         <td>${user.id}</td>
         <td>${user.username}</td>
-        <td>${user.email || '-'}</td>
+        <td>${user.email || ''}</td>
         <td><span class="status-badge ${statusClass}">${statusText}</span></td>
         <td>${adminText}</td>
         <td>${ports}</td>
