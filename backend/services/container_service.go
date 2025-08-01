@@ -54,7 +54,7 @@ func (s *ContainerService) CreateContainer(user *models.User, gpuDevices string)
 
 func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDevices, password string) (*models.Container, error) {
 	containerName := fmt.Sprintf("dev-%s", user.Username)
-	
+
 	// 检查数据库中是否已有容器记录，如果存在则验证容器状态
 	if user.ContainerID != "" {
 		// 检查Docker中是否真的存在这个容器
@@ -69,7 +69,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 			return nil, fmt.Errorf("用户 %s 已有容器，容器ID: %s", user.Username, user.ContainerID)
 		}
 	}
-	
+
 	// 检查Docker中是否存在孤立容器（数据库中没记录但Docker中存在）
 	_, err := s.dockerClient.ContainerInspect(context.Background(), containerName)
 	if err == nil {
@@ -146,11 +146,11 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	if containerDataRoot == "" {
 		containerDataRoot = "/app/data"
 	}
-	
+
 	containerUserDir := fmt.Sprintf("%s/users/%s", containerDataRoot, user.Username)
 	containerSharedRoDir := fmt.Sprintf("%s/shared-ro", containerDataRoot)
 	containerSharedRwDir := fmt.Sprintf("%s/shared-rw", containerDataRoot)
-	
+
 	// 在容器内创建目录（会通过挂载反映到宿主机）
 	os.MkdirAll(containerUserDir, 0755)
 	os.MkdirAll(containerSharedRoDir, 0755)
@@ -489,10 +489,10 @@ func (s *ContainerService) ResetContainerPassword(containerID, newPassword strin
 	}
 
 	// 执行密码重置命令
-	// 1. 重置系统用户密码和更新环境变量
+	// 1. 重置系统用户密码
 	passwordInput := fmt.Sprintf("%s:%s", username, newPassword)
 	execConfig := types.ExecConfig{
-		Cmd:          []string{"sh", "-c", fmt.Sprintf("echo '%s' | chpasswd && export DEV_PASSWORD='%s'", passwordInput, newPassword)},
+		Cmd:          []string{"sh", "-c", fmt.Sprintf("echo '%s' | chpasswd", passwordInput)},
 		AttachStdin:  true,
 		AttachStdout: true,
 		AttachStderr: true,
@@ -516,7 +516,44 @@ func (s *ContainerService) ResetContainerPassword(containerID, newPassword strin
 	}
 	execAttachResp.Close()
 
-	// 2. 更新Jupyter配置
+	// 2. 持久化环境变量（确保容器重启后仍使用新密码）
+	envPersistScript := fmt.Sprintf(`
+# 更新/etc/environment文件，确保环境变量持久化
+echo "DEV_PASSWORD=%s" >> /etc/environment
+echo "PASSWORD=%s" >> /etc/environment
+
+# 更新用户的环境变量文件
+echo "export DEV_PASSWORD='%s'" >> /home/%s/.bashrc
+echo "export PASSWORD='%s'" >> /home/%s/.bashrc
+
+# 更新profile文件
+echo "export DEV_PASSWORD='%s'" >> /etc/profile
+echo "export PASSWORD='%s'" >> /etc/profile
+
+# 立即设置当前会话的环境变量
+export DEV_PASSWORD='%s'
+export PASSWORD='%s'
+
+echo "环境变量已持久化"
+`, newPassword, newPassword, newPassword, username, newPassword, username, newPassword, newPassword, newPassword, newPassword)
+
+	execConfigEnv := types.ExecConfig{
+		Cmd:          []string{"sh", "-c", envPersistScript},
+		AttachStdout: true,
+		AttachStderr: true,
+	}
+
+	execRespEnv, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, execConfigEnv)
+	if err != nil {
+		return fmt.Errorf("创建环境变量持久化命令失败: %v", err)
+	}
+
+	err = s.dockerClient.ContainerExecStart(context.Background(), execRespEnv.ID, types.ExecStartCheck{})
+	if err != nil {
+		return fmt.Errorf("执行环境变量持久化失败: %v", err)
+	}
+
+	// 3. 更新Jupyter配置
 	jupyterConfigScript := fmt.Sprintf(`
 import os
 from jupyter_server.auth import passwd
@@ -554,14 +591,14 @@ with open('/home/%s/.jupyter/jupyter_lab_config.py', 'w') as f:
 		return fmt.Errorf("执行Jupyter配置更新失败: %v", err)
 	}
 
-	// 3. 更新code-server配置和环境变量
+	// 4. 更新code-server配置
 	codeServerConfig := fmt.Sprintf(`bind-addr: 0.0.0.0:8080
 auth: password
 password: %s
 cert: false`, newPassword)
 
 	execConfig3 := types.ExecConfig{
-		Cmd:          []string{"sh", "-c", fmt.Sprintf("mkdir -p /home/%s/.config/code-server && echo '%s' > /home/%s/.config/code-server/config.yaml && export PASSWORD='%s'", username, codeServerConfig, username, newPassword)},
+		Cmd:          []string{"sh", "-c", fmt.Sprintf("mkdir -p /home/%s/.config/code-server && echo '%s' > /home/%s/.config/code-server/config.yaml", username, codeServerConfig, username)},
 		AttachStdout: true,
 		AttachStderr: true,
 	}
@@ -576,7 +613,7 @@ cert: false`, newPassword)
 		return fmt.Errorf("执行VSCode配置更新失败: %v", err)
 	}
 
-	// 4. 重启服务（确保VSCode使用新配置）
+	// 5. 重启服务（确保VSCode使用新配置）
 	killServicesScript := `
 pkill -f "jupyter" || true
 pkill -f "code-server" || true
@@ -610,11 +647,11 @@ echo "服务重启完成"
 	if err != nil {
 		return fmt.Errorf("启动服务重启脚本失败: %v", err)
 	}
-	
+
 	// 等待脚本执行完成
 	log.Printf("等待重启脚本执行完成...")
 	time.Sleep(5 * time.Second)
-	
+
 	// 检查脚本执行结果
 	inspectResp, err := s.dockerClient.ContainerExecInspect(context.Background(), execResp4.ID)
 	if err != nil {
@@ -625,7 +662,7 @@ echo "服务重启完成"
 
 	// 验证服务启动状态
 	log.Printf("验证服务启动状态...")
-	
+
 	// 验证服务是否真正启动
 	verifyScript := `
 echo "=== 最终验证服务状态 ==="
@@ -646,13 +683,13 @@ tail -5 /tmp/jupyter.log 2>/dev/null || echo "无Jupyter日志文件"
 echo "VSCode最新日志:"
 tail -5 /tmp/code-server.log 2>/dev/null || echo "无VSCode日志文件"
 `
-	
+
 	verifyConfig := types.ExecConfig{
 		Cmd:          []string{"sh", "-c", verifyScript},
 		AttachStdout: true,
 		AttachStderr: true,
 	}
-	
+
 	verifyResp, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, verifyConfig)
 	if err == nil {
 		verifyAttachResp, err := s.dockerClient.ContainerExecAttach(context.Background(), verifyResp.ID, types.ExecStartCheck{})
