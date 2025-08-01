@@ -111,9 +111,57 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // 完全禁用模态框的自动关闭行为，只允许通过取消按钮关闭
-        // 由于HTML中已设置 data-bs-backdrop="false" 和 data-bs-keyboard="false"
-        // 并移除了右上角关闭按钮，模态框现在只能通过取消按钮关闭
+        // 专门处理鼠标拖拽选择文本导致模态框关闭的问题
+        let isTextSelecting = false;
+        let selectStartTarget = null;
+        
+        // 监听模态框内的鼠标按下事件
+        createContainerModal.addEventListener('mousedown', function(e) {
+            // 如果点击的是输入框或其他表单元素，标记开始文本选择
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                isTextSelecting = true;
+                selectStartTarget = e.target;
+                console.log('开始文本选择');
+            }
+            // 如果点击的是模态框背景，阻止事件
+            else if (e.target === createContainerModal) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
+        
+        // 监听全局鼠标释放事件
+        document.addEventListener('mouseup', function(e) {
+            if (isTextSelecting) {
+                console.log('结束文本选择');
+                isTextSelecting = false;
+                selectStartTarget = null;
+            }
+        });
+        
+        // 阻止模态框的hide事件（当文本选择进行中时）
+        createContainerModal.addEventListener('hide.bs.modal', function(e) {
+            // 如果正在进行文本选择，阻止关闭
+            if (isTextSelecting) {
+                console.log('阻止模态框关闭 - 正在进行文本选择');
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
+            
+            // 检查是否是取消按钮触发的关闭
+            const cancelButton = createContainerModal.querySelector('[data-bs-dismiss="modal"]');
+            if (cancelButton && !cancelButton.contains(document.activeElement) && !e.target.hasAttribute('data-bs-dismiss')) {
+                // 如果不是取消按钮触发的，也阻止关闭
+                console.log('阻止模态框关闭 - 非取消按钮触发');
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
+        });
     }
     
     // 添加创建容器按钮点击事件作为最后的保障
