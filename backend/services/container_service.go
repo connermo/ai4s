@@ -579,10 +579,10 @@ cert: false`, newPassword)
 	killServicesScript := `
 pkill -f "jupyter lab" || true
 pkill -f "code-server" || true
-sleep 2
-# 重启服务
+sleep 1
+# 重启服务（使用配置文件方式）
 su - ` + username + ` -c "nohup jupyter lab --config=/home/` + username + `/.jupyter/jupyter_lab_config.py > /tmp/jupyter.log 2>&1 &"
-su - ` + username + ` -c "PASSWORD='` + newPassword + `' nohup code-server --bind-addr 0.0.0.0:8080 --auth password > /tmp/code-server.log 2>&1 &"
+su - ` + username + ` -c "nohup code-server > /tmp/code-server.log 2>&1 &"
 `
 
 	execConfig4 := types.ExecConfig{
@@ -601,12 +601,9 @@ su - ` + username + ` -c "PASSWORD='` + newPassword + `' nohup code-server --bin
 		return fmt.Errorf("执行服务重启失败: %v", err)
 	}
 
-	// 5. 重启容器以确保所有服务使用新密码
-	log.Printf("重启容器 %s 以确保密码更新生效", containerID)
-	err = s.dockerClient.ContainerRestart(context.Background(), containerID, container.StopOptions{})
-	if err != nil {
-		return fmt.Errorf("重启容器失败: %v", err)
-	}
+	// 等待服务启动完成
+	log.Printf("等待服务启动完成...")
+	time.Sleep(3 * time.Second)
 
 	return nil
 }
