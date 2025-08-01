@@ -608,8 +608,10 @@ fi
 
 echo "重启Jupyter服务..."
 export DEV_PASSWORD='` + newPassword + `'
+# 等待Jupyter完全停止
+sleep 1
 su - ` + username + ` -c "export DEV_PASSWORD='` + newPassword + `' && nohup jupyter lab --config=/home/` + username + `/.jupyter/jupyter_lab_config.py > /tmp/jupyter.log 2>&1 &"
-sleep 2
+sleep 3
 
 echo "重启VSCode服务..."
 su - ` + username + ` -c "export PASSWORD='` + newPassword + `' && nohup code-server > /tmp/code-server.log 2>&1 &"
@@ -670,14 +672,22 @@ echo "服务重启完成"
 	// 验证服务是否真正启动
 	verifyScript := `
 echo "=== 最终验证服务状态 ==="
-ps aux | grep -E "jupyter|code-server" | grep -v grep
+ps aux | grep -E "jupyter|code-server" | grep -v grep || echo "未发现相关服务进程"
 echo "=== 端口监听状态 ==="
-netstat -tlnp | grep -E "8080|8888" || echo "未发现服务端口监听"
+# 使用ss命令替代netstat（更常见）
+if command -v ss > /dev/null; then
+    ss -tlnp | grep -E "8080|8888" || echo "未发现服务端口监听"
+elif command -v netstat > /dev/null; then
+    netstat -tlnp | grep -E "8080|8888" || echo "未发现服务端口监听"
+else
+    # 使用lsof作为备选
+    lsof -i :8080 -i :8888 2>/dev/null || echo "未发现服务端口监听（无端口检查工具）"
+fi
 echo "=== 最新日志 ==="
 echo "Jupyter最新日志:"
-tail -3 /tmp/jupyter.log 2>/dev/null || echo "无Jupyter日志文件"
+tail -5 /tmp/jupyter.log 2>/dev/null || echo "无Jupyter日志文件"
 echo "VSCode最新日志:"
-tail -3 /tmp/code-server.log 2>/dev/null || echo "无VSCode日志文件"
+tail -5 /tmp/code-server.log 2>/dev/null || echo "无VSCode日志文件"
 `
 	
 	verifyConfig := types.ExecConfig{
