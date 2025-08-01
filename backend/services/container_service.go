@@ -615,19 +615,21 @@ cert: false`, newPassword)
 
 	// 5. 重启服务（确保VSCode使用新配置）
 	killServicesScript := `
-pkill -f "jupyter" || true
-pkill -f "code-server" || true
-HASH=\$(python3 -c "from jupyter_server.auth import passwd; print(passwd('` + newPassword + `'))" 2>/dev/null)
-su - ` + username + ` -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password='\$HASH' >/tmp/jupyter.log 2>&1 &"
-# 重新生成VSCode配置文件确保使用新密码
-cat > /home/` + username + `/.config/code-server/config.yaml << EOF
-bind-addr: 0.0.0.0:8080
-auth: password
-password: ` + newPassword + `
-cert: false
-EOF
-chown ` + username + `:` + username + ` /home/` + username + `/.config/code-server/config.yaml
+echo "开始重启服务..."
+echo "杀死现有进程..."
+pkill -f "jupyter" || echo "没有找到jupyter进程"
+sleep 1
+pkill -f "code-server" || echo "没有找到code-server进程"
+sleep 2
+
+echo "重启Jupyter服务..."
+su - ` + username + ` -c "nohup jupyter lab --config=/home/` + username + `/.jupyter/jupyter_lab_config.py >/tmp/jupyter.log 2>&1 &"
+sleep 1
+
+echo "重启VSCode服务..."
 su - ` + username + ` -c "nohup code-server >/tmp/code-server.log 2>&1 &"
+sleep 1
+
 echo "服务重启完成"
 `
 
