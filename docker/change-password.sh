@@ -63,21 +63,43 @@ fi
 echo "2️⃣  更新Jupyter Lab配置..."
 mkdir -p ~/.jupyter
 
-# 生成Jupyter密码hash
-JUPYTER_HASH=$(python3 -c "from jupyter_server.auth import passwd; print(passwd('$NEW_PASSWORD'))")
+# 使用现代化的Jupyter密码设置方法
+# 生成配置文件使用推荐的PasswordIdentityProvider
+python3 -c "
+from jupyter_server.auth import passwd
+import json
+import os
 
-cat > ~/.jupyter/jupyter_lab_config.py << EOF
-c.ServerApp.ip = '0.0.0.0'
-c.ServerApp.port = 8888
-c.ServerApp.allow_root = True
-c.ServerApp.open_browser = False
-c.ServerApp.token = ''
-c.ServerApp.password = '$JUPYTER_HASH'
-c.ServerApp.allow_origin = '*'
-c.ServerApp.allow_remote_access = True
-c.ServerApp.root_dir = '/home/$CURRENT_USER'
-c.ServerApp.disable_check_xsrf = True
-EOF
+# 生成密码哈希
+hashed_password = passwd('$NEW_PASSWORD')
+
+# 创建配置目录
+config_dir = os.path.expanduser('~/.jupyter')
+os.makedirs(config_dir, exist_ok=True)
+
+# 写入JSON配置（优先级高于.py配置）
+config_file = os.path.join(config_dir, 'jupyter_server_config.json')
+config = {
+    'PasswordIdentityProvider': {
+        'hashed_password': hashed_password
+    },
+    'ServerApp': {
+        'ip': '0.0.0.0',
+        'port': 8888,
+        'allow_root': True,
+        'open_browser': False,
+        'token': '',
+        'allow_origin': '*',
+        'allow_remote_access': True,
+        'disable_check_xsrf': True
+    }
+}
+
+with open(config_file, 'w') as f:
+    json.dump(config, f, indent=2)
+
+print('Jupyter配置已更新到:', config_file)
+"
 
 if [ $? -eq 0 ]; then
     echo "✅ Jupyter Lab配置更新成功"
@@ -110,8 +132,8 @@ pkill -f "jupyter lab" 2>/dev/null
 pkill -f "code-server" 2>/dev/null
 sleep 2
 
-# 重启Jupyter Lab
-nohup jupyter lab --config=~/.jupyter/jupyter_lab_config.py > /tmp/jupyter.log 2>&1 &
+# 重启Jupyter Lab (使用更新后的配置)
+nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root > /tmp/jupyter.log 2>&1 &
 JUPYTER_PID=$!
 
 # 重启VSCode Server

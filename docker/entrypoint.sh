@@ -682,7 +682,42 @@ if id -u $DEV_USER > /dev/null 2>&1; then
 
 # 启动Jupyter Lab
 echo "启动Jupyter Lab..."
-    su - $DEV_USER -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password='$(python3 -c "from jupyter_server.auth import passwd; print(passwd('$DEV_PASSWORD'))")' > /tmp/jupyter.log 2>&1 &"
+    # 先生成Jupyter配置文件
+    python3 -c "
+import os
+import json
+from jupyter_server.auth import passwd
+
+# 生成密码哈希
+hashed_password = passwd('$DEV_PASSWORD')
+
+# 创建配置目录
+config_dir = '/home/$DEV_USER/.jupyter'
+os.makedirs(config_dir, exist_ok=True)
+
+# 写入JSON配置
+config_file = os.path.join(config_dir, 'jupyter_server_config.json')
+config = {
+    'PasswordIdentityProvider': {
+        'hashed_password': hashed_password
+    },
+    'ServerApp': {
+        'ip': '0.0.0.0',
+        'port': 8888,
+        'allow_root': True,
+        'open_browser': False,
+        'token': '',
+        'allow_origin': '*',
+        'allow_remote_access': True,
+        'disable_check_xsrf': True
+    }
+}
+
+with open(config_file, 'w') as f:
+    json.dump(config, f, indent=2)
+"
+    chown $DEV_UID:$DEV_GID /home/$DEV_USER/.jupyter/jupyter_server_config.json
+    su - $DEV_USER -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root > /tmp/jupyter.log 2>&1 &"
 
     # 启动VSCode Server
 echo "启动VSCode Server..."

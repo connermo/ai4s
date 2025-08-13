@@ -558,27 +558,42 @@ echo "环境变量已持久化"
 		return fmt.Errorf("执行环境变量持久化失败: %v", err)
 	}
 
-	// 3. 更新Jupyter配置
+	// 3. 更新Jupyter配置 - 使用现代化配置方法
 	jupyterConfigScript := fmt.Sprintf(`
 import os
+import json
 from jupyter_server.auth import passwd
 
-password_hash = passwd('%s')
-config_content = f'''c.ServerApp.ip = '0.0.0.0'
-c.ServerApp.port = 8888
-c.ServerApp.allow_root = True
-c.ServerApp.open_browser = False
-c.ServerApp.token = ''
-c.ServerApp.password = '{password_hash}'
-c.ServerApp.allow_origin = '*'
-c.ServerApp.allow_remote_access = True
-c.ServerApp.root_dir = '/home/%s'
-c.ServerApp.disable_check_xsrf = True'''
+# 生成密码哈希
+hashed_password = passwd('%s')
 
-os.makedirs('/home/%s/.jupyter', exist_ok=True)
-with open('/home/%s/.jupyter/jupyter_lab_config.py', 'w') as f:
-    f.write(config_content)
-`, newPassword, username, username, username)
+# 创建配置目录
+config_dir = '/home/%s/.jupyter'
+os.makedirs(config_dir, exist_ok=True)
+
+# 写入JSON配置（优先级高于.py配置）
+config_file = os.path.join(config_dir, 'jupyter_server_config.json')
+config = {
+    'PasswordIdentityProvider': {
+        'hashed_password': hashed_password
+    },
+    'ServerApp': {
+        'ip': '0.0.0.0',
+        'port': 8888,
+        'allow_root': True,
+        'open_browser': False,
+        'token': '',
+        'allow_origin': '*',
+        'allow_remote_access': True,
+        'disable_check_xsrf': True
+    }
+}
+
+with open(config_file, 'w') as f:
+    json.dump(config, f, indent=2)
+
+print('Jupyter配置已更新')
+`, newPassword, username)
 
 	execConfig2 := types.ExecConfig{
 		Cmd:          []string{"python3", "-c", jupyterConfigScript},
@@ -634,8 +649,7 @@ echo "=== 进程杀死完成 ==="
 echo "=== 开始重启服务 ==="
 
 echo "重启Jupyter服务..."
-HASH=\$(python3 -c "from jupyter_server.auth import passwd; print(passwd('` + newPassword + `'))" 2>/dev/null)
-su - ` + username + ` -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token='' --NotebookApp.password=\"\$HASH\" >/tmp/jupyter.log 2>&1 &"
+su - ` + username + ` -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root >/tmp/jupyter.log 2>&1 &"
 echo "Jupyter启动命令已执行"
 sleep 5
 
