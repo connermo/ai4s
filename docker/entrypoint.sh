@@ -681,9 +681,10 @@ if id -u $DEV_USER > /dev/null 2>&1; then
 
 # 启动Jupyter Lab
 echo "启动Jupyter Lab..."
-    # 总是根据DEV_PASSWORD重新生成Jupyter配置文件（确保容器重建时使用新密码）
-    echo "生成Jupyter配置文件（使用当前DEV_PASSWORD）..."
-    python3 -c "
+    # 只在配置文件不存在时创建（保护用户修改的密码，容器重建时后端会清理旧文件）
+    if [ ! -f "/home/$DEV_USER/.jupyter/jupyter_server_config.json" ]; then
+        echo "初始化Jupyter配置文件..."
+        python3 -c "
 import os
 import json
 from jupyter_server.auth import passwd
@@ -716,21 +717,28 @@ config = {
 with open(config_file, 'w') as f:
     json.dump(config, f, indent=2)
 "
-    chown $DEV_UID:$DEV_GID /home/$DEV_USER/.jupyter/jupyter_server_config.json
+        chown $DEV_UID:$DEV_GID /home/$DEV_USER/.jupyter/jupyter_server_config.json
+    else
+        echo "使用现有Jupyter配置文件..."
+    fi
     su - $DEV_USER -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root > /tmp/jupyter.log 2>&1 &"
 
     # 启动VSCode Server
 echo "启动VSCode Server..."
-    # 总是根据DEV_PASSWORD重新生成VSCode配置文件（确保容器重建时使用新密码）
-    mkdir -p /home/$DEV_USER/.config/code-server
-    echo "生成VSCode配置文件（使用当前DEV_PASSWORD）..."
-    cat > /home/$DEV_USER/.config/code-server/config.yaml << EOF
+    # 只在配置文件不存在时创建（保护用户修改的密码，容器重建时后端会清理旧文件）
+    if [ ! -f "/home/$DEV_USER/.config/code-server/config.yaml" ]; then
+        mkdir -p /home/$DEV_USER/.config/code-server
+        echo "初始化VSCode配置文件..."
+        cat > /home/$DEV_USER/.config/code-server/config.yaml << EOF
 bind-addr: 0.0.0.0:8080
 auth: password
 password: $DEV_PASSWORD
 cert: false
 EOF
-    chown $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server/config.yaml
+        chown $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server/config.yaml
+    else
+        echo "使用现有VSCode配置文件..."
+    fi
     # 启动VSCode Server（使用配置文件中的密码）
     su - $DEV_USER -c "nohup code-server > /tmp/code-server.log 2>&1 &"
 else

@@ -156,6 +156,21 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	os.MkdirAll(containerSharedRoDir, 0755)
 	os.MkdirAll(containerSharedRwDir, 0755)
 
+	// 清理旧的配置文件，确保使用新密码（容器重建时）
+	// 这样可以区分容器重建（需要新密码）和容器重启（保持用户修改的密码）
+	jupyterConfigFile := fmt.Sprintf("%s/.jupyter/jupyter_server_config.json", hostUserDir)
+	vscodeConfigFile := fmt.Sprintf("%s/.config/code-server/config.yaml", hostUserDir)
+
+	if _, err := os.Stat(jupyterConfigFile); err == nil {
+		log.Printf("容器重建：清理旧的Jupyter配置文件 %s", jupyterConfigFile)
+		os.Remove(jupyterConfigFile)
+	}
+
+	if _, err := os.Stat(vscodeConfigFile); err == nil {
+		log.Printf("容器重建：清理旧的VSCode配置文件 %s", vscodeConfigFile)
+		os.Remove(vscodeConfigFile)
+	}
+
 	// 基础挂载点
 	mounts := []mount.Mount{
 		{
