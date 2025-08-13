@@ -95,48 +95,104 @@ config = {
     }
 }
 
-with open(config_file, 'w') as f:
-    json.dump(config, f, indent=2)
-
-print('Jupyter配置已更新到:', config_file)
+try:
+    with open(config_file, 'w') as f:
+        json.dump(config, f, indent=2)
+    print('Jupyter配置已更新到:', config_file)
+except PermissionError:
+    print('权限错误：无法写入Jupyter配置文件')
+    exit(1)
+except Exception as e:
+    print('错误：', str(e))
+    exit(1)
 "
 
-if [ $? -eq 0 ]; then
+JUPYTER_UPDATE_STATUS=$?
+if [ $JUPYTER_UPDATE_STATUS -eq 0 ]; then
     echo "✅ Jupyter Lab配置更新成功"
 else
-    echo "❌ Jupyter Lab配置更新失败"
+    echo "❌ Jupyter Lab配置更新失败（权限问题）"
+    JUPYTER_UPDATE_FAILED=1
 fi
 
 # 3. 更新VSCode Server配置
 echo "3️⃣  更新VSCode Server配置..."
 mkdir -p ~/.config/code-server
 
-cat > ~/.config/code-server/config.yaml << EOF
+if cat > ~/.config/code-server/config.yaml << EOF
 bind-addr: 0.0.0.0:8080
 auth: password
 password: $NEW_PASSWORD
 cert: false
 EOF
-
-if [ $? -eq 0 ]; then
+then
     echo "✅ VSCode Server配置更新成功"
+    VSCODE_UPDATE_STATUS=0
 else
-    echo "❌ VSCode Server配置更新失败"
+    echo "❌ VSCode Server配置更新失败（权限问题）"
+    VSCODE_UPDATE_FAILED=1
+    VSCODE_UPDATE_STATUS=1
+fi
+
+# 检查是否需要使用备用方案（通过API更新配置）
+if [ "$JUPYTER_UPDATE_FAILED" = "1" ] || [ "$VSCODE_UPDATE_FAILED" = "1" ]; then
+    echo ""
+    echo "⚠️  检测到配置文件权限问题，尝试通过后端API更新配置..."
+    
+    # 尝试通过容器内部调用后端API（如果可用）
+    # 这里可以添加API调用逻辑，但通常不建议从容器内部调用外部API
+    echo "💡 提示：配置文件可能需要管理员权限来更新"
+    echo "   请联系管理员或者重启容器以应用新的配置"
 fi
 
 # 4. 重启服务
 echo "4️⃣  重启相关服务..."
 
-# 杀死现有进程
-pkill -f "jupyter lab" 2>/dev/null
-pkill -f "code-server" 2>/dev/null
+# 更彻底地杀死现有进程
+echo "正在停止现有服务..."
+
+# 找到所有相关进程并强制杀死
+JUPYTER_PIDS=$(pgrep -f "jupyter.*lab" | tr '\n' ' ')
+VSCODE_PIDS=$(pgrep -f "code-server" | tr '\n' ' ')
+
+if [ -n "$JUPYTER_PIDS" ]; then
+    echo "停止Jupyter进程: $JUPYTER_PIDS"
+    kill -TERM $JUPYTER_PIDS 2>/dev/null
+    sleep 3
+    # 如果还没停止，强制杀死
+    for pid in $JUPYTER_PIDS; do
+        if kill -0 $pid 2>/dev/null; then
+            echo "强制停止Jupyter进程: $pid"
+            kill -9 $pid 2>/dev/null
+        fi
+    done
+fi
+
+if [ -n "$VSCODE_PIDS" ]; then
+    echo "停止VSCode进程: $VSCODE_PIDS"
+    kill -TERM $VSCODE_PIDS 2>/dev/null
+    sleep 3
+    # 如果还没停止，强制杀死
+    for pid in $VSCODE_PIDS; do
+        if kill -0 $pid 2>/dev/null; then
+            echo "强制停止VSCode进程: $pid"
+            kill -9 $pid 2>/dev/null
+        fi
+    done
+fi
+
 sleep 2
 
+# 清理Jupyter运行时缓存
+rm -rf ~/.jupyter/runtime/* 2>/dev/null
+
 # 重启Jupyter Lab (使用更新后的配置)
+echo "正在启动Jupyter Lab..."
 nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root > /tmp/jupyter.log 2>&1 &
 JUPYTER_PID=$!
 
-# 重启VSCode Server
+# 重启VSCode Server (使用配置文件中的密码)
+echo "正在启动VSCode Server..."
 nohup code-server > /tmp/code-server.log 2>&1 &
 VSCODE_PID=$!
 

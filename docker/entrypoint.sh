@@ -677,12 +677,12 @@ echo "启动SSH服务..."
 # 切换到用户身份启动服务
 echo "切换到用户 $DEV_USER 启动服务..."
 if id -u $DEV_USER > /dev/null 2>&1; then
-    # 设置VSCode Server密码
-    export PASSWORD="$DEV_PASSWORD"
+    # VSCode Server密码现在通过配置文件管理，不再设置环境变量
 
 # 启动Jupyter Lab
 echo "启动Jupyter Lab..."
-    # 先生成Jupyter配置文件
+    # 总是根据DEV_PASSWORD重新生成Jupyter配置文件（确保容器重建时使用新密码）
+    echo "生成Jupyter配置文件（使用当前DEV_PASSWORD）..."
     python3 -c "
 import os
 import json
@@ -721,8 +721,9 @@ with open(config_file, 'w') as f:
 
     # 启动VSCode Server
 echo "启动VSCode Server..."
-    # 创建VSCode配置文件
+    # 总是根据DEV_PASSWORD重新生成VSCode配置文件（确保容器重建时使用新密码）
     mkdir -p /home/$DEV_USER/.config/code-server
+    echo "生成VSCode配置文件（使用当前DEV_PASSWORD）..."
     cat > /home/$DEV_USER/.config/code-server/config.yaml << EOF
 bind-addr: 0.0.0.0:8080
 auth: password
@@ -730,6 +731,7 @@ password: $DEV_PASSWORD
 cert: false
 EOF
     chown $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server/config.yaml
+    # 启动VSCode Server（使用配置文件中的密码）
     su - $DEV_USER -c "nohup code-server > /tmp/code-server.log 2>&1 &"
 else
     echo "警告: 用户 $DEV_USER 不存在，无法启动用户服务。"

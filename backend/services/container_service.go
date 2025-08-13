@@ -216,7 +216,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	if gpuDevices == "" {
 		gpuDevices = "all"
 	}
-	
+
 	// 添加GPU配置
 	if gpuDevices != "" {
 		// 解析GPU设备ID
@@ -338,7 +338,7 @@ func (s *ContainerService) RemoveContainer(containerID string) error {
 		}
 	}
 	// 无论如何都要删数据库
-	_, err = s.db.Exec("DELETE FROM containers WHERE id = ?", containerID)
+	_, _ = s.db.Exec("DELETE FROM containers WHERE id = ?", containerID)
 	// 忽略数据库已无记录的情况
 	// 清除用户的容器ID
 	_, _ = s.db.Exec("UPDATE users SET container_id = '' WHERE container_id = ?", containerID)
@@ -493,12 +493,26 @@ func (s *ContainerService) ResetContainerPassword(containerID, newPassword strin
 		username = "developer" // 默认用户名
 	}
 
-	// 执行密码重置命令
-	// 1. 重置系统用户密码
-	passwordInput := fmt.Sprintf("%s:%s", username, newPassword)
+	log.Printf("开始重置容器 %s 中用户 %s 的密码", containerID, username)
+
+	// 使用容器内的 change-password.sh 脚本
+	// 这确保了与用户手动修改密码的逻辑完全一致
+	changePasswordScript := fmt.Sprintf(`
+# 创建临时输入文件
+echo '%s
+%s' > /tmp/backend_password_input.txt
+
+# 以目标用户身份运行 change-password.sh
+su - %s -c "cat /tmp/backend_password_input.txt | /usr/local/bin/change-password.sh"
+
+# 清理临时文件
+rm -f /tmp/backend_password_input.txt
+
+echo "=== 后端密码重置完成 ==="
+`, newPassword, newPassword, username)
+
 	execConfig := types.ExecConfig{
-		Cmd:          []string{"sh", "-c", fmt.Sprintf("echo '%s' | chpasswd", passwordInput)},
-		AttachStdin:  true,
+		Cmd:          []string{"sh", "-c", changePasswordScript},
 		AttachStdout: true,
 		AttachStderr: true,
 	}
@@ -514,258 +528,20 @@ func (s *ContainerService) ResetContainerPassword(containerID, newPassword strin
 	}
 	defer execAttachResp.Close()
 
-	// 发送密码数据
-	_, err = execAttachResp.Conn.Write([]byte(passwordInput + "\n"))
+	// 读取执行结果
+	output, err := io.ReadAll(execAttachResp.Reader)
 	if err != nil {
-		return fmt.Errorf("写入密码数据失败: %v", err)
-	}
-	execAttachResp.Close()
-
-	// 2. 持久化环境变量（确保容器重启后仍使用新密码）
-	envPersistScript := fmt.Sprintf(`
-# 更新/etc/environment文件，确保环境变量持久化
-echo "DEV_PASSWORD=%s" >> /etc/environment
-echo "PASSWORD=%s" >> /etc/environment
-
-# 更新用户的环境变量文件
-echo "export DEV_PASSWORD='%s'" >> /home/%s/.bashrc
-echo "export PASSWORD='%s'" >> /home/%s/.bashrc
-
-# 更新profile文件
-echo "export DEV_PASSWORD='%s'" >> /etc/profile
-echo "export PASSWORD='%s'" >> /etc/profile
-
-# 立即设置当前会话的环境变量
-export DEV_PASSWORD='%s'
-export PASSWORD='%s'
-
-echo "环境变量已持久化"
-`, newPassword, newPassword, newPassword, username, newPassword, username, newPassword, newPassword, newPassword, newPassword)
-
-	execConfigEnv := types.ExecConfig{
-		Cmd:          []string{"sh", "-c", envPersistScript},
-		AttachStdout: true,
-		AttachStderr: true,
-	}
-
-	execRespEnv, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, execConfigEnv)
-	if err != nil {
-		return fmt.Errorf("创建环境变量持久化命令失败: %v", err)
-	}
-
-	err = s.dockerClient.ContainerExecStart(context.Background(), execRespEnv.ID, types.ExecStartCheck{})
-	if err != nil {
-		return fmt.Errorf("执行环境变量持久化失败: %v", err)
-	}
-
-	// 3. 更新Jupyter配置 - 使用现代化配置方法
-	jupyterConfigScript := fmt.Sprintf(`
-import os
-import json
-from jupyter_server.auth import passwd
-
-# 生成密码哈希
-hashed_password = passwd('%s')
-
-# 创建配置目录
-config_dir = '/home/%s/.jupyter'
-os.makedirs(config_dir, exist_ok=True)
-
-# 写入JSON配置（优先级高于.py配置）
-config_file = os.path.join(config_dir, 'jupyter_server_config.json')
-config = {
-    'PasswordIdentityProvider': {
-        'hashed_password': hashed_password
-    },
-    'ServerApp': {
-        'ip': '0.0.0.0',
-        'port': 8888,
-        'allow_root': True,
-        'open_browser': False,
-        'token': '',
-        'allow_origin': '*',
-        'allow_remote_access': True,
-        'disable_check_xsrf': True
-    }
-}
-
-with open(config_file, 'w') as f:
-    json.dump(config, f, indent=2)
-
-print('Jupyter配置已更新')
-`, newPassword, username)
-
-	execConfig2 := types.ExecConfig{
-		Cmd:          []string{"python3", "-c", jupyterConfigScript},
-		AttachStdout: true,
-		AttachStderr: true,
-	}
-
-	execResp2, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, execConfig2)
-	if err != nil {
-		return fmt.Errorf("创建Jupyter配置更新命令失败: %v", err)
-	}
-
-	err = s.dockerClient.ContainerExecStart(context.Background(), execResp2.ID, types.ExecStartCheck{})
-	if err != nil {
-		return fmt.Errorf("执行Jupyter配置更新失败: %v", err)
-	}
-
-	// 4. 更新code-server配置
-	codeServerConfig := fmt.Sprintf(`bind-addr: 0.0.0.0:8080
-auth: password
-password: %s
-cert: false`, newPassword)
-
-	execConfig3 := types.ExecConfig{
-		Cmd:          []string{"sh", "-c", fmt.Sprintf("mkdir -p /home/%s/.config/code-server && echo '%s' > /home/%s/.config/code-server/config.yaml", username, codeServerConfig, username)},
-		AttachStdout: true,
-		AttachStderr: true,
-	}
-
-	execResp3, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, execConfig3)
-	if err != nil {
-		return fmt.Errorf("创建VSCode配置更新命令失败: %v", err)
-	}
-
-	err = s.dockerClient.ContainerExecStart(context.Background(), execResp3.ID, types.ExecStartCheck{})
-	if err != nil {
-		return fmt.Errorf("执行VSCode配置更新失败: %v", err)
-	}
-
-	// 5. 重启服务（确保VSCode使用新配置）
-	// 分步执行，避免pkill影响exec会话
-	killProcessScript := `
-echo "=== 开始杀死现有进程 ==="
-pkill -f "jupyter" || echo "没有找到jupyter进程"
-pkill -f "/usr/lib/code-server" || echo "没有找到code-server主进程"
-pkill -f "code-server" || echo "没有找到code-server进程"
-pkill -9 -f "code-server" 2>/dev/null || true
-sleep 3
-echo "=== 进程杀死完成 ==="
-`
-
-	restartServicesScript := `
-echo "=== 开始重启服务 ==="
-
-echo "重启Jupyter服务..."
-su - ` + username + ` -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root >/tmp/jupyter.log 2>&1 &"
-echo "Jupyter启动命令已执行"
-sleep 5
-
-echo "重启VSCode服务..."
-su - ` + username + ` -c "nohup code-server >/tmp/code-server.log 2>&1 &"
-echo "VSCode启动命令已执行"
-sleep 5
-
-echo "=== 验证服务启动状态 ==="
-ps aux | grep -E "code-server|jupyter" | grep -v grep || echo "警告: 部分服务可能未启动"
-
-echo "=== 服务重启完成 ==="
-`
-
-	// 第一步：杀死进程
-	execConfig4 := types.ExecConfig{
-		Cmd:          []string{"sh", "-c", killProcessScript},
-		AttachStdout: true,
-		AttachStderr: true,
-	}
-
-	execResp4, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, execConfig4)
-	if err != nil {
-		return fmt.Errorf("创建进程杀死命令失败: %v", err)
-	}
-
-	// 执行杀死进程脚本
-	execAttachResp4, err := s.dockerClient.ContainerExecAttach(context.Background(), execResp4.ID, types.ExecStartCheck{})
-	if err != nil {
-		return fmt.Errorf("启动进程杀死脚本失败: %v", err)
-	}
-	defer execAttachResp4.Close()
-
-	// 读取杀死进程脚本输出
-	output, err := io.ReadAll(execAttachResp4.Reader)
-	if err != nil {
-		log.Printf("读取杀死进程脚本输出失败: %v", err)
+		log.Printf("读取密码重置结果失败: %v", err)
 	} else {
-		log.Printf("杀死进程脚本输出: %s", string(output))
+		log.Printf("密码重置执行结果:\n%s", string(output))
 	}
 
-	// 等待杀死进程完成
-	log.Printf("等待进程杀死完成...")
-	time.Sleep(5 * time.Second)
-
-	// 第二步：重启服务
-	execConfig5 := types.ExecConfig{
-		Cmd:          []string{"sh", "-c", restartServicesScript},
-		AttachStdout: true,
-		AttachStderr: true,
+	// 检查执行结果
+	if err := s.dockerClient.ContainerExecStart(context.Background(), execResp.ID, types.ExecStartCheck{}); err != nil {
+		return fmt.Errorf("密码重置脚本执行失败: %v", err)
 	}
 
-	execResp5, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, execConfig5)
-	if err != nil {
-		return fmt.Errorf("创建服务重启命令失败: %v", err)
-	}
-
-	// 执行服务重启脚本
-	execAttachResp5, err := s.dockerClient.ContainerExecAttach(context.Background(), execResp5.ID, types.ExecStartCheck{})
-	if err != nil {
-		return fmt.Errorf("启动服务重启脚本失败: %v", err)
-	}
-	defer execAttachResp5.Close()
-
-	// 读取服务重启脚本输出
-	output2, err := io.ReadAll(execAttachResp5.Reader)
-	if err != nil {
-		log.Printf("读取服务重启脚本输出失败: %v", err)
-	} else {
-		log.Printf("服务重启脚本输出: %s", string(output2))
-	}
-
-	// 等待服务重启完成
-	log.Printf("等待服务重启完成...")
-	time.Sleep(10 * time.Second)
-
-	// 验证服务启动状态
-	log.Printf("验证服务启动状态...")
-
-	// 验证服务是否真正启动
-	verifyScript := `
-echo "=== 最终验证服务状态 ==="
-ps aux | grep -E "jupyter|code-server" | grep -v grep || echo "未发现相关服务进程"
-echo "=== 端口监听状态 ==="
-# 使用ss命令替代netstat（更常见）
-if command -v ss > /dev/null; then
-    ss -tlnp | grep -E "8080|8888" || echo "未发现服务端口监听"
-elif command -v netstat > /dev/null; then
-    netstat -tlnp | grep -E "8080|8888" || echo "未发现服务端口监听"
-else
-    # 使用lsof作为备选
-    lsof -i :8080 -i :8888 2>/dev/null || echo "未发现服务端口监听（无端口检查工具）"
-fi
-echo "=== 最新日志 ==="
-echo "Jupyter最新日志:"
-tail -5 /tmp/jupyter.log 2>/dev/null || echo "无Jupyter日志文件"
-echo "VSCode最新日志:"
-tail -5 /tmp/code-server.log 2>/dev/null || echo "无VSCode日志文件"
-`
-
-	verifyConfig := types.ExecConfig{
-		Cmd:          []string{"sh", "-c", verifyScript},
-		AttachStdout: true,
-		AttachStderr: true,
-	}
-
-	verifyResp, err := s.dockerClient.ContainerExecCreate(context.Background(), containerID, verifyConfig)
-	if err == nil {
-		verifyAttachResp, err := s.dockerClient.ContainerExecAttach(context.Background(), verifyResp.ID, types.ExecStartCheck{})
-		if err == nil {
-			defer verifyAttachResp.Close()
-			verifyOutput, _ := io.ReadAll(verifyAttachResp.Reader)
-			log.Printf("最终验证结果: %s", string(verifyOutput))
-		}
-	}
-
+	log.Printf("密码重置成功完成")
 	return nil
 }
 
