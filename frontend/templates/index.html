@@ -272,8 +272,8 @@
                         </div>
                         <div class="mb-3">
                             <label for="gpu-devices" class="form-label">GPU设备</label>
-                            <input type="text" class="form-control" id="gpu-devices" placeholder="0,1,2" onclick="event.stopPropagation()">
-                            <div class="form-text">可选，指定GPU设备ID，用逗号分隔</div>
+                            <input type="text" class="form-control" id="gpu-devices" value="all" placeholder="0,1,2" onclick="event.stopPropagation()">
+                            <div class="form-text">可选，指定GPU设备ID，用逗号分隔。默认"all"使用全部GPU</div>
                         </div>
                         <div class="mb-3">
                             <label for="service-password" class="form-label">服务登录密码 <span class="text-danger">*</span></label>

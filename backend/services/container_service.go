@@ -212,7 +212,12 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 		},
 	}
 
-	// 如果有GPU设备，添加GPU配置
+	// 添加GPU配置，如果gpuDevices为空则默认使用all
+	if gpuDevices == "" {
+		gpuDevices = "all"
+	}
+	
+	// 添加GPU配置
 	if gpuDevices != "" {
 		// 解析GPU设备ID
 		deviceIDs := []string{}
