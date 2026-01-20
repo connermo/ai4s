@@ -537,14 +537,14 @@ async function createContainerRow(container) {
         <td>${gpuDevices}</td>
         <td class="text-truncate" title="${portsTitle}">${ports}</td>
         <td>
-            ${container.status === 'running' 
-                ? `<button class="btn btn-action btn-action-warning" onclick="stopContainer('${container.id}')" title="停止容器">
+            ${container.status === 'running'
+                ? `<button class="btn btn-action btn-action-warning" id="btn-stop-${container.id}" onclick="confirmStopContainer('${container.id}', '${container.name}')" title="停止容器">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect x="6" y="4" width="4" height="16" fill="currentColor"/>
                         <rect x="14" y="4" width="4" height="16" fill="currentColor"/>
                     </svg>
                    </button>`
-                : `<button class="btn btn-action btn-action-success" onclick="startContainer('${container.id}')" title="启动容器">
+                : `<button class="btn btn-action btn-action-success" id="btn-start-${container.id}" onclick="startContainer('${container.id}')" title="启动容器">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <polygon points="5,3 19,12 5,21" fill="currentColor"/>
                     </svg>
@@ -577,16 +577,31 @@ async function createContainerRow(container) {
     return row;
 }
 
-// 启动容器（优化状态同步）
+// 启动容器（优化状态同步，带加载动画）
 async function startContainer(id) {
+    const btn = document.getElementById(`btn-start-${id}`);
+
+    // 设置按钮为加载状态
+    if (btn) {
+        btn.disabled = true;
+        btn.classList.remove('btn-action-success');
+        btn.classList.add('btn-action-loading');
+        btn.innerHTML = `
+            <svg class="spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" transform="rotate(-90 12 12)"/>
+            </svg>
+        `;
+        btn.title = '启动中...';
+    }
+
     try {
         console.log(`正在启动容器 ${id}...`);
-        
+
         const response = await fetch(`${API_BASE}/containers/${id}/start`, {
             method: 'POST',
             headers: getAdminHeaders()
         });
-        
+
         if (response.ok) {
             showAlert('容器启动成功', 'success');
             // 延迟后刷新确保状态同步，但不强制刷新
@@ -598,6 +613,8 @@ async function startContainer(id) {
         } else {
             const error = await response.text();
             showAlert(`启动失败: ${error}`, 'danger');
+            // 恢复按钮状态
+            restoreStartButton(btn);
             // 失败时强制刷新显示真实状态
             if (!isContainerLoading) {
                 loadContainers(true);
@@ -605,6 +622,8 @@ async function startContainer(id) {
         }
     } catch (error) {
         handleApiError(error, '启动容器失败');
+        // 恢复按钮状态
+        restoreStartButton(btn);
         // 失败时强制刷新显示真实状态
         if (!isContainerLoading) {
             loadContainers(true);
@@ -612,16 +631,53 @@ async function startContainer(id) {
     }
 }
 
-// 停止容器（优化状态同步）
+// 恢复启动按钮状态
+function restoreStartButton(btn) {
+    if (btn) {
+        btn.disabled = false;
+        btn.classList.remove('btn-action-loading');
+        btn.classList.add('btn-action-success');
+        btn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="5,3 19,12 5,21" fill="currentColor"/>
+            </svg>
+        `;
+        btn.title = '启动容器';
+    }
+}
+
+// 确认停止容器对话框
+function confirmStopContainer(id, name) {
+    if (confirm(`确定要停止容器 "${name}" 吗？`)) {
+        stopContainer(id);
+    }
+}
+
+// 停止容器（优化状态同步，带加载动画）
 async function stopContainer(id) {
+    const btn = document.getElementById(`btn-stop-${id}`);
+
+    // 设置按钮为加载状态
+    if (btn) {
+        btn.disabled = true;
+        btn.classList.remove('btn-action-warning');
+        btn.classList.add('btn-action-loading');
+        btn.innerHTML = `
+            <svg class="spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" transform="rotate(-90 12 12)"/>
+            </svg>
+        `;
+        btn.title = '停止中...';
+    }
+
     try {
         console.log(`正在停止容器 ${id}...`);
-        
+
         const response = await fetch(`${API_BASE}/containers/${id}/stop`, {
             method: 'POST',
             headers: getAdminHeaders()
         });
-        
+
         if (response.ok) {
             showAlert('容器停止成功', 'success');
             // 延迟后刷新确保状态同步，但不强制刷新
@@ -633,6 +689,8 @@ async function stopContainer(id) {
         } else {
             const error = await response.text();
             showAlert(`停止失败: ${error}`, 'danger');
+            // 恢复按钮状态
+            restoreStopButton(btn);
             // 失败时强制刷新显示真实状态
             if (!isContainerLoading) {
                 loadContainers(true);
@@ -640,10 +698,28 @@ async function stopContainer(id) {
         }
     } catch (error) {
         handleApiError(error, '停止容器失败');
+        // 恢复按钮状态
+        restoreStopButton(btn);
         // 失败时强制刷新显示真实状态
         if (!isContainerLoading) {
             loadContainers(true);
         }
+    }
+}
+
+// 恢复停止按钮状态
+function restoreStopButton(btn) {
+    if (btn) {
+        btn.disabled = false;
+        btn.classList.remove('btn-action-loading');
+        btn.classList.add('btn-action-warning');
+        btn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="6" y="4" width="4" height="16" fill="currentColor"/>
+                <rect x="14" y="4" width="4" height="16" fill="currentColor"/>
+            </svg>
+        `;
+        btn.title = '停止容器';
     }
 }
 
