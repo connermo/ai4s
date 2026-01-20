@@ -83,6 +83,20 @@ function getAdminHeaders() {
 // 防抖变量
 let containerLoadTimeout = null;
 let isContainerLoading = false;
+let isContainerOperating = false; // 容器启动/停止操作进行中
+
+// 容器状态缓存 { containerId: status }
+let containerStatusCache = {};
+
+// 容器状态定义
+const CONTAINER_STATUS = {
+    RUNNING: 'running',
+    EXITED: 'exited',
+    CREATED: 'created',
+    PAUSED: 'paused',
+    RESTARTING: 'restarting',
+    DEAD: 'dead'
+};
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -173,15 +187,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (currentSection === 'users') {
             loadUsers();
-        } else if (currentSection === 'containers' && !isContainerLoading) {
-            // 容器页面使用强制刷新确保与Docker状态同步，但避免重复加载
-            loadContainers(true);
+        } else if (currentSection === 'containers' && !isContainerLoading && !isContainerOperating) {
+            // 容器页面使用智能刷新，仅状态变化时更新UI
+            smartRefreshContainers();
         } else if (currentSection === 'groups') {
             loadGroups();
         } else if (currentSection === 'dashboard') {
             loadDashboard();
         }
-    }, 30000);
+    }, 5000); // 5秒轮询一次，智能刷新不会频繁更新UI
     
     // 优化的页面可见性检测，添加防抖
     document.addEventListener('visibilitychange', function() {
@@ -191,10 +205,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (containerLoadTimeout) {
                 clearTimeout(containerLoadTimeout);
             }
-            // 设置新的延迟刷新
+            // 设置新的延迟刷新（智能刷新）
             containerLoadTimeout = setTimeout(() => {
-                if (!isContainerLoading) {
-                    loadContainers(true);
+                if (!isContainerLoading && !isContainerOperating) {
+                    smartRefreshContainers();
                 }
             }, 1000);
         }
@@ -446,11 +460,18 @@ async function loadContainers(forceRefresh = false) {
             rows.forEach(row => {
                 if (row) tbody.appendChild(row);
             });
-            
+
+            // 更新状态缓存
+            containerStatusCache = {};
+            containers.forEach(c => {
+                containerStatusCache[c.id] = c.status;
+            });
+
             console.log(`成功加载 ${containers.length} 个容器`);
         } else {
             // 显示空状态
             tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">暂无容器</td></tr>';
+            containerStatusCache = {}; // 清空缓存
             console.log('当前没有容器');
         }
         
@@ -580,6 +601,7 @@ async function createContainerRow(container) {
 // 启动容器（优化状态同步，带加载动画）
 async function startContainer(id) {
     const btn = document.getElementById(`btn-start-${id}`);
+    isContainerOperating = true; // 标记操作进行中
 
     // 设置按钮为加载状态
     if (btn) {
@@ -603,13 +625,13 @@ async function startContainer(id) {
         });
 
         if (response.ok) {
+            // 轮询等待容器真正启动
+            await waitForContainerStatus(id, 'running');
             showAlert('容器启动成功', 'success');
-            // 延迟后刷新确保状态同步，但不强制刷新
-            setTimeout(() => {
-                if (!isContainerLoading) {
-                    loadContainers(false); // 普通刷新，减少闪烁
-                }
-            }, 1500);
+            // 刷新列表
+            if (!isContainerLoading) {
+                loadContainers(false);
+            }
         } else {
             const error = await response.text();
             showAlert(`启动失败: ${error}`, 'danger');
@@ -628,6 +650,8 @@ async function startContainer(id) {
         if (!isContainerLoading) {
             loadContainers(true);
         }
+    } finally {
+        isContainerOperating = false; // 操作完成
     }
 }
 
@@ -653,9 +677,98 @@ function confirmStopContainer(id, name) {
     }
 }
 
+// 轮询等待容器状态变化
+async function waitForContainerStatus(id, targetStatus, maxAttempts = 10) {
+    for (let i = 0; i < maxAttempts; i++) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+            const response = await fetch(`${API_BASE}/containers`, {
+                headers: getAdminHeaders()
+            });
+            if (response.ok) {
+                const containers = await response.json();
+                const container = containers.find(c => c.id === id);
+                if (!container || container.status === targetStatus) {
+                    return true;
+                }
+            }
+        } catch (e) {
+            console.log('轮询状态出错:', e);
+        }
+    }
+    return false;
+}
+
+// 检查容器状态是否有变化
+async function checkContainerStatusChange() {
+    if (isContainerOperating || isContainerLoading) {
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/containers`, {
+            headers: getAdminHeaders()
+        });
+
+        if (!response.ok) {
+            return false;
+        }
+
+        const containers = await response.json();
+        let hasChange = false;
+
+        // 构建新的状态映射
+        const newStatusMap = {};
+        containers.forEach(c => {
+            newStatusMap[c.id] = c.status;
+        });
+
+        // 检查是否有变化
+        // 1. 检查容器数量变化
+        const oldIds = Object.keys(containerStatusCache);
+        const newIds = Object.keys(newStatusMap);
+        if (oldIds.length !== newIds.length) {
+            hasChange = true;
+        }
+
+        // 2. 检查状态变化
+        if (!hasChange) {
+            for (const id of newIds) {
+                if (containerStatusCache[id] !== newStatusMap[id]) {
+                    console.log(`容器 ${id} 状态变化: ${containerStatusCache[id]} -> ${newStatusMap[id]}`);
+                    hasChange = true;
+                    break;
+                }
+            }
+        }
+
+        // 更新缓存
+        containerStatusCache = newStatusMap;
+
+        return hasChange;
+    } catch (e) {
+        console.log('检查状态变化出错:', e);
+        return false;
+    }
+}
+
+// 智能刷新容器列表（仅状态变化时刷新UI）
+async function smartRefreshContainers() {
+    if (isContainerOperating) {
+        return;
+    }
+
+    const hasChange = await checkContainerStatusChange();
+    if (hasChange) {
+        console.log('检测到状态变化，刷新列表');
+        loadContainers(false);
+    }
+}
+
 // 停止容器（优化状态同步，带加载动画）
 async function stopContainer(id) {
     const btn = document.getElementById(`btn-stop-${id}`);
+    isContainerOperating = true; // 标记操作进行中
 
     // 设置按钮为加载状态
     if (btn) {
@@ -679,13 +792,13 @@ async function stopContainer(id) {
         });
 
         if (response.ok) {
+            // 轮询等待容器真正停止
+            await waitForContainerStatus(id, 'exited');
             showAlert('容器停止成功', 'success');
-            // 延迟后刷新确保状态同步，但不强制刷新
-            setTimeout(() => {
-                if (!isContainerLoading) {
-                    loadContainers(false); // 普通刷新，减少闪烁
-                }
-            }, 1500);
+            // 刷新列表
+            if (!isContainerLoading) {
+                loadContainers(false);
+            }
         } else {
             const error = await response.text();
             showAlert(`停止失败: ${error}`, 'danger');
@@ -704,6 +817,8 @@ async function stopContainer(id) {
         if (!isContainerLoading) {
             loadContainers(true);
         }
+    } finally {
+        isContainerOperating = false; // 操作完成
     }
 }
 
