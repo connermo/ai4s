@@ -652,6 +652,15 @@ echo "shared-rw目录权限设置完成"
 
 # 创建用户目录下的符号链接
 echo "创建用户目录下的符号链接..."
+# 如果存在同名目录（非软链接），先删除再创建软链接
+if [ -d "/home/$DEV_USER/shared-ro" ] && [ ! -L "/home/$DEV_USER/shared-ro" ]; then
+    echo "  移除旧的shared-ro目录，创建软链接..."
+    rm -rf /home/$DEV_USER/shared-ro
+fi
+if [ -d "/home/$DEV_USER/shared-rw" ] && [ ! -L "/home/$DEV_USER/shared-rw" ]; then
+    echo "  移除旧的shared-rw目录，创建软链接..."
+    rm -rf /home/$DEV_USER/shared-rw
+fi
 ln -sfnT /shared-ro /home/$DEV_USER/shared-ro
 ln -sfnT /shared-rw /home/$DEV_USER/shared-rw
 chown -h $DEV_UID:$DEV_GID /home/$DEV_USER/shared-ro /home/$DEV_USER/shared-rw
