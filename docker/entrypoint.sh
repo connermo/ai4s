@@ -646,8 +646,8 @@ else
     echo "[$(date '+%H:%M:%S')] 使用默认pip源"
 fi
 
-# 确保挂载目录存在并设置权限
-chown -R $DEV_UID:$DEV_GID /shared-rw 2>/dev/null || echo "警告: shared-rw权限设置失败"
+# 确保共享目录权限正确（不改变所有者，只确保所有人可写）
+chmod 777 /shared-rw 2>/dev/null || echo "警告: shared-rw权限设置失败"
 echo "shared-rw目录权限设置完成"
 
 # 创建用户目录下的符号链接
