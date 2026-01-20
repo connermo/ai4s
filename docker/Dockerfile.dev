@@ -68,6 +68,7 @@ RUN wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.s
 # 设置conda环境变量和配置（稳定）
 ENV PATH="/opt/miniconda3/bin:$PATH"
 RUN conda init bash \
+    && conda config --remove channels defaults 2>/dev/null || true \
     && conda config --add channels conda-forge \
     && conda config --add channels pytorch \
     && conda config --add channels nvidia \
@@ -77,8 +78,8 @@ RUN conda init bash \
     && conda config --set channel_priority strict \
     && conda clean -afy
 
-# 创建额外的Python环境（预留给用户自定义使用）
-RUN conda create -n ml python=3.11 -y && conda clean -afy
+# 创建额外的Python环境（使用 conda-forge 避免服务条款问题）
+RUN conda create -n ml python=3.11 -c conda-forge --override-channels -y && conda clean -afy
 
 # 设置CUDA环境变量（稳定）
 ENV CUDA_HOME=/usr/local/cuda \

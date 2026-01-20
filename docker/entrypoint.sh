@@ -51,6 +51,8 @@ if ! id -u $DEV_USER > /dev/null 2>&1; then
         echo "创建用户: $DEV_USER ($DEV_UID:$DEV_GID)"
         echo "$DEV_USER:$DEV_PASSWORD" | chpasswd
             echo "密码设置成功"
+        # 创建密码初始化标记文件
+        touch /home/$DEV_USER/.password_initialized
         usermod -aG sudo $DEV_USER
             echo "添加到sudo组成功"
         echo "$DEV_USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
@@ -59,9 +61,14 @@ if ! id -u $DEV_USER > /dev/null 2>&1; then
         echo "警告: 用户创建失败，可能已存在"
     fi
 else
-    # 用户已存在，静默处理
-    # 确保密码是最新的
-    echo "$DEV_USER:$DEV_PASSWORD" | chpasswd 2>/dev/null
+    # 用户已存在，检查是否需要更新密码
+    # 只有当密码标记文件不存在时才设置密码（表示这是容器重建而非重启）
+    if [ ! -f "/home/$DEV_USER/.password_initialized" ]; then
+        echo "检测到容器重建，重新设置密码..."
+        echo "$DEV_USER:$DEV_PASSWORD" | chpasswd 2>/dev/null
+    else
+        echo "容器重启，保留用户已修改的密码"
+    fi
 fi
 
 chown -R $DEV_UID:$DEV_GID /home/$DEV_USER
@@ -724,20 +731,23 @@ with open(config_file, 'w') as f:
     su - $DEV_USER -c "nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root > /tmp/jupyter.log 2>&1 &"
 
     # 启动VSCode Server
-echo "启动VSCode Server..."
+    echo "启动VSCode Server..."
+    mkdir -p /home/$DEV_USER/.config/code-server
     # 只在配置文件不存在时创建（保护用户修改的密码，容器重建时后端会清理旧文件）
     if [ ! -f "/home/$DEV_USER/.config/code-server/config.yaml" ]; then
-        mkdir -p /home/$DEV_USER/.config/code-server
         echo "初始化VSCode配置文件..."
         cat > /home/$DEV_USER/.config/code-server/config.yaml << EOF
 bind-addr: 0.0.0.0:8080
 auth: password
 password: $DEV_PASSWORD
 cert: false
+disable-telemetry: true
+disable-update-check: true
+disable-workspace-trust: true
 EOF
         chown $DEV_UID:$DEV_GID /home/$DEV_USER/.config/code-server/config.yaml
     else
-        echo "使用现有VSCode配置文件..."
+        echo "使用现有VSCode配置文件（保留用户密码）..."
     fi
     # 启动VSCode Server（使用配置文件中的密码）
     su - $DEV_USER -c "nohup code-server > /tmp/code-server.log 2>&1 &"

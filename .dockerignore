@@ -1,0 +1,16 @@
+# 排除运行时数据目录
+data/
+logs/
+
+# Git相关
+.git/
+.gitignore
+
+# 文档和配置
+*.md
+.env
+.env.*
+
+# 其他
+.DS_Store
+*.log

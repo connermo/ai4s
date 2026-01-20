@@ -160,6 +160,7 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	// 这样可以区分容器重建（需要新密码）和容器重启（保持用户修改的密码）
 	jupyterConfigFile := fmt.Sprintf("%s/.jupyter/jupyter_server_config.json", hostUserDir)
 	vscodeConfigFile := fmt.Sprintf("%s/.config/code-server/config.yaml", hostUserDir)
+	passwordMarkerFile := fmt.Sprintf("%s/.password_initialized", hostUserDir)
 
 	if _, err := os.Stat(jupyterConfigFile); err == nil {
 		log.Printf("容器重建：清理旧的Jupyter配置文件 %s", jupyterConfigFile)
@@ -169,6 +170,11 @@ func (s *ContainerService) CreateContainerWithPassword(user *models.User, gpuDev
 	if _, err := os.Stat(vscodeConfigFile); err == nil {
 		log.Printf("容器重建：清理旧的VSCode配置文件 %s", vscodeConfigFile)
 		os.Remove(vscodeConfigFile)
+	}
+
+	if _, err := os.Stat(passwordMarkerFile); err == nil {
+		log.Printf("容器重建：清理密码初始化标记文件 %s", passwordMarkerFile)
+		os.Remove(passwordMarkerFile)
 	}
 
 	// 基础挂载点
